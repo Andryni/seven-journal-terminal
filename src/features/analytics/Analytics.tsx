@@ -1,0 +1,890 @@
+import React, { useState, useMemo } from 'react';
+import { useTrades } from '../trades/useTrades';
+import type { Trade } from '../trades/useTrades';
+import { Card } from '../../components/ui/Card';
+import {
+  Line,
+  BarChart, Bar,
+  AreaChart, Area,
+  PieChart, Pie, Cell,
+  ComposedChart,
+  XAxis, YAxis,
+  Tooltip, Legend,
+  ResponsiveContainer,
+  ReferenceLine,
+} from 'recharts';
+import {
+  TrendingUp, TrendingDown, Target, Percent,
+  Flame, Activity, Clock, Brain, BarChart3,
+  Zap, Award, AlertCircle
+} from 'lucide-react';
+
+
+
+// ─── KPI tile ─────────────────────────────────────────────────────────────────
+const KpiTile = ({ label, value, sub, positive }: { label: string; value: string; sub?: string; positive?: boolean }) => (
+  <div className="bg-bloomberg-surface border border-bloomberg-border p-3 rounded-sm">
+    <div className="text-[9px] text-bloomberg-text-secondary uppercase tracking-wider mb-1">{label}</div>
+    <div className={`text-xl font-bold tabular-nums font-mono ${positive === undefined ? 'text-white' : positive ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
+      {value}
+    </div>
+    {sub && <div className="text-[9px] text-bloomberg-text-muted mt-0.5">{sub}</div>}
+  </div>
+);
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+const Empty = () => (
+  <div className="h-[200px] flex flex-col items-center justify-center text-bloomberg-text-secondary text-[10px] uppercase tracking-wider space-y-2">
+    <AlertCircle className="w-5 h-5 opacity-30" />
+    <span>Pas encore assez de données</span>
+  </div>
+);
+
+// ─── Custom Tooltip for Dark Theme ────────────────────────────────────────────
+const AnalyticsTooltip = ({ active, payload, label }: {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+}) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-[#08080b] border border-[#2a2a32] px-3 py-2 text-[10px] font-mono shadow-xl">
+      <div className="text-[#71717a] mb-1 font-bold uppercase tracking-wider">{label}</div>
+      <div className="space-y-1">
+        {payload.map((item, idx) => {
+          const val = Number(item.value);
+          const isDrawdown = item.name.toLowerCase().includes('drawdown');
+          const isWinrate = item.name.toLowerCase().includes('win%') || item.name.toLowerCase().includes('winrate');
+          
+          let textClass = 'text-white';
+          if (!isNaN(val)) {
+            if (isDrawdown) {
+              textClass = 'text-red-400 font-bold';
+            } else if (isWinrate) {
+              textClass = val >= 50 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold';
+            } else {
+              textClass = val >= 0 ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold';
+            }
+          }
+
+          const prefix = isDrawdown || isWinrate ? '' : (val >= 0 ? '+' : '');
+          const suffix = isDrawdown || isWinrate ? '%' : '';
+
+          return (
+            <div key={idx} className="flex items-center gap-2">
+              <span className="text-[#a1a1aa]">{item.name} :</span>
+              <span className={textClass}>
+                {prefix}{val.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}{suffix}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ─── Tab types ────────────────────────────────────────────────────────────────
+type Tab = 'overview' | 'equity' | 'distribution' | 'breakdown' | 'timing' | 'psychology';
+
+const TABS: { id: Tab; label: string; icon: React.FC<{ className?: string }> }[] = [
+  { id: 'overview',      label: 'VUE D\'ENSEMBLE', icon: Activity },
+  { id: 'equity',        label: 'EQUITY & DRAWDOWN', icon: TrendingUp },
+  { id: 'distribution',  label: 'DISTRIBUTION', icon: BarChart3 },
+  { id: 'breakdown',     label: 'PAR SETUP/PAIRE/TF', icon: Target },
+  { id: 'timing',        label: 'TIMING (H/J)', icon: Clock },
+  { id: 'psychology',    label: 'PSYCHOLOGIE', icon: Brain },
+];
+
+// ─── Main component ───────────────────────────────────────────────────────────
+export const Analytics: React.FC = () => {
+  const { trades, isLoading } = useTrades();
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
+
+  const closed = useMemo(
+    () => trades.filter((t): t is Trade & { exit_time: string; pnl: number } =>
+      t.exit_time !== null && t.pnl !== null),
+    [trades]
+  );
+
+  // ── Equity curve + Drawdown ────────────────────────────────────────────────
+  const equityCurve = useMemo(() => {
+    const sorted = [...closed].sort(
+      (a, b) => new Date(a.exit_time).getTime() - new Date(b.exit_time).getTime()
+    );
+    let cum = 0, peak = 0;
+    return sorted.map((t, i) => {
+      cum += t.pnl;
+      if (cum > peak) peak = cum;
+      const dd = peak > 0 ? ((cum - peak) / peak) * 100 : 0;
+      return {
+        i: i + 1,
+        date: new Date(t.exit_time).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
+        pnl: Number(cum.toFixed(2)),
+        drawdown: Number(dd.toFixed(2)),
+        trade_pnl: Number(t.pnl.toFixed(2)),
+      };
+    });
+  }, [closed]);
+
+  const maxDrawdown = useMemo(() => Math.min(0, ...equityCurve.map(e => e.drawdown)), [equityCurve]);
+  const netPnL = useMemo(() => closed.reduce((s, t) => s + t.pnl, 0), [closed]);
+  const winTrades = useMemo(() => closed.filter(t => t.pnl > 0), [closed]);
+  const lossTrades = useMemo(() => closed.filter(t => t.pnl <= 0), [closed]);
+  const winRate = closed.length > 0 ? (winTrades.length / closed.length) * 100 : 0;
+  const grossProfit = winTrades.reduce((s, t) => s + t.pnl, 0);
+  const grossLoss = Math.abs(lossTrades.reduce((s, t) => s + t.pnl, 0));
+  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? 99 : 0;
+  const avgR = useMemo(() => {
+    const rs = closed.map(t => t.r_multiple ?? 0);
+    return rs.length > 0 ? rs.reduce((s, r) => s + r, 0) / rs.length : 0;
+  }, [closed]);
+  const avgWin = winTrades.length > 0 ? grossProfit / winTrades.length : 0;
+  const avgLoss = lossTrades.length > 0 ? grossLoss / lossTrades.length : 0;
+  const expectancy = winRate / 100 * avgWin - (1 - winRate / 100) * avgLoss;
+
+  // ── Streaks ────────────────────────────────────────────────────────────────
+  const streakData = useMemo(() => {
+    const sorted = [...closed].sort(
+      (a, b) => new Date(a.exit_time).getTime() - new Date(b.exit_time).getTime()
+    );
+    let bestWin = 0, worstLoss = 0, cur = 0, curType: 'W' | 'L' | '-' = '-';
+    let localWin = 0, localLoss = 0;
+    for (const t of sorted) {
+      if (t.pnl > 0) {
+        localWin++; localLoss = 0;
+        if (localWin > bestWin) bestWin = localWin;
+        cur = localWin; curType = 'W';
+      } else {
+        localLoss++; localWin = 0;
+        if (localLoss > worstLoss) worstLoss = localLoss;
+        cur = localLoss; curType = 'L';
+      }
+    }
+    return { bestWin, worstLoss, cur, curType };
+  }, [closed]);
+
+  // ── Monthly P&L ───────────────────────────────────────────────────────────
+  const monthlyData = useMemo(() => {
+    const map: Record<string, { pnl: number; trades: number; wins: number }> = {};
+    closed.forEach(t => {
+      const d = new Date(t.exit_time);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!map[key]) map[key] = { pnl: 0, trades: 0, wins: 0 };
+      map[key].pnl += t.pnl;
+      map[key].trades++;
+      if (t.pnl > 0) map[key].wins++;
+    });
+    return Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => ({
+        month: k.slice(0, 7),
+        pnl: Number(v.pnl.toFixed(2)),
+        trades: v.trades,
+        winRate: Number(((v.wins / v.trades) * 100).toFixed(1)),
+      }));
+  }, [closed]);
+
+  // ── R-Multiple distribution histogram ────────────────────────────────────
+  const rDistribution = useMemo(() => {
+    const buckets: Record<string, number> = {
+      '< -2R': 0, '-2R': 0, '-1R': 0, '-0.5R': 0,
+      '0': 0, '+0.5R': 0, '+1R': 0, '+2R': 0, '> +2R': 0
+    };
+    closed.forEach(t => {
+      const r = t.r_multiple ?? (t.pnl > 0 ? 1 : -1);
+      if (r < -2) buckets['< -2R']++;
+      else if (r < -1) buckets['-2R']++;
+      else if (r < -0.5) buckets['-1R']++;
+      else if (r < 0) buckets['-0.5R']++;
+      else if (r === 0) buckets['0']++;
+      else if (r < 0.5) buckets['+0.5R']++;
+      else if (r < 1) buckets['+0.5R']++;
+      else if (r < 2) buckets['+1R']++;
+      else if (r < 3) buckets['+2R']++;
+      else buckets['> +2R']++;
+    });
+    return Object.entries(buckets).map(([bucket, count]) => ({
+      bucket, count,
+      positive: bucket.startsWith('+') || bucket === '0',
+    }));
+  }, [closed]);
+
+  // ── Win / Loss pie ────────────────────────────────────────────────────────
+  const pieData = [
+    { name: 'WINS', value: winTrades.length, color: '#059669' },
+    { name: 'LOSSES', value: lossTrades.length, color: '#dc2626' },
+  ];
+
+  // ── Direction (BUY vs SELL) ───────────────────────────────────────────────
+  const directionData = useMemo(() => {
+    const map: Record<string, { pnl: number; wins: number; total: number }> = {
+      BUY: { pnl: 0, wins: 0, total: 0 },
+      SELL: { pnl: 0, wins: 0, total: 0 },
+    };
+    closed.forEach(t => {
+      map[t.direction].pnl += t.pnl;
+      map[t.direction].total++;
+      if (t.pnl > 0) map[t.direction].wins++;
+    });
+    return Object.entries(map).map(([dir, d]) => ({
+      name: dir,
+      pnl: Number(d.pnl.toFixed(2)),
+      winRate: d.total > 0 ? Number(((d.wins / d.total) * 100).toFixed(1)) : 0,
+      total: d.total,
+    }));
+  }, [closed]);
+
+  // ── By Pair ────────────────────────────────────────────────────────────────
+  const pairData = useMemo(() => {
+    const map: Record<string, { pnl: number; wins: number; total: number; r: number[] }> = {};
+    closed.forEach(t => {
+      if (!map[t.pair]) map[t.pair] = { pnl: 0, wins: 0, total: 0, r: [] };
+      map[t.pair].pnl += t.pnl;
+      map[t.pair].total++;
+      if (t.pnl > 0) map[t.pair].wins++;
+      map[t.pair].r.push(t.r_multiple ?? 0);
+    });
+    return Object.entries(map).map(([pair, d]) => ({
+      name: pair,
+      pnl: Number(d.pnl.toFixed(2)),
+      winRate: Number(((d.wins / d.total) * 100).toFixed(1)),
+      total: d.total,
+      avgR: Number((d.r.reduce((s, v) => s + v, 0) / d.r.length).toFixed(2)),
+    }));
+  }, [closed]);
+
+  // ── By Timeframe ───────────────────────────────────────────────────────────
+  const tfData = useMemo(() => {
+    const map: Record<string, { pnl: number; wins: number; total: number }> = {};
+    closed.forEach(t => {
+      if (!map[t.timeframe]) map[t.timeframe] = { pnl: 0, wins: 0, total: 0 };
+      map[t.timeframe].pnl += t.pnl;
+      map[t.timeframe].total++;
+      if (t.pnl > 0) map[t.timeframe].wins++;
+    });
+    const ORDER = ['M1','M5','M15','H1','H4','D1'];
+    return Object.entries(map)
+      .sort(([a], [b]) => ORDER.indexOf(a) - ORDER.indexOf(b))
+      .map(([tf, d]) => ({
+        name: tf,
+        pnl: Number(d.pnl.toFixed(2)),
+        winRate: Number(((d.wins / d.total) * 100).toFixed(1)),
+        total: d.total,
+      }));
+  }, [closed]);
+
+  // ── Setup performance ──────────────────────────────────────────────────────
+  const setupData = useMemo(() => {
+    const defs = [
+      { name: 'BOS', check: (t: Trade) => t.setup_structures.includes('BOS') },
+      { name: 'CHoCH', check: (t: Trade) => t.setup_structures.includes('CHoCH') },
+      { name: 'Order Block', check: (t: Trade) => t.setup_ob },
+      { name: 'FVG', check: (t: Trade) => t.setup_fvg },
+      { name: 'Liquidity Sweep', check: (t: Trade) => t.setup_liquidity_sweep },
+    ];
+    return defs.map(({ name, check }) => {
+      const sub = closed.filter(check);
+      const wins = sub.filter(t => t.pnl > 0).length;
+      const pnl = sub.reduce((s, t) => s + t.pnl, 0);
+      return {
+        name, total: sub.length, wins,
+        winRate: sub.length > 0 ? Number(((wins / sub.length) * 100).toFixed(1)) : 0,
+        pnl: Number(pnl.toFixed(2)),
+      };
+    });
+  }, [closed]);
+
+  // ── By Hour of Day ────────────────────────────────────────────────────────
+  const hourData = useMemo(() => {
+    const map: Record<number, { pnl: number; wins: number; total: number }> = {};
+    closed.forEach(t => {
+      const h = new Date(t.exit_time).getHours();
+      if (!map[h]) map[h] = { pnl: 0, wins: 0, total: 0 };
+      map[h].pnl += t.pnl;
+      map[h].total++;
+      if (t.pnl > 0) map[h].wins++;
+    });
+    return Array.from({ length: 24 }, (_, h) => ({
+      hour: `${String(h).padStart(2, '0')}h`,
+      pnl: map[h] ? Number(map[h].pnl.toFixed(2)) : 0,
+      winRate: map[h] && map[h].total > 0 ? Number(((map[h].wins / map[h].total) * 100).toFixed(1)) : 0,
+      total: map[h]?.total ?? 0,
+    })).filter(d => d.total > 0);
+  }, [closed]);
+
+  // ── By Day of Week ────────────────────────────────────────────────────────
+  const DAYS = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
+  const dayData = useMemo(() => {
+    const map: Record<number, { pnl: number; wins: number; total: number }> = {};
+    closed.forEach(t => {
+      let d = new Date(t.exit_time).getDay();
+      d = d === 0 ? 6 : d - 1; // Mon=0 … Sun=6
+      if (!map[d]) map[d] = { pnl: 0, wins: 0, total: 0 };
+      map[d].pnl += t.pnl;
+      map[d].total++;
+      if (t.pnl > 0) map[d].wins++;
+    });
+    return DAYS.map((day, i) => ({
+      day,
+      pnl: map[i] ? Number(map[i].pnl.toFixed(2)) : 0,
+      winRate: map[i] && map[i].total > 0 ? Number(((map[i].wins / map[i].total) * 100).toFixed(1)) : 0,
+      total: map[i]?.total ?? 0,
+    }));
+  }, [closed]);
+
+  // ── By Mental State ───────────────────────────────────────────────────────
+  const mentalData = useMemo(() => {
+    const map: Record<string, { pnl: number; wins: number; total: number }> = {};
+    closed.forEach(t => {
+      if (!map[t.mental_state]) map[t.mental_state] = { pnl: 0, wins: 0, total: 0 };
+      map[t.mental_state].pnl += t.pnl;
+      map[t.mental_state].total++;
+      if (t.pnl > 0) map[t.mental_state].wins++;
+    });
+    return Object.entries(map).map(([state, d]) => ({
+      name: state.toUpperCase(),
+      pnl: Number(d.pnl.toFixed(2)),
+      winRate: Number(((d.wins / d.total) * 100).toFixed(1)),
+      total: d.total,
+    })).sort((a, b) => b.pnl - a.pnl);
+  }, [closed]);
+
+
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-bloomberg-text-secondary font-mono text-xs">
+        CALCUL DES ANALYTICS...
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+
+      {/* PAGE HEADER */}
+      <div className="flex items-center justify-between border-b border-bloomberg-border pb-4">
+        <div>
+          <h2 className="text-sm font-extrabold uppercase tracking-widest text-white">ANALYTICS AVANCÉS</h2>
+          <p className="text-[10px] text-bloomberg-text-secondary mt-0.5">
+            {closed.length} trades clôturés analysés · Toutes métriques calculées en temps réel
+          </p>
+        </div>
+        <div className="text-right font-mono">
+          <div className={`text-xl font-bold tabular-nums ${netPnL >= 0 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
+            {netPnL >= 0 ? '+' : ''}{netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </div>
+          <div className="text-[9px] text-bloomberg-text-secondary">P&L CUMULÉ</div>
+        </div>
+      </div>
+
+      {/* TABS */}
+      <div className="flex flex-wrap gap-1 border-b border-bloomberg-border pb-0">
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex items-center space-x-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-colors ${
+              activeTab === id
+                ? 'border-bloomberg-gold text-bloomberg-gold'
+                : 'border-transparent text-bloomberg-text-secondary hover:text-white'
+            }`}
+          >
+            <Icon className="w-3 h-3" />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── TAB: VUE D'ENSEMBLE ───────────────────────────────────────────── */}
+      {activeTab === 'overview' && (
+        <div className="space-y-5">
+          {/* KPI grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <KpiTile label="Win Rate" value={`${winRate.toFixed(1)}%`} sub={`${winTrades.length}W / ${lossTrades.length}L`} positive={winRate >= 50} />
+            <KpiTile label="Profit Factor" value={profitFactor.toFixed(2)} sub="Seuil viable ≥ 1.5" positive={profitFactor >= 1.5} />
+            <KpiTile label="Avg R-Multiple" value={`${avgR >= 0 ? '+' : ''}${avgR.toFixed(2)}R`} positive={avgR >= 0} />
+            <KpiTile label="Expectancy / Trade" value={`$${expectancy.toFixed(2)}`} positive={expectancy >= 0} />
+            <KpiTile label="Max Drawdown" value={`${maxDrawdown.toFixed(1)}%`} positive={maxDrawdown > -10} />
+            <KpiTile label="Streak actuel" value={`${streakData.cur} ${streakData.curType}`} positive={streakData.curType === 'W'} />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <KpiTile label="Avg Win" value={`+$${avgWin.toFixed(0)}`} positive={true} />
+            <KpiTile label="Avg Loss" value={`-$${avgLoss.toFixed(0)}`} positive={false} />
+            <KpiTile label="Meilleure série W" value={`${streakData.bestWin} gains`} positive={true} />
+            <KpiTile label="Pire série L" value={`${streakData.worstLoss} pertes`} positive={false} />
+            <KpiTile label="Total trades" value={`${trades.length}`} />
+            <KpiTile label="P&L / Mois" value={monthlyData.length > 0 ? `$${(netPnL / Math.max(monthlyData.length, 1)).toFixed(0)}` : '—'} positive={netPnL >= 0} />
+          </div>
+
+          {/* Monthly P&L bar */}
+          <Card title="P&L MENSUEL (CUMULÉ MENSUEL)" headerAction={<Flame className="w-3.5 h-3.5 text-bloomberg-gold" />}>
+            {monthlyData.length > 0 ? (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="glowWin" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#059669" stopOpacity={0.2} />
+                      </linearGradient>
+                      <linearGradient id="glowLoss" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#b91c1c" stopOpacity={0.2} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="month" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <YAxis stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <Tooltip content={<AnalyticsTooltip />} />
+                    <ReferenceLine y={0} stroke="#3f3f46" />
+                    <Bar dataKey="pnl" name="P&L">
+                      {monthlyData.map((d, i) => (
+                        <Cell key={i} fill={d.pnl >= 0 ? 'url(#glowWin)' : 'url(#glowLoss)'} />
+                      ))}
+                    </Bar>
+                    <Line type="monotone" dataKey="winRate" name="Win% (ligne)" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2, fill: '#f59e0b' }} yAxisId={0} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <Empty />}
+          </Card>
+        </div>
+      )}
+
+      {/* ── TAB: EQUITY & DRAWDOWN ────────────────────────────────────────── */}
+      {activeTab === 'equity' && (
+        <div className="space-y-5">
+          <Card title="COURBE D'EQUITY CUMULATIVE" headerAction={<TrendingUp className="w-3.5 h-3.5 text-bloomberg-gold" />}>
+            {equityCurve.length > 0 ? (
+              <div className="h-[240px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={equityCurve} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                        <stop offset="50%" stopColor="#f59e0b" stopOpacity={0.1} />
+                        <stop offset="95%" stopColor="#059669" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="date" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <YAxis stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <Tooltip content={<AnalyticsTooltip />} />
+                    <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1} />
+                    <Area type="monotone" dataKey="pnl" name="Equity ($)" stroke="#10b981" strokeWidth={2.5} fill="url(#equityGrad)" dot={false} activeDot={{ r: 5, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <Empty />}
+          </Card>
+
+          <Card title="DRAWDOWN (% DEPUIS LE PEAK)" headerAction={<TrendingDown className="w-3.5 h-3.5 text-bloomberg-red-light" />}>
+            {equityCurve.length > 0 ? (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={equityCurve} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="ddGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#b91c1c" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="date" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <YAxis stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} tickFormatter={(v) => `${v}%`} />
+                    <Tooltip content={<AnalyticsTooltip />} />
+                    <ReferenceLine y={0} stroke="#3f3f46" />
+                    <Area type="monotone" dataKey="drawdown" name="Drawdown %" stroke="#ef4444" strokeWidth={2} fill="url(#ddGrad)" dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <Empty />}
+          </Card>
+
+          <Card title="P&L PAR TRADE (CHRONOLOGIQUE)">
+            {equityCurve.length > 0 ? (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={equityCurve} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="barWin" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.9} />
+                        <stop offset="100%" stopColor="#059669" stopOpacity={0.3} />
+                      </linearGradient>
+                      <linearGradient id="barLoss" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ef4444" stopOpacity={0.9} />
+                        <stop offset="100%" stopColor="#b91c1c" stopOpacity={0.3} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="i" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} label={{ value: 'Trade #', position: 'insideBottomRight', fontSize: 9, fill: '#71717a' }} />
+                    <YAxis stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <Tooltip content={<AnalyticsTooltip />} />
+                    <ReferenceLine y={0} stroke="#3f3f46" />
+                    <Bar dataKey="trade_pnl" name="P&L Trade">
+                      {equityCurve.map((d, i) => (
+                        <Cell key={i} fill={d.trade_pnl >= 0 ? 'url(#barWin)' : 'url(#barLoss)'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <Empty />}
+          </Card>
+        </div>
+      )}
+
+      {/* ── TAB: DISTRIBUTION ────────────────────────────────────────────── */}
+      {activeTab === 'distribution' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+            {/* Win / Loss Pie */}
+            <Card title="RÉPARTITION WINS vs LOSSES" headerAction={<Percent className="w-3.5 h-3.5 text-bloomberg-gold" />}>
+              {closed.length > 0 ? (
+                <div className="flex items-center space-x-6">
+                  <div className="h-[200px] w-[200px] shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={80} innerRadius={45} paddingAngle={3} stroke="none">
+                          {pieData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                        </Pie>
+                        <Tooltip content={<AnalyticsTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-3 font-mono text-xs">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="w-3 h-3 rounded-full bg-bloomberg-green inline-block shrink-0" />
+                        <span className="text-bloomberg-text-secondary">WINS</span>
+                      </div>
+                      <div className="text-bloomberg-green-light font-bold text-lg tabular-nums">{winTrades.length}</div>
+                      <div className="text-[10px] text-bloomberg-text-muted">{winRate.toFixed(1)}% du total</div>
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="w-3 h-3 rounded-full bg-bloomberg-red inline-block shrink-0" />
+                        <span className="text-bloomberg-text-secondary">LOSSES</span>
+                      </div>
+                      <div className="text-bloomberg-red-light font-bold text-lg tabular-nums">{lossTrades.length}</div>
+                      <div className="text-[10px] text-bloomberg-text-muted">{(100 - winRate).toFixed(1)}% du total</div>
+                    </div>
+                  </div>
+                </div>
+              ) : <Empty />}
+            </Card>
+
+            {/* R-Multiple distribution */}
+            <Card title="DISTRIBUTION DES R-MULTIPLES" headerAction={<Target className="w-3.5 h-3.5 text-bloomberg-gold" />}>
+              {rDistribution.some(d => d.count > 0) ? (
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={rDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="distWin" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10b981" stopOpacity={0.85} />
+                          <stop offset="100%" stopColor="#059669" stopOpacity={0.25} />
+                        </linearGradient>
+                        <linearGradient id="distLoss" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#ef4444" stopOpacity={0.85} />
+                          <stop offset="100%" stopColor="#b91c1c" stopOpacity={0.25} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="bucket" stroke="#3f3f46" tick={{ fontSize: 8, fontFamily: 'monospace' }} />
+                      <YAxis stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} allowDecimals={false} />
+                      <Tooltip content={<AnalyticsTooltip />} />
+                      <Bar dataKey="count" name="Trades">
+                        {rDistribution.map((d, i) => (
+                          <Cell key={i} fill={d.positive ? 'url(#distWin)' : 'url(#distLoss)'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : <Empty />}
+            </Card>
+
+            {/* BUY vs SELL */}
+            <Card title="PERFORMANCE PAR DIRECTION (BUY vs SELL)" headerAction={<Zap className="w-3.5 h-3.5 text-bloomberg-gold" />}>
+              {directionData.some(d => d.total > 0) ? (
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={directionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <XAxis dataKey="name" stroke="#52525b" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
+                      <YAxis stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                      <Tooltip content={<AnalyticsTooltip />} />
+                      <Bar dataKey="pnl" name="P&L ($)">
+                        {directionData.map((d, i) => (
+                          <Cell key={i} fill={d.pnl >= 0 ? '#059669' : '#dc2626'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : <Empty />}
+            </Card>
+
+            {/* BUY/SELL Win Rate */}
+            <Card title="WIN RATE PAR DIRECTION">
+              <div className="space-y-4 pt-2">
+                {directionData.map(d => (
+                  <div key={d.name} className="space-y-1">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className={`font-bold ${d.name === 'BUY' ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>{d.name}</span>
+                      <span className="text-white">{d.winRate}% — {d.total} trades</span>
+                    </div>
+                    <div className="w-full bg-bloomberg-border rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${d.name === 'BUY' ? 'bg-bloomberg-green' : 'bg-bloomberg-red'}`}
+                        style={{ width: `${Math.min(d.winRate, 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-[9px] text-bloomberg-text-muted">
+                      P&L: {d.pnl >= 0 ? '+' : ''}{d.pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB: PAR SETUP / PAIRE / TF ────────────────────────────────────── */}
+      {activeTab === 'breakdown' && (
+        <div className="space-y-5">
+          {/* By Pair */}
+          <Card title="P&L NET PAR INSTRUMENT" headerAction={<Award className="w-3.5 h-3.5 text-bloomberg-gold" />}>
+            {pairData.length > 0 ? (
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={pairData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="glowWinPair" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#059669" stopOpacity={0.2} />
+                      </linearGradient>
+                      <linearGradient id="glowLossPair" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#b91c1c" stopOpacity={0.2} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="name" stroke="#3f3f46" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
+                    <YAxis yAxisId="left" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <YAxis yAxisId="right" orientation="right" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} tickFormatter={v => `${v}%`} />
+                    <Tooltip content={<AnalyticsTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <Bar yAxisId="left" dataKey="pnl" name="P&L ($)">
+                      {pairData.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? 'url(#glowWinPair)' : 'url(#glowLossPair)'} />)}
+                    </Bar>
+                    <Line yAxisId="right" type="monotone" dataKey="winRate" name="Win%" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 3 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <Empty />}
+          </Card>
+
+          {/* By Timeframe */}
+          <Card title="PERFORMANCE PAR TIMEFRAME">
+            {tfData.length > 0 ? (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={tfData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="glowWinTf" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#059669" stopOpacity={0.2} />
+                      </linearGradient>
+                      <linearGradient id="glowLossTf" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#b91c1c" stopOpacity={0.2} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="name" stroke="#3f3f46" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
+                    <YAxis yAxisId="left" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <YAxis yAxisId="right" orientation="right" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} tickFormatter={v => `${v}%`} />
+                    <Tooltip content={<AnalyticsTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <Bar yAxisId="left" dataKey="pnl" name="P&L ($)">
+                      {tfData.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? 'url(#glowWinTf)' : 'url(#glowLossTf)'} />)}
+                    </Bar>
+                    <Line yAxisId="right" type="monotone" dataKey="winRate" name="Win%" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 3 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <Empty />}
+          </Card>
+
+          {/* Setup table */}
+          <Card title="WIN RATE PAR CONFIRMATION SMC/ICT">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-bloomberg-border font-mono text-xs">
+                <thead className="bg-bloomberg-surface text-[9px] text-bloomberg-text-secondary uppercase">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Setup</th>
+                    <th className="px-4 py-2 text-right">Trades</th>
+                    <th className="px-4 py-2 text-right">Win Rate</th>
+                    <th className="px-4 py-2 text-right">P&L Cumulé</th>
+                    <th className="px-4 py-2 text-right">Progression</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-bloomberg-border/40 text-white tabular-nums">
+                  {setupData.map(s => (
+                    <tr key={s.name} className="hover:bg-bloomberg-surface/30">
+                      <td className="px-4 py-2.5 font-bold">{s.name}</td>
+                      <td className="px-4 py-2.5 text-right text-bloomberg-text-secondary">{s.total}</td>
+                      <td className={`px-4 py-2.5 text-right font-bold ${s.winRate >= 50 ? 'text-bloomberg-green-light' : s.total > 0 ? 'text-bloomberg-red-light' : 'text-bloomberg-text-muted'}`}>
+                        {s.total > 0 ? `${s.winRate}%` : '—'}
+                      </td>
+                      <td className={`px-4 py-2.5 text-right font-bold ${s.pnl >= 0 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
+                        {s.total > 0 ? `${s.pnl >= 0 ? '+' : ''}${s.pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—'}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <div className="w-full bg-bloomberg-border rounded-full h-1.5">
+                          <div
+                            className={`h-1.5 rounded-full ${s.winRate >= 50 ? 'bg-bloomberg-green' : 'bg-bloomberg-red'}`}
+                            style={{ width: `${Math.min(s.winRate, 100)}%` }}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ── TAB: TIMING ──────────────────────────────────────────────────── */}
+      {activeTab === 'timing' && (
+        <div className="space-y-5">
+          <Card title="P&L PAR HEURE DE SORTIE (UTC)" headerAction={<Clock className="w-3.5 h-3.5 text-bloomberg-gold" />}>
+            {hourData.length > 0 ? (
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={hourData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="hour" stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <YAxis yAxisId="left" stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <YAxis yAxisId="right" orientation="right" stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} tickFormatter={v => `${v}%`} />
+                    <Tooltip content={<AnalyticsTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <ReferenceLine yAxisId="left" y={0} stroke="#52525b" />
+                    <Bar yAxisId="left" dataKey="pnl" name="P&L ($)">
+                      {hourData.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? '#059669' : '#dc2626'} />)}
+                    </Bar>
+                    <Line yAxisId="right" type="monotone" dataKey="winRate" name="Win%" stroke="#d97706" strokeWidth={2} dot={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <Empty />}
+          </Card>
+
+          <Card title="P&L PAR JOUR DE LA SEMAINE">
+            {dayData.some(d => d.total > 0) ? (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={dayData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="day" stroke="#52525b" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
+                    <YAxis yAxisId="left" stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <YAxis yAxisId="right" orientation="right" stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} tickFormatter={v => `${v}%`} />
+                    <Tooltip content={<AnalyticsTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <ReferenceLine yAxisId="left" y={0} stroke="#52525b" />
+                    <Bar yAxisId="left" dataKey="pnl" name="P&L ($)">
+                      {dayData.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? '#059669' : '#dc2626'} />)}
+                    </Bar>
+                    <Line yAxisId="right" type="monotone" dataKey="winRate" name="Win%" stroke="#d97706" strokeWidth={2} dot={{ fill: '#d97706', r: 5 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <Empty />}
+          </Card>
+        </div>
+      )}
+
+      {/* ── TAB: PSYCHOLOGIE ─────────────────────────────────────────────── */}
+      {activeTab === 'psychology' && (
+        <div className="space-y-5">
+          <Card title="PERFORMANCE PAR ÉTAT MENTAL" headerAction={<Brain className="w-3.5 h-3.5 text-bloomberg-gold" />}>
+            {mentalData.length > 0 ? (
+              <>
+                <div className="h-[220px] mb-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={mentalData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <XAxis dataKey="name" stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                      <YAxis yAxisId="left" stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                      <YAxis yAxisId="right" orientation="right" stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} tickFormatter={v => `${v}%`} />
+                      <Tooltip content={<AnalyticsTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: 9, fontFamily: 'monospace' }} />
+                      <ReferenceLine yAxisId="left" y={0} stroke="#52525b" />
+                      <Bar yAxisId="left" dataKey="pnl" name="P&L ($)">
+                        {mentalData.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? '#059669' : '#dc2626'} />)}
+                      </Bar>
+                      <Line yAxisId="right" type="monotone" dataKey="winRate" name="Win%" stroke="#d97706" strokeWidth={2} dot={{ fill: '#d97706', r: 5 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Barchart progress per state */}
+                <div className="space-y-3">
+                  {mentalData.map(d => {
+                    const isNegative = ['REVENGE', 'GREEDY', 'FOMO', 'ANXIOUS', 'TIRED'].includes(d.name);
+                    return (
+                      <div key={d.name} className="space-y-1">
+                        <div className="flex justify-between text-[10px] font-mono">
+                          <span className={`font-bold ${isNegative ? 'text-bloomberg-red-light' : 'text-bloomberg-gold-light'}`}>{d.name}</span>
+                          <span className="text-bloomberg-text-secondary">{d.total} trades · WR: {d.winRate}%</span>
+                          <span className={`font-bold ${d.pnl >= 0 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
+                            {d.pnl >= 0 ? '+' : ''}{d.pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="w-full bg-bloomberg-border rounded-full h-1.5">
+                          <div
+                            className={`h-1.5 rounded-full ${d.winRate >= 50 ? 'bg-bloomberg-green' : 'bg-bloomberg-red'}`}
+                            style={{ width: `${Math.min(d.winRate, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : <Empty />}
+          </Card>
+
+          {/* Goggins / Discipline */}
+          <Card title="FRAMEWORKS GOGGINS — APPLICATION TERRAIN">
+            {closed.length > 0 ? (() => {
+              const cookieJarCount = closed.filter(t => t.cookie_jar_ref).length;
+              const rule40Count = closed.filter(t => t.rule_40_percent).length;
+              const cookieJarWR = closed.filter(t => t.cookie_jar_ref && t.pnl > 0).length / Math.max(cookieJarCount, 1) * 100;
+              const rule40WR = closed.filter(t => t.rule_40_percent && t.pnl > 0).length / Math.max(rule40Count, 1) * 100;
+              return (
+                <div className="grid grid-cols-2 gap-6 font-mono text-xs">
+                  <div className="space-y-2">
+                    <div className="text-bloomberg-gold font-bold uppercase text-[10px]">Cookie Jar Method</div>
+                    <div className="text-2xl font-bold text-white tabular-nums">{cookieJarCount}</div>
+                    <div className="text-bloomberg-text-secondary text-[10px]">activations sur {closed.length} trades</div>
+                    <div className={`font-bold ${cookieJarWR >= 50 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
+                      Win Rate: {cookieJarWR.toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-bloomberg-gold font-bold uppercase text-[10px]">40% Rule</div>
+                    <div className="text-2xl font-bold text-white tabular-nums">{rule40Count}</div>
+                    <div className="text-bloomberg-text-secondary text-[10px]">activations sur {closed.length} trades</div>
+                    <div className={`font-bold ${rule40WR >= 50 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
+                      Win Rate: {rule40WR.toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
+              );
+            })() : <Empty />}
+          </Card>
+        </div>
+      )}
+
+    </div>
+  );
+};
