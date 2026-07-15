@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAccounts } from './useAccounts';
 import type { TradingAccount } from './useAccounts';
 import { useTrades } from '../trades/useTrades';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input, Select } from '../../components/ui/Input';
-import { Plus, AlertCircle, Trash2, Edit3, TrendingUp, DollarSign, Wallet, CheckCircle } from 'lucide-react';
+import { Plus, AlertCircle, Trash2, Edit3, TrendingUp, DollarSign, Wallet, CheckCircle, X } from 'lucide-react';
 
 export const Accounts: React.FC = () => {
   const { accounts, isLoading, createAccount, updateAccount, deleteAccount } = useAccounts();
@@ -128,101 +128,142 @@ export const Accounts: React.FC = () => {
         </div>
         <Button 
           variant="outline" 
-          onClick={() => {
-            if (showAddForm) handleCancelEdit();
-            else setShowAddForm(true);
-          }}
+          onClick={() => setShowAddForm(true)}
           className="flex items-center space-x-1.5"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>{showAddForm ? 'ANNULER' : 'AJOUTER UN COMPTE'}</span>
+          <span>AJOUTER UN COMPTE</span>
         </Button>
       </div>
 
-      {/* FORMULAIRE DE CRÉATION ET MODIFICATION */}
-      {showAddForm && (
-        <Card title={editingAccount ? "MODIFIER LE COMPTE" : "NOUVEAU COMPTE"} className="max-w-md mx-auto">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="p-2.5 bg-bloomberg-red/10 border border-bloomberg-red text-bloomberg-red-light text-xs flex items-center space-x-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
+      {/* MODAL FORMULAIRE COMPTE — STYLE BLOOMBERG */}
+      {showAddForm && createPortal(
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[9999] font-mono overflow-y-auto">
+          <div className="bg-bloomberg-surface border border-bloomberg-border w-full max-w-xl p-6 relative rounded-sm my-8">
+            {/* Header */}
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="absolute top-4 right-4 text-bloomberg-text-secondary hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="border-b border-bloomberg-border pb-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-0.5 h-6 bg-bloomberg-gold" />
+                <div>
+                  <h2 className="text-xs font-extrabold tracking-widest text-white uppercase">
+                    {editingAccount ? '— MODIFIER LE COMPTE —' : '— NOUVEAU COMPTE —'}
+                  </h2>
+                  <p className="text-[10px] text-bloomberg-text-muted mt-0.5">
+                    {editingAccount ? `Édition : ${editingAccount.name.toUpperCase()}` : 'Prop Firm / Compte Personnel / Demo'}
+                  </p>
+                </div>
               </div>
-            )}
-            <Input
-              label="Nom du compte *"
-              placeholder="ex: Challenge FTMO 100K"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                label="Type de compte"
-                value={type}
-                onChange={(e) => setType(e.target.value as any)}
-                options={[
-                  { value: 'challenge', label: 'CHALLENGE PROP' },
-                  { value: 'funded', label: 'FUNDED PROP' },
-                  { value: 'personal', label: 'COMPTE PERSONNEL' },
-                  { value: 'demo', label: 'COMPTE DEMO' },
-                ]}
-              />
-              <Select
-                label="Devise"
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                options={[
-                  { value: 'USD', label: 'USD ($)' },
-                  { value: 'EUR', label: 'EUR (€)' },
-                  { value: 'GBP', label: 'GBP (£)' },
-                ]}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Solde initial / Balance *"
-                placeholder="ex: 100000"
-                value={initialBalance}
-                onChange={(e) => setInitialBalance(e.target.value)}
-                type="number"
-                step="0.01"
-                required
-              />
-              <Input
-                label="Solde actuel / Balance *"
-                placeholder="ex: 102500"
-                value={balance}
-                onChange={(e) => setBalance(e.target.value)}
-                type="number"
-                step="0.01"
-                required
-              />
             </div>
 
-            <Input
-              label="Limite de Perte Quotidienne Max ($) — Prop Firm Rule"
-              placeholder="ex: 2500 (laisser vide pour désactiver)"
-              value={maxDailyLoss}
-              onChange={(e) => setMaxDailyLoss(e.target.value)}
-              type="number"
-              step="0.01"
-            />
-
-            <div className="flex items-center space-x-3 pt-2">
-              <Button type="submit" className="flex-1 py-2">
-                {editingAccount ? "SAUVEGARDER LES MODIFICATIONS" : "ENREGISTRER LE COMPTE"}
-              </Button>
-              {editingAccount && (
-                <Button type="button" variant="outline" onClick={handleCancelEdit}>
-                  ANNULER
-                </Button>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="p-2.5 bg-bloomberg-red/10 border border-bloomberg-red text-bloomberg-red-light text-xs flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
               )}
-            </div>
-          </form>
-        </Card>
-      )}
+
+              {/* Section 1 — Identité */}
+              <div className="border border-bloomberg-border/50 p-4 space-y-4">
+                <p className="text-[9px] text-bloomberg-gold tracking-widest uppercase font-bold border-b border-bloomberg-border/40 pb-2">1. Identité du Compte</p>
+                <Input
+                  label="Nom du compte *"
+                  placeholder="ex: Challenge FTMO 100K"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <Select
+                    label="Type de compte"
+                    value={type}
+                    onChange={(e) => setType(e.target.value as any)}
+                    options={[
+                      { value: 'challenge', label: 'CHALLENGE PROP' },
+                      { value: 'funded', label: 'FUNDED PROP' },
+                      { value: 'personal', label: 'COMPTE PERSONNEL' },
+                      { value: 'demo', label: 'COMPTE DEMO' },
+                    ]}
+                  />
+                  <Select
+                    label="Devise"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    options={[
+                      { value: 'USD', label: 'USD ($)' },
+                      { value: 'EUR', label: 'EUR (€)' },
+                      { value: 'GBP', label: 'GBP (£)' },
+                    ]}
+                  />
+                </div>
+              </div>
+
+              {/* Section 2 — Capital */}
+              <div className="border border-bloomberg-border/50 p-4 space-y-4">
+                <p className="text-[9px] text-bloomberg-gold tracking-widest uppercase font-bold border-b border-bloomberg-border/40 pb-2">2. Capital</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Capital Initial *"
+                    placeholder="ex: 25000"
+                    value={initialBalance}
+                    onChange={(e) => setInitialBalance(e.target.value)}
+                    type="number"
+                    step="0.01"
+                    required
+                  />
+                  <Input
+                    label="Solde Actuel *"
+                    placeholder="ex: 25000"
+                    value={balance}
+                    onChange={(e) => setBalance(e.target.value)}
+                    type="number"
+                    step="0.01"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Section 3 — Règles Prop Firm */}
+              <div className="border border-bloomberg-border/50 p-4 space-y-4">
+                <p className="text-[9px] text-bloomberg-gold tracking-widest uppercase font-bold border-b border-bloomberg-border/40 pb-2">3. Règles Prop Firm (Optionnel)</p>
+                <Input
+                  label="Limite de Perte Quotidienne Max ($)"
+                  placeholder="ex: 500 (laisser vide pour désactiver)"
+                  value={maxDailyLoss}
+                  onChange={(e) => setMaxDailyLoss(e.target.value)}
+                  type="number"
+                  step="0.01"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-bloomberg-gold text-black text-[11px] font-extrabold tracking-widest uppercase py-2.5 hover:bg-bloomberg-gold/90 transition-colors"
+                >
+                  {editingAccount ? 'SAUVEGARDER LES MODIFICATIONS' : 'CRÉER LE COMPTE'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="border border-bloomberg-border text-bloomberg-text-secondary hover:text-white text-[11px] font-bold tracking-widest uppercase px-5 py-2.5 transition-colors hover:border-bloomberg-border-bright"
+                >
+                  ANNULER
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      , document.body)}
 
       {/* COMPTES GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -241,10 +282,13 @@ export const Accounts: React.FC = () => {
           const totalR = closedTrades.reduce((sum, t) => sum + (t.r_multiple || 0), 0);
 
           return (
-            <Card 
+            <div
               key={acc.id}
-              title={acc.name.toUpperCase()}
-              headerAction={
+              className="bg-bloomberg-surface border border-bloomberg-border p-4 space-y-0 hover:border-bloomberg-border-bright transition-colors"
+            >
+              {/* Card Header */}
+              <div className="flex items-center justify-between border-b border-bloomberg-border pb-3 mb-4">
+                <span className="text-[11px] font-extrabold tracking-widest text-white uppercase">{acc.name.toUpperCase()}</span>
                 <div className="flex items-center space-x-2">
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase ${
                     acc.type === 'funded' 
@@ -255,13 +299,11 @@ export const Accounts: React.FC = () => {
                   }`}>
                     {acc.type}
                   </span>
-                  
                   {acc.type === 'funded' && pnlPercent >= 0 && (
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
                   )}
                 </div>
-              }
-            >
+              </div>
               <div className="space-y-4 font-mono text-xs">
                 
                 {/* SOLDE ACTUEL */}
@@ -352,7 +394,7 @@ export const Accounts: React.FC = () => {
                 </div>
 
               </div>
-            </Card>
+            </div>
           );
         })}
 
