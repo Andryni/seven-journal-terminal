@@ -228,11 +228,13 @@ export const Accounts: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {accounts.map((acc: TradingAccount) => {
           const accountTrades = trades.filter(t => t.account_id === acc.id);
-          const closedTrades = accountTrades.filter(t => t.exit_time !== null && t.pnl !== null);
+          const closedTrades = accountTrades.filter(t => t.pnl !== null);
           const winTrades = closedTrades.filter(t => t.pnl !== null && t.pnl > 0);
           
-          const pnl = acc.balance - acc.initial_balance;
-          const pnlPercent = acc.initial_balance > 0 ? (pnl / acc.initial_balance) * 100 : 0;
+          // Calcul dynamique du P&L à partir des trades réels
+          const cumulativePnl = closedTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+          const computedBalance = acc.initial_balance + cumulativePnl;
+          const pnlPercent = acc.initial_balance > 0 ? (cumulativePnl / acc.initial_balance) * 100 : 0;
           const winRate = closedTrades.length > 0 ? (winTrades.length / closedTrades.length) * 100 : 0;
           
           // Cumulative R-multiple for this specific account
@@ -269,7 +271,7 @@ export const Accounts: React.FC = () => {
                     <span>SOLDE ACTUEL :</span>
                   </span>
                   <span className="text-white font-bold text-sm">
-                    {acc.currency} {acc.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    {acc.currency} {computedBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
 
@@ -290,8 +292,8 @@ export const Accounts: React.FC = () => {
                     <TrendingUp className="w-3.5 h-3.5 shrink-0" />
                     <span>P&L NET CUMULÉ :</span>
                   </span>
-                  <span className={`font-bold ${pnl >= 0 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
-                    {pnl >= 0 ? '+' : ''}{pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })} ({pnlPercent.toFixed(2)}%)
+                  <span className={`font-bold ${cumulativePnl >= 0 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
+                    {cumulativePnl >= 0 ? '+' : ''}{cumulativePnl.toLocaleString('en-US', { minimumFractionDigits: 2 })} ({pnlPercent.toFixed(2)}%)
                   </span>
                 </div>
 
