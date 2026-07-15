@@ -194,6 +194,29 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
           </div>
         </main>
       </div>
+
+      {/* ── BOTTOM NAV (mobile only) ───────────────────────────────────── */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-bloomberg-surface border-t border-bloomberg-border z-50 flex items-center justify-around px-1 py-1.5 safe-area-bottom">
+        {NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const isActive = currentTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setCurrentTab(item.id)}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1 min-w-0 flex-1 transition-all duration-150 ${
+                isActive ? 'text-bloomberg-gold' : 'text-bloomberg-text-secondary'
+              }`}
+            >
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-bloomberg-gold' : ''}`} />
+              <span className={`text-[8px] font-bold tracking-wider truncate w-full text-center ${isActive ? 'text-bloomberg-gold' : 'text-bloomberg-text-muted'}`}>
+                {item.name}
+              </span>
+              {isActive && <div className="w-4 h-0.5 bg-bloomberg-gold rounded-full" />}
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 };
