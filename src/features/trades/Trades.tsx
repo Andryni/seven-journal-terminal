@@ -607,12 +607,12 @@ export const Trades: React.FC = () => {
 
       {/* NOUVEAU FORMULAIRE EN MODAL STYLE DETAIL */}
       {showAddForm && createPortal(
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[9999] font-mono overflow-y-auto">
-          <div className="bg-bloomberg-surface border border-bloomberg-border w-full max-w-4xl p-6 relative rounded-sm my-8">
+        <div className="fixed inset-0 bg-black/90 flex items-start md:items-center justify-center p-2 sm:p-4 z-[9999] font-mono overflow-y-auto">
+          <div className="bg-bloomberg-surface border border-bloomberg-border w-full max-w-4xl p-4 sm:p-6 relative rounded-sm my-2 md:my-8 max-h-[95vh] md:max-h-none overflow-y-auto">
             <button 
               type="button"
               onClick={handleCancelEdit} 
-              className="absolute top-4 right-4 text-bloomberg-text-secondary hover:text-white"
+              className="absolute top-4 right-4 text-bloomberg-text-secondary hover:text-white z-10"
             >
               <X className="w-5 h-5" />
             </button>
