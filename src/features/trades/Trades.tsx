@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTrades } from './useTrades';
 import type { Trade } from './useTrades';
 import { useAccounts } from '../accounts/useAccounts';
@@ -605,8 +606,8 @@ export const Trades: React.FC = () => {
       {showCalculator && <PositionCalculator />}
 
       {/* NOUVEAU FORMULAIRE EN MODAL STYLE DETAIL */}
-      {showAddForm && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 font-mono overflow-y-auto">
+      {showAddForm && createPortal(
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[9999] font-mono overflow-y-auto">
           <div className="bg-bloomberg-surface border border-bloomberg-border w-full max-w-4xl p-6 relative rounded-sm my-8">
             <button 
               type="button"
@@ -979,7 +980,7 @@ export const Trades: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* TABLEAU DES TRADES */}
       <Table headers={['DATE', 'INSTRUMENT', 'TYPE', 'LOTS', 'RESULTAT', 'P&L ($)', 'R-MULTIPLE', 'LIENS IMAGES', 'ACTIONS']}>
@@ -1051,8 +1052,8 @@ export const Trades: React.FC = () => {
       </Table>
 
       {/* DETAIL MODAL POPUP */}
-      {viewingTrade && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 font-mono">
+      {viewingTrade && createPortal(
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[9999] font-mono">
           <div className="bg-bloomberg-surface border border-bloomberg-border w-full max-w-2xl p-6 relative rounded-sm max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => setViewingTrade(null)} 
@@ -1191,7 +1192,7 @@ export const Trades: React.FC = () => {
 
           </div>
         </div>
-      )}
+      , document.body)}
 
     </div>
   );
