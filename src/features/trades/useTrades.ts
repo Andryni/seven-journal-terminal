@@ -34,6 +34,7 @@ export interface Trade {
   screenshot_after_url: string | null;
   notes: string | null;
   result: 'TP' | 'SL' | 'BE' | 'OPEN';
+  session: 'Asia' | 'London' | 'New York' | 'Over Session' | null;
   created_at: string;
 }
 

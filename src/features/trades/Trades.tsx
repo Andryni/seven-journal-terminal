@@ -54,6 +54,7 @@ export const Trades: React.FC = () => {
   const [takeProfit, setTakeProfit] = useState('');
   const [size, setSize] = useState('');
   const [timeframe, setTimeframe] = useState<'M1' | 'M5' | 'M15' | 'H1' | 'H4' | 'D1'>('M5');
+  const [session, setSession] = useState<'Asia' | 'London' | 'New York' | 'Over Session' | ''>('');
   const [result, setResult] = useState<'TP' | 'SL' | 'BE' | 'OPEN'>('OPEN');
   
   // Custom manual overwrite inputs
@@ -177,6 +178,7 @@ export const Trades: React.FC = () => {
     setTakeProfit(trade.take_profit.toString());
     setSize(trade.size.toString());
     setTimeframe(trade.timeframe);
+    setSession(trade.session || '');
     setResult(trade.result);
     setManualPnl(trade.pnl !== null ? trade.pnl.toString() : '');
     setManualRMultiple(trade.r_multiple !== null ? trade.r_multiple.toString() : '');
@@ -231,6 +233,7 @@ export const Trades: React.FC = () => {
     setPassiveOrders('');
     setAggressiveOrders('');
     setResult('OPEN');
+    setSession('');
     setRiskValue('');
   };
 
@@ -295,6 +298,7 @@ export const Trades: React.FC = () => {
       screenshot_after_url: screenshotAfter || null,
       notes: notes || null,
       result,
+      session: session ? (session as 'Asia' | 'London' | 'New York' | 'Over Session') : null,
     };
 
     try {
@@ -401,6 +405,7 @@ export const Trades: React.FC = () => {
                 screenshot_after_url: t.screenshot_after_url || null,
                 notes: t.notes || null,
                 result: t.result || 'OPEN',
+                session: t.session || null,
               });
             }
             alert('Importation réussie de vos trades.');
@@ -677,6 +682,18 @@ export const Trades: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
+                    <Select
+                      label="Session *"
+                      value={session}
+                      onChange={(e) => setSession(e.target.value as any)}
+                      options={[
+                        { value: '', label: '[ CHOISIR LA SESSION ]' },
+                        { value: 'Asia', label: 'ASIA SESSION' },
+                        { value: 'London', label: 'LONDON SESSION' },
+                        { value: 'New York', label: 'NEW YORK SESSION' },
+                        { value: 'Over Session', label: 'OVER SESSION' },
+                      ]}
+                    />
                     <Input 
                       label="Volume (Lots) *" 
                       placeholder="1.0" 
@@ -685,6 +702,9 @@ export const Trades: React.FC = () => {
                       type="number" 
                       step="0.01" 
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
                     <Input 
                       label="Prix d'entrée *" 
                       placeholder="2350.50" 
@@ -1075,6 +1095,10 @@ export const Trades: React.FC = () => {
                 <div className="flex justify-between border-b border-bloomberg-border pb-1">
                   <span className="text-bloomberg-text-secondary">Timeframe:</span>
                   <span className="text-white font-bold">{viewingTrade.timeframe}</span>
+                </div>
+                <div className="flex justify-between border-b border-bloomberg-border pb-1">
+                  <span className="text-bloomberg-text-secondary">Session de Trading:</span>
+                  <span className="text-bloomberg-gold font-bold">{viewingTrade.session || '—'}</span>
                 </div>
                 <div className="flex justify-between border-b border-bloomberg-border pb-1">
                   <span className="text-bloomberg-text-secondary">Volume:</span>
