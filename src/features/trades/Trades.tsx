@@ -1003,11 +1003,25 @@ export const Trades: React.FC = () => {
       , document.body)}
 
       {/* TABLEAU DES TRADES */}
-      <Table headers={['DATE', 'INSTRUMENT', 'TYPE', 'LOTS', 'RESULTAT', 'P&L ($)', 'R-MULTIPLE', 'LIENS IMAGES', 'ACTIONS']}>
+      <Table headers={['DATE', 'INSTRUMENT', 'SESSION', 'TYPE', 'LOTS', 'RESULTAT', 'P&L ($)', 'R-MULTIPLE', 'LIENS IMAGES', 'ACTIONS']}>
         {filteredTrades.map((t: Trade) => (
           <TableRow key={t.id}>
             <TableCell>{new Date(t.entry_time).toLocaleDateString('fr-FR')} {new Date(t.entry_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</TableCell>
             <TableCell className="font-bold text-white">{t.pair}</TableCell>
+            <TableCell>
+              {t.session ? (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase ${
+                  t.session === 'Asia' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-400' :
+                  t.session === 'London' ? 'bg-blue-500/10 border-blue-500 text-blue-400' :
+                  t.session === 'New York' ? 'bg-green-500/10 border-green-500 text-green-400' :
+                  'bg-bloomberg-border text-bloomberg-text-secondary'
+                }`}>
+                  {t.session === 'New York' ? 'NY' : t.session === 'Over Session' ? 'OVER' : t.session}
+                </span>
+              ) : (
+                <span className="text-bloomberg-text-muted">—</span>
+              )}
+            </TableCell>
             <TableCell>
               <Badge variant={t.direction === 'BUY' ? 'blue' : 'gold'}>
                 {t.direction}
