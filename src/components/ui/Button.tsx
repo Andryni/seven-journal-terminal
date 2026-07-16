@@ -16,23 +16,22 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const base = [
-    'relative inline-flex items-center justify-center font-mono font-semibold uppercase tracking-widest',
-    'rounded-none border transition-all duration-150 overflow-hidden',
+    'relative inline-flex items-center justify-center font-sans font-bold uppercase tracking-wider',
+    'rounded-xl border transition-all duration-300 overflow-hidden',
     'disabled:opacity-40 disabled:pointer-events-none',
-    'active:scale-[0.97] select-none',
+    'active:scale-[0.96] select-none',
     'btn-press',
   ].join(' ');
 
   const variants: Record<string, string> = {
     primary: [
-      'bg-bloomberg-gold border-bloomberg-gold text-black',
-      'hover:bg-bloomberg-gold-light hover:border-bloomberg-gold-light hover:shadow-gold-sm',
-      'after:absolute after:inset-0 after:bg-white/10 after:opacity-0 hover:after:opacity-100 after:transition-opacity after:duration-200',
+      'bg-[#0075ff] border-[#0075ff] text-white',
+      'hover:bg-[#0066de] hover:border-[#0066de] hover:shadow-gold-md',
     ].join(' '),
 
     secondary: [
-      'bg-bloomberg-surface-2 border-bloomberg-border text-bloomberg-text-primary',
-      'hover:border-bloomberg-border-bright hover:text-white',
+      'bg-[#0f143c] border-bloomberg-border text-[#a0aec0]',
+      'hover:border-bloomberg-border-bright hover:text-white hover:bg-[#151c54]',
     ].join(' '),
 
     danger: [
@@ -41,26 +40,26 @@ export const Button: React.FC<ButtonProps> = ({
     ].join(' '),
 
     success: [
-      'bg-transparent border-bloomberg-green text-bloomberg-green',
-      'hover:bg-bloomberg-green hover:text-white hover:shadow-green-sm',
+      'bg-transparent border-[#01b574] text-[#01b574]',
+      'hover:bg-[#01b574] hover:text-white hover:shadow-green-sm',
     ].join(' '),
 
     outline: [
       'bg-transparent border-bloomberg-border text-bloomberg-text-secondary',
-      'hover:text-bloomberg-gold hover:border-bloomberg-gold/70 hover:bg-bloomberg-gold/5',
+      'hover:text-white hover:border-[#0075ff] hover:bg-[#0075ff]/10',
     ].join(' '),
 
     ghost: [
-      'bg-transparent border-transparent text-bloomberg-text-secondary',
-      'hover:text-white hover:bg-bloomberg-border/30',
+      'bg-transparent border-transparent text-[#a0aec0]',
+      'hover:text-white hover:bg-white/5',
     ].join(' '),
   };
 
   const sizes: Record<string, string> = {
     xs: 'text-[9px] px-2 py-0.5 gap-1',
-    sm: 'text-[10px] px-2.5 py-1 gap-1.5',
-    md: 'text-[10px] px-4 py-1.5 gap-2',
-    lg: 'text-xs px-5 py-2.5 gap-2',
+    sm: 'text-[10px] px-3 py-1 gap-1.5',
+    md: 'text-[10px] px-4 py-2 gap-2',
+    lg: 'text-xs px-5 py-3 gap-2',
   };
 
   return (

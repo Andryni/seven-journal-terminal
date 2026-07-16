@@ -8,41 +8,41 @@ export default {
     extend: {
       colors: {
         bloomberg: {
-          bg: '#050506',
-          surface: '#0a0a0d',
-          'surface-2': '#0f0f14',
-          border: '#1a1a1f',
-          'border-bright': '#2a2a32',
+          bg: '#020515',
+          surface: 'rgba(6, 11, 40, 0.74)',
+          'surface-2': 'rgba(10, 16, 56, 0.85)',
+          border: 'rgba(255, 255, 255, 0.08)',
+          'border-bright': 'rgba(255, 255, 255, 0.16)',
           gold: {
-            DEFAULT: '#d97706',
-            hover: '#b45309',
-            light: '#f59e0b',
-            glow: '#fbbf24',
+            DEFAULT: '#0075ff', // Utilisation de bleu électrique principal style Vision UI
+            hover: '#005ecc',
+            light: '#59a2ff',
+            glow: '#80baff',
           },
           green: {
-            DEFAULT: '#059669',
-            light: '#10b981',
-            glow: '#34d399',
+            DEFAULT: '#01b574',
+            light: '#05cd99',
+            glow: '#33f0c0',
           },
           red: {
-            DEFAULT: '#dc2626',
-            light: '#ef4444',
-            glow: '#f87171',
+            DEFAULT: '#ee5d50',
+            light: '#ff7c70',
+            glow: '#ff9d94',
           },
           blue: {
-            DEFAULT: '#2563eb',
-            light: '#3b82f6',
+            DEFAULT: '#0075ff',
+            light: '#59a2ff',
           },
           text: {
-            primary: '#e4e4e7',
-            secondary: '#71717a',
-            muted: '#3f3f46',
+            primary: '#ffffff',
+            secondary: '#a0aec0',
+            muted: '#4a5568',
           }
         }
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'Geist Mono', 'Fira Code', 'monospace'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'Outfit', 'system-ui', 'sans-serif'],
       },
       animation: {
         'fade-in-up': 'fadeInUp 0.35s ease-out both',
@@ -101,11 +101,12 @@ export default {
         'grid': '40px 40px',
       },
       boxShadow: {
-        'gold-sm': '0 0 8px rgba(217, 119, 6, 0.2)',
-        'gold-md': '0 0 20px rgba(217, 119, 6, 0.3)',
-        'green-sm': '0 0 8px rgba(5, 150, 105, 0.2)',
-        'red-sm': '0 0 8px rgba(220, 38, 38, 0.2)',
-        'inner-dark': 'inset 0 1px 0 rgba(255,255,255,0.03)',
+        'gold-sm': '0 0 10px rgba(0, 117, 255, 0.25)',
+        'gold-md': '0 10px 30px rgba(0, 117, 255, 0.35)',
+        'green-sm': '0 0 10px rgba(1, 181, 116, 0.25)',
+        'red-sm': '0 0 10px rgba(238, 93, 80, 0.25)',
+        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+        'inner-dark': 'inset 0 1px 0 rgba(255,255,255,0.05)',
       },
     },
   },

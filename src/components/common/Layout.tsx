@@ -42,7 +42,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
   const activeAccount = accounts.find(acc => acc.id === activeAccountId);
 
   return (
-    <div className="min-h-screen bg-bloomberg-bg text-bloomberg-text-primary flex flex-col font-mono selection:bg-bloomberg-gold/30 selection:text-white">
+    <div className="min-h-screen bg-[#020515] text-bloomberg-text-primary flex flex-col font-sans selection:bg-[#0075ff]/30 selection:text-white relative overflow-hidden">
+      
+      {/* Background gradients for vision UI */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-gradient-to-br from-[#0075ff]/10 to-transparent rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-gradient-to-tl from-[#8400ff]/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
       
       {/* ── DANGER BANNER ─────────────────────────────────────────────── */}
       {isLocked && (
@@ -64,7 +68,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
       )}
 
       {/* ── TOPBAR ────────────────────────────────────────────────────── */}
-      <header className="h-11 border-b border-bloomberg-border bg-bloomberg-surface flex items-center justify-between px-3 md:px-5 shrink-0 relative z-10">
+      <header className="h-11 border-b border-bloomberg-border bg-bloomberg-surface/60 backdrop-blur-xl flex items-center justify-between px-3 md:px-5 shrink-0 relative z-10">
         {/* Top accent line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-bloomberg-gold/40 to-transparent" />
 
@@ -119,7 +123,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
       <div className="flex flex-1 overflow-hidden">
         
         {/* ── SIDEBAR (desktop only) ───────────────────────────────────── */}
-        <aside className={`hidden md:flex border-r border-bloomberg-border bg-bloomberg-surface flex-col justify-between shrink-0 transition-all duration-300 ease-out ${sidebarOpen ? 'w-52' : 'w-14'}`}>
+        <aside className={`hidden md:flex border-r border-bloomberg-border bg-bloomberg-surface/30 backdrop-blur-xl flex-col justify-between shrink-0 transition-all duration-300 ease-out ${sidebarOpen ? 'w-52' : 'w-14'}`}>
           
           <nav className="p-2 space-y-0.5 mt-1">
             {NAV_ITEMS.map((item, idx) => {
@@ -133,8 +137,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
                   className={[
                     'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-all duration-150 relative group animate-slide-in-left',
                     isActive
-                      ? 'nav-active-indicator bg-bloomberg-gold/8 text-bloomberg-gold border-r-0'
-                      : 'text-bloomberg-text-secondary hover:text-white hover:bg-bloomberg-border/30',
+                      ? 'nav-active-indicator bg-[#0075ff]/10 text-bloomberg-gold border-r-0'
+                      : 'text-bloomberg-text-secondary hover:text-white hover:bg-white/5',
                   ].join(' ')}
                   title={!sidebarOpen ? item.name : undefined}
                 >
@@ -183,9 +187,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
         </aside>
 
         {/* ── MAIN CONTENT ──────────────────────────────────────────── */}
-        <main className="flex-1 overflow-y-auto bg-bloomberg-bg bg-grid relative">
+        <main className="flex-1 overflow-y-auto bg-transparent bg-grid relative">
+          <div className="ambient-glow-1" />
+          <div className="ambient-glow-2" />
           {/* Subtle vignette overlay */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-bloomberg-bg/30 via-transparent to-bloomberg-bg/10 z-0" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#020515]/30 via-transparent to-[#020515]/10 z-0" />
           
           <div className="relative z-10 max-w-screen-2xl mx-auto p-3 md:p-6 pb-20 md:pb-6">
             <div className="page-enter">
@@ -196,7 +202,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
       </div>
 
       {/* ── BOTTOM NAV (mobile only) ───────────────────────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-bloomberg-surface border-t border-bloomberg-border z-50 flex items-center justify-around px-1 py-1.5 safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#060b28]/80 backdrop-blur-xl border-t border-bloomberg-border z-50 flex items-center justify-around px-1 py-1.5 safe-area-bottom">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
