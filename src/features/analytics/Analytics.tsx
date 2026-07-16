@@ -274,6 +274,31 @@ export const Analytics: React.FC = () => {
       }));
   }, [closed]);
 
+  // ── By Session ─────────────────────────────────────────────────────────────
+  const sessionData = useMemo(() => {
+    const map: Record<string, { pnl: number; wins: number; total: number }> = {
+      'Asia': { pnl: 0, wins: 0, total: 0 },
+      'London': { pnl: 0, wins: 0, total: 0 },
+      'New York': { pnl: 0, wins: 0, total: 0 },
+      'Over Session': { pnl: 0, wins: 0, total: 0 },
+    };
+    closed.forEach(t => {
+      const s = t.session || 'Over Session';
+      const key = s === 'Asia' || s === 'London' || s === 'New York' || s === 'Over Session' ? s : 'Over Session';
+      map[key].pnl += t.pnl;
+      map[key].total++;
+      if (t.pnl > 0) map[key].wins++;
+    });
+    return Object.entries(map)
+      .filter(([_, d]) => d.total > 0)
+      .map(([sess, d]) => ({
+        name: sess.toUpperCase(),
+        pnl: Number(d.pnl.toFixed(2)),
+        winRate: Number(((d.wins / d.total) * 100).toFixed(1)),
+        total: d.total,
+      }));
+  }, [closed]);
+
   // ── Setup performance ──────────────────────────────────────────────────────
   const setupData = useMemo(() => {
     const defs = [
@@ -707,6 +732,37 @@ export const Analytics: React.FC = () => {
                     <Legend wrapperStyle={{ fontSize: 9, fontFamily: 'monospace' }} />
                     <Bar yAxisId="left" dataKey="pnl" name="P&L ($)">
                       {tfData.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? 'url(#glowWinTf)' : 'url(#glowLossTf)'} />)}
+                    </Bar>
+                    <Line yAxisId="right" type="monotone" dataKey="winRate" name="Win%" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 3 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <Empty />}
+          </Card>
+
+          {/* By Session */}
+          <Card title="PERFORMANCE PAR SESSION DE TRADING">
+            {sessionData.length > 0 ? (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={sessionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="glowWinSess" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#059669" stopOpacity={0.2} />
+                      </linearGradient>
+                      <linearGradient id="glowLossSess" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#b91c1c" stopOpacity={0.2} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="name" stroke="#3f3f46" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
+                    <YAxis yAxisId="left" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <YAxis yAxisId="right" orientation="right" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} tickFormatter={v => `${v}%`} />
+                    <Tooltip content={<AnalyticsTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <Bar yAxisId="left" dataKey="pnl" name="P&L ($)">
+                      {sessionData.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? 'url(#glowWinSess)' : 'url(#glowLossSess)'} />)}
                     </Bar>
                     <Line yAxisId="right" type="monotone" dataKey="winRate" name="Win%" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 3 }} />
                   </ComposedChart>
