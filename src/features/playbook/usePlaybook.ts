@@ -9,9 +9,18 @@ export interface DailyDebrief {
   lessons_learned: string | null;
   mistakes_committed: string[];
   mental_score: number | null;
+  // Nouveaux champs
+  htf_analysis: string | null;
+  htf_image_url: string | null;
+  rules_followed: string[];
+  objective_tomorrow: string | null;
+  emotion_before: string | null;
+  day_rating: number | null;
   created_at: string;
   updated_at: string;
 }
+
+export type DebriefPayload = Omit<DailyDebrief, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { id?: string };
 
 export function usePlaybook() {
   const queryClient = useQueryClient();
@@ -32,14 +41,11 @@ export function usePlaybook() {
 
   // Save/Upsert debrief
   const saveDebriefMutation = useMutation({
-    mutationFn: async (debrief: Omit<DailyDebrief, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { id?: string }) => {
+    mutationFn: async (debrief: DebriefPayload) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Utilisateur non authentifié');
 
-      const payload = {
-        ...debrief,
-        user_id: user.id,
-      };
+      const payload = { ...debrief, user_id: user.id };
 
       const { data, error } = await supabase
         .from('daily_debriefs')
@@ -55,10 +61,45 @@ export function usePlaybook() {
     },
   });
 
+  // Delete debrief
+  const deleteDebriefMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('daily_debriefs')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['debriefs'] });
+    },
+  });
+
+  // Upload HTF image to Supabase Storage
+  const uploadHtfImage = async (file: File, date: string): Promise<string> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non authentifié');
+
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/${date}_htf.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('playbook-htf')
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('playbook-htf').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   return {
     debriefs,
     isLoading,
     saveDebrief: saveDebriefMutation.mutateAsync,
     isSaving: saveDebriefMutation.isPending,
+    deleteDebrief: deleteDebriefMutation.mutateAsync,
+    isDeleting: deleteDebriefMutation.isPending,
+    uploadHtfImage,
   };
 }
