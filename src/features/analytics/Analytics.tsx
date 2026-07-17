@@ -18,6 +18,7 @@ import {
   Flame, Activity, Clock, Brain, BarChart3,
   Zap, Award, AlertCircle
 } from 'lucide-react';
+import { ShareButton } from '../../components/share/ShareCard';
 
 
 
@@ -396,11 +397,14 @@ export const Analytics: React.FC = () => {
             {closed.length} trades clôturés analysés · Toutes métriques calculées en temps réel
           </p>
         </div>
-        <div className="text-right font-mono">
-          <div className={`text-xl font-bold tabular-nums ${netPnL >= 0 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
-            {netPnL >= 0 ? '+' : ''}{netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+        <div className="flex items-center space-x-3">
+          <ShareButton />
+          <div className="text-right font-mono">
+            <div className={`text-xl font-bold tabular-nums ${netPnL >= 0 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
+              {netPnL >= 0 ? '+' : ''}{netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </div>
+            <div className="text-[9px] text-bloomberg-text-secondary">P&L CUMULÉ</div>
           </div>
-          <div className="text-[9px] text-bloomberg-text-secondary">P&L CUMULÉ</div>
         </div>
       </div>
 

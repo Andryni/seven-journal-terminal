@@ -23,6 +23,7 @@ import {
   Calculator
 } from 'lucide-react';
 import { PositionCalculator } from './PositionCalculator';
+import { ShareButton } from '../../components/share/ShareCard';
 
 export const Trades: React.FC = () => {
   const { trades, createTrade, updateTrade, deleteTrade, isLoading, error: createError } = useTrades();
@@ -492,6 +493,8 @@ export const Trades: React.FC = () => {
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">CSV</span>
           </Button>
+
+          <ShareButton />
 
           {!isLocked ? (
             <Button 
