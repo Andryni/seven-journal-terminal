@@ -183,13 +183,14 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
         </div>
         <div style={{
           background: 'rgba(0,117,255,0.1)', border: '1px solid rgba(0,117,255,0.3)',
-          borderRadius: '10px', padding: '6px 12px', textAlign: 'right',
+          borderRadius: '10px', padding: '8px 14px',
+          display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-end',
         }}>
-          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', letterSpacing: '1px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '1px', lineHeight: 1.2 }}>
             {account ? account.name.toUpperCase() : 'TOUS LES COMPTES'}
           </div>
           {account && (
-            <div style={{ fontSize: '10px', color: '#0075ff', letterSpacing: '1px' }}>
+            <div style={{ fontSize: '9px', fontWeight: 600, color: '#0075ff', letterSpacing: '1px', marginTop: '2px', lineHeight: 1 }}>
               {account.type.toUpperCase()}
             </div>
           )}
@@ -249,12 +250,14 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
 
       {/* Sessions */}
       {stats.sessions.length > 0 && (
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
           {stats.sessions.map(s => (
             <span key={s} style={{
-              fontSize: '9px', fontWeight: 700, padding: '3px 8px',
+              fontSize: '10px', fontWeight: 800, height: '22px', padding: '0 10px',
               borderRadius: '6px', border: '1px solid rgba(0,117,255,0.3)',
               background: 'rgba(0,117,255,0.08)', color: '#0075ff', letterSpacing: '1px',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              lineHeight: 1,
             }}>
               {s.toUpperCase()}
             </span>
