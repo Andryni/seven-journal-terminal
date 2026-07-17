@@ -106,25 +106,77 @@ function computeStats(trades: Trade[], period: Period): PeriodStats {
 }
 
 // ─── Mini Equity Curve SVG ───────────────────────────────────────────────────────
-const EquityCurveSVG: React.FC<{ data: number[]; positive: boolean }> = ({ data, positive }) => {
+const EquityCurveSVG: React.FC<{ data: number[]; positive: boolean; trades: Trade[] }> = ({ data, positive, trades }) => {
   if (data.length < 2) return null;
-  const w = 280, h = 60;
-  const min = Math.min(...data, 0);
-  const max = Math.max(...data, 0.01);
+  const w = 516, h = 100;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
   const range = max - min || 1;
+  
+  // Grid lines (horizontal & vertical)
+  const hLines = 4;
+  const vLines = 5;
+
   const pts = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * w;
-    const y = h - ((v - min) / range) * h;
-    return `${x},${y}`;
+    const x = 50 + (i / (data.length - 1)) * (w - 70);
+    const y = 15 + (1 - (v - min) / range) * (h - 30);
+    return { x, y, val: v };
   });
-  const fillPts = `0,${h} ${pts.join(' ')} ${w},${h}`;
+
   const color = positive ? '#01b574' : '#e53e3e';
-  const fillColor = positive ? 'rgba(1,181,116,0.12)' : 'rgba(229,62,62,0.12)';
+  const fillColor = positive ? 'rgba(1,181,116,0.08)' : 'rgba(229,62,62,0.08)';
+  const polylinePoints = pts.map(p => `${p.x},${p.y}`).join(' ');
+  const polygonPoints = `50,${h - 15} ${polylinePoints} ${pts[pts.length - 1].x},${h - 15}`;
 
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none">
-      <polygon points={fillPts} fill={fillColor} />
-      <polyline points={pts.join(' ')} stroke={color} strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} fill="none" style={{ overflow: 'visible' }}>
+      {/* Grid lines */}
+      {Array.from({ length: hLines }).map((_, i) => {
+        const y = 15 + (i / (hLines - 1)) * (h - 30);
+        return (
+          <line key={i} x1="50" y1={y} x2={w - 20} y2={y} stroke="rgba(255,255,255,0.05)" strokeDasharray="3,3" />
+        );
+      })}
+      {Array.from({ length: vLines }).map((_, i) => {
+        const x = 50 + (i / (vLines - 1)) * (w - 70);
+        return (
+          <line key={i} x1={x} y1="15" x2={x} y2={h - 15} stroke="rgba(255,255,255,0.05)" strokeDasharray="3,3" />
+        );
+      })}
+
+      {/* Y Axis Labels */}
+      {Array.from({ length: hLines }).map((_, i) => {
+        const y = 15 + (i / (hLines - 1)) * (h - 30);
+        const val = max - (i / (hLines - 1)) * range;
+        return (
+          <text key={i} x="42" y={y + 3} fill="rgba(255,255,255,0.3)" fontSize="8" fontFamily="monospace" textAnchor="end">
+            {val.toFixed(0)}$
+          </text>
+        );
+      })}
+
+      {/* X Axis Labels */}
+      {pts.map((p, i) => {
+        if (i === 0 || i === pts.length - 1 || (pts.length > 4 && i === Math.floor(pts.length / 2))) {
+          const tradeTime = trades[i]?.entry_time ? new Date(trades[i].entry_time) : new Date();
+          const timeStr = `${tradeTime.getDate()}/${tradeTime.getMonth() + 1} ${tradeTime.getHours().toString().padStart(2, '0')}:00`;
+          return (
+            <text key={i} x={p.x} y={h - 2} fill="rgba(255,255,255,0.3)" fontSize="8" fontFamily="monospace" textAnchor="middle">
+              {timeStr}
+            </text>
+          );
+        }
+        return null;
+      })}
+
+      {/* Area & Line */}
+      <polygon points={polygonPoints} fill={fillColor} />
+      <polyline points={polylinePoints} stroke={color} strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+
+      {/* Data Circles */}
+      {pts.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r="3" fill="#020515" stroke={color} strokeWidth="1.5" />
+      ))}
     </svg>
   );
 };
@@ -134,10 +186,10 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
   stats: PeriodStats;
   period: Period;
   account: TradingAccount | null;
-}>(({ stats, period, account }, ref) => {
+  trades: Trade[];
+}>(({ stats, period, account, trades }, ref) => {
   const isPositive = stats.totalPnl >= 0;
   const profitColor = isPositive ? '#01b574' : '#e53e3e';
-  const winColor = stats.winRate >= 50 ? '#01b574' : '#e53e3e';
 
   const periodEmoji: Record<Period, string> = {
     daily: '📅', weekly: '📆', monthly: '🗓️', yearly: '📊'
@@ -199,10 +251,17 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
 
       {/* Main P&L */}
       <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', marginBottom: '6px' }}>
+        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', marginBottom: '6px' }}>
           P&L NET
         </div>
-        <div style={{ fontSize: '52px', fontWeight: 900, color: profitColor, lineHeight: 1, letterSpacing: '-2px' }}>
+        <div style={{
+          fontSize: '52px',
+          fontWeight: 900,
+          color: profitColor,
+          lineHeight: 1,
+          letterSpacing: '-1px',
+          textShadow: `0 0 20px ${isPositive ? 'rgba(1, 181, 116, 0.4)' : 'rgba(229, 62, 62, 0.4)'}`,
+        }}>
           {stats.totalPnl >= 0 ? '+' : ''}{stats.totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}$
         </div>
         <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>
@@ -213,35 +272,113 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
       {/* Equity Curve */}
       {stats.equityCurve.length >= 2 && (
         <div style={{
-          background: 'rgba(255,255,255,0.03)', borderRadius: '12px',
-          padding: '12px 16px', marginBottom: '20px',
-          border: `1px solid ${isPositive ? 'rgba(1,181,116,0.2)' : 'rgba(229,62,62,0.2)'}`,
+          background: 'rgba(255,255,255,0.02)', borderRadius: '12px',
+          padding: '16px', marginBottom: '24px',
+          border: '1px solid rgba(255,255,255,0.06)',
         }}>
-          <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)', letterSpacing: '2px', marginBottom: '8px' }}>
+          <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', marginBottom: '12px' }}>
             EQUITY CURVE
           </div>
-          <EquityCurveSVG data={stats.equityCurve} positive={isPositive} />
+          <EquityCurveSVG data={stats.equityCurve} positive={isPositive} trades={trades} />
         </div>
       )}
 
       {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
         {[
-          { label: 'WIN RATE', value: `${stats.winRate.toFixed(1)}%`, color: winColor },
-          { label: 'WINS', value: stats.wins.toString(), color: '#01b574' },
-          { label: 'LOSSES', value: stats.losses.toString(), color: '#e53e3e' },
-          { label: 'BEST TRADE', value: `+${stats.bestTrade.toFixed(2)}$`, color: '#01b574' },
-          { label: 'WORST TRADE', value: `${stats.worstTrade.toFixed(2)}$`, color: '#e53e3e' },
-          { label: 'INSTRUMENTS', value: stats.pairs.length > 0 ? stats.pairs.slice(0, 2).join(', ') : '—', color: '#fff' },
-        ].map(({ label, value, color }) => (
+          {
+            label: 'TAUX DE RÉUSSITE',
+            value: `${stats.winRate.toFixed(1)}%`,
+            color: '#01b574',
+            bgColor: 'rgba(1,181,116,0.04)',
+            borderColor: 'rgba(1,181,116,0.2)',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#01b574" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
+              </svg>
+            )
+          },
+          {
+            label: 'GAGNANTS',
+            value: stats.wins.toString(),
+            color: '#01b574',
+            bgColor: 'rgba(1,181,116,0.04)',
+            borderColor: 'rgba(1,181,116,0.2)',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#01b574" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" /><path d="M12 2a6 6 0 0 1 6 6v1H6V8a6 6 0 0 1 6-6z" />
+              </svg>
+            )
+          },
+          {
+            label: 'PERDANTS',
+            value: stats.losses.toString(),
+            color: '#e53e3e',
+            bgColor: 'rgba(229,62,62,0.04)',
+            borderColor: 'rgba(229,62,62,0.2)',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" /><polyline points="16 17 22 17 22 11" />
+              </svg>
+            )
+          },
+          {
+            label: 'MEILLEUR TRADE',
+            value: `+${stats.bestTrade.toFixed(2)}$`,
+            color: '#01b574',
+            bgColor: 'rgba(1,181,116,0.04)',
+            borderColor: 'rgba(1,181,116,0.2)',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#01b574" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" />
+              </svg>
+            )
+          },
+          {
+            label: 'PIRE TRADE',
+            value: `${stats.worstTrade.toFixed(2)}$`,
+            color: '#e53e3e',
+            bgColor: 'rgba(229,62,62,0.04)',
+            borderColor: 'rgba(229,62,62,0.2)',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="7" y1="7" x2="17" y2="17" /><polyline points="17 7 17 17 7 17" />
+              </svg>
+            )
+          },
+          {
+            label: 'ACTIFS',
+            value: stats.pairs.length > 0 ? stats.pairs.slice(0, 2).join(', ') : '—',
+            color: '#fff',
+            bgColor: 'rgba(255,255,255,0.02)',
+            borderColor: 'rgba(255,255,255,0.1)',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a0aec0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
+              </svg>
+            )
+          },
+        ].map(({ label, value, color, bgColor, borderColor, icon }) => (
           <div key={label} style={{
-            background: 'rgba(255,255,255,0.03)', borderRadius: '10px',
-            padding: '10px', border: '1px solid rgba(255,255,255,0.06)',
+            background: bgColor,
+            borderRadius: '12px',
+            padding: '12px',
+            border: `1.5px solid ${borderColor}`,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            position: 'relative',
+            height: '68px',
           }}>
-            <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', letterSpacing: '1.5px', marginBottom: '4px' }}>
-              {label}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', letterSpacing: '1px', fontWeight: 700 }}>
+                {label}
+              </div>
+              <div style={{ opacity: 0.8 }}>
+                {icon}
+              </div>
             </div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color }}>
+            <div style={{ fontSize: '15px', fontWeight: 800, color, fontFamily: 'monospace' }}>
               {value}
             </div>
           </div>
@@ -254,8 +391,8 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
           {stats.sessions.map(s => (
             <span key={s} style={{
               fontSize: '10px', fontWeight: 800, height: '22px', padding: '0 10px',
-              borderRadius: '6px', border: '1px solid rgba(0,117,255,0.3)',
-              background: 'rgba(0,117,255,0.08)', color: '#0075ff', letterSpacing: '1px',
+              borderRadius: '8px', border: '1px solid rgba(0,117,255,0.2)',
+              background: 'rgba(0,117,255,0.06)', color: '#0075ff', letterSpacing: '1px',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               lineHeight: 1,
             }}>
@@ -265,9 +402,25 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
         </div>
       )}
 
+      {/* Separator line and Sparkle */}
+      <div style={{
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        position: 'relative',
+        margin: '20px 0 16px 0',
+      }}>
+        {/* Star Sparkle icon on the separator line */}
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#60a5fa" style={{
+          position: 'absolute',
+          right: '20px',
+          top: '-12px',
+          opacity: 0.7,
+        }}>
+          <path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z" />
+        </svg>
+      </div>
+
       {/* Footer */}
       <div style={{
-        borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px' }}>
@@ -464,7 +617,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
 
             {/* Hidden card to capture */}
             <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-              <ShareCardVisual ref={cardRef} stats={stats} period={period} account={selectedAccount} />
+              <ShareCardVisual ref={cardRef} stats={stats} period={period} account={selectedAccount} trades={filteredTrades} />
             </div>
 
             {/* Preview image or placeholder */}
