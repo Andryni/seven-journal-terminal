@@ -313,6 +313,14 @@ export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
         scale: 2,
         useCORS: true,
         logging: false,
+        width: 600,
+        height: cardRef.current.offsetHeight,
+        windowWidth: 600,
+        windowHeight: cardRef.current.offsetHeight,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
       });
       const dataUrl = canvas.toDataURL('image/png');
       setPreview(dataUrl);
