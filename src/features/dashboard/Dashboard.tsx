@@ -2,25 +2,21 @@ import React from 'react';
 import { useTrades } from '../trades/useTrades';
 import { usePerformanceMetrics } from './usePerformanceMetrics';
 import {
-  TrendingUp, Target,
-  TrendingDown, Activity, Brain, History, BarChart2
-} from 'lucide-react';
-import {
   AreaChart, Area,
   BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, ReferenceLine, Cell, CartesianGrid
+  ResponsiveContainer, ReferenceLine, Cell, CartesianGrid,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from 'recharts';
-import { Badge } from '../../components/ui/Badge';
 
-// ── Tooltip partagé ────────────────────────────────────────────────────────────
+/* ── Shared Tooltip ─────────────────────────────────────────────────────────── */
 const ChartTooltip = ({ active, payload, label }: {
-  active?: boolean; payload?: { value: number; name?: string }[]; label?: string;
+  active?: boolean; payload?: { value: number }[]; label?: string;
 }) => {
   if (!active || !payload?.length) return null;
   const val = payload[0].value;
   return (
-    <div className="bg-[#181920] border border-[#262833] px-3 py-2 rounded-xl text-xs shadow-xl">
-      <div className="text-slate-400 text-[11px] mb-0.5">{label}</div>
+    <div className="bg-[#181920] border border-[#262833] px-3 py-1.5 rounded-lg text-xs shadow-xl">
+      <div className="text-slate-500 text-[10px]">{label}</div>
       <div className={`font-bold tabular-nums ${val >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
         {val >= 0 ? '+' : ''}${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}
       </div>
@@ -28,51 +24,36 @@ const ChartTooltip = ({ active, payload, label }: {
   );
 };
 
-// ── Gauge SVG demi-cercle ──────────────────────────────────────────────────────
-const SemiCircleGauge = ({ percent, color = '#10b981' }: { percent: number; color?: string }) => {
-  const r = 24;
+/* ── Semi-circle Gauge (like TradeZella win % arc) ──────────────────────────── */
+const SemiGauge = ({ pct, color }: { pct: number; color: string }) => {
+  const r = 22;
   const circ = Math.PI * r;
-  const offset = circ - (Math.min(Math.max(percent, 0), 100) / 100) * circ;
+  const off = circ - (Math.min(Math.max(pct, 0), 100) / 100) * circ;
   return (
-    <div className="relative w-14 h-8 flex items-center justify-center shrink-0">
-      <svg className="w-14 h-8 transform -rotate-180" viewBox="0 0 56 30">
-        <path d="M 4 28 A 22 22 0 0 1 52 28" fill="none" stroke="#262833" strokeWidth="5" strokeLinecap="round" />
-        <path d="M 4 28 A 22 22 0 0 1 52 28" fill="none" stroke={color} strokeWidth="5"
-          strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 0.5s ease-out' }} />
-      </svg>
-    </div>
+    <svg className="w-[52px] h-[30px] -rotate-180" viewBox="0 0 52 28">
+      <path d="M 4 26 A 20 20 0 0 1 48 26" fill="none" stroke="#262833" strokeWidth="4.5" strokeLinecap="round" />
+      <path d="M 4 26 A 20 20 0 0 1 48 26" fill="none" stroke={color} strokeWidth="4.5"
+        strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off}
+        style={{ transition: 'stroke-dashoffset .6s ease-out' }} />
+    </svg>
   );
 };
 
-// ── Stat Row minimaliste ───────────────────────────────────────────────────────
-const StatRow = ({ label, value, colorClass = 'text-slate-200' }: {
-  label: string; value: string; colorClass?: string;
-}) => (
-  <div className="flex justify-between items-center py-1.5 border-b border-[#1e2029] last:border-0">
-    <span className="text-[11px] text-slate-400">{label}</span>
-    <span className={`text-[11px] font-bold tabular-nums ${colorClass}`}>{value}</span>
+/* ── Dot Legend (green / gray / red) ────────────────────────────────────────── */
+const DotLegend = ({ values }: { values: [number, number, number] }) => (
+  <div className="flex items-center gap-3 mt-1">
+    {[['#10b981', values[0]], ['#6b7280', values[1]], ['#ef4444', values[2]]].map(([c, v], i) => (
+      <span key={i} className="flex items-center gap-1 text-[10px] tabular-nums text-slate-400">
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c as string }} />
+        {v as number}
+      </span>
+    ))}
   </div>
 );
 
-// ── KPI Card compact ───────────────────────────────────────────────────────────
-const KpiCard = ({
-  label, value, sub, colorClass = 'text-white', icon, gauge
-}: {
-  label: string; value: string; sub?: string; colorClass?: string;
-  icon: React.ReactNode; gauge?: React.ReactNode;
-}) => (
-  <div className="bg-[#181920] border border-[#262833] rounded-xl px-4 py-3 hover:border-[#363948] transition-all flex items-center justify-between gap-3">
-    <div className="min-w-0 flex-1">
-      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block leading-none mb-1">{label}</span>
-      <div className={`text-xl font-black tabular-nums tracking-tight leading-none ${colorClass}`}>{value}</div>
-      {sub && <div className="text-[10px] text-slate-500 mt-0.5">{sub}</div>}
-    </div>
-    {gauge ?? icon}
-  </div>
-);
-
-// ═══════════════════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DASHBOARD
+   ═══════════════════════════════════════════════════════════════════════════════ */
 export const Dashboard: React.FC = () => {
   const { trades, isLoading } = useTrades();
   const m = usePerformanceMetrics(trades);
@@ -86,196 +67,212 @@ export const Dashboard: React.FC = () => {
     );
   }
 
-  const equityData = [{ tradeIndex: 0, pnl: 0, date: 'Début' }, ...m.equityCurve];
   const isPositive = m.netPnL >= 0;
+  const equityData = [{ tradeIndex: 0, pnl: 0, date: 'Début' }, ...m.equityCurve];
+  const beCount = Math.max(m.closedTrades - m.winCount - m.lossCount, 0);
+  const avgWinLossRatio = m.avgLoss !== 0 ? Math.abs(m.avgWin / m.avgLoss) : 0;
 
-  // Données graphique mensuel — on abrège le mois pour plus de lisibilité
-  const monthlyChartData = m.monthlyPerformance.map(mp => ({
-    month: mp.month.slice(0, 3),
-    pnl: mp.pnl,
+  // Day-level stats
+  const winDays = m.dailyPnL.filter(d => d.pnl > 0).length;
+  const lossDays = m.dailyPnL.filter(d => d.pnl < 0).length;
+  const beDays = m.dailyPnL.filter(d => d.pnl === 0).length;
+
+  // ── Radar data (Seven Score) ──────────────────────────────────────────────
+  const recoveryFactor = m.maxDrawdown > 0 ? m.netPnL / m.maxDrawdown : 0;
+  const radarData = [
+    { metric: 'Win %', value: Math.min(m.winRate, 100), fullMark: 100 },
+    { metric: 'Profit factor', value: Math.min(m.profitFactor === Infinity ? 100 : (m.profitFactor / 5) * 100, 100), fullMark: 100 },
+    { metric: 'Avg win/loss', value: Math.min((avgWinLossRatio / 3) * 100, 100), fullMark: 100 },
+    { metric: 'Recovery factor', value: Math.min((Math.max(recoveryFactor, 0) / 5) * 100, 100), fullMark: 100 },
+    { metric: 'Max drawdown', value: m.netPnL > 0 ? Math.max(100 - (m.maxDrawdown / m.netPnL) * 100, 0) : 0, fullMark: 100 },
+    { metric: 'Consistency', value: Math.max(100 - m.consistency.score * 2, 0), fullMark: 100 },
+  ];
+  const sevenScore = radarData.length > 0
+    ? Number((radarData.reduce((s, d) => s + d.value, 0) / radarData.length).toFixed(1))
+    : 0;
+
+  // Format dates for charts
+  const equityChartData = equityData.map(d => ({
+    ...d,
+    date: d.date.length > 6 ? d.date : d.date,
+  }));
+  const dailyChartData = m.dailyPnL.map(d => ({
+    ...d,
+    date: new Date(d.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
   }));
 
   return (
     <div className="flex flex-col gap-3 h-full page-enter">
 
-      {/* ── ROW 1 : 5 KPI CARDS ───────────────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          ROW 1 — 5 KPI CARDS (matching TradeZella exactly)
+          ══════════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-5 gap-3 shrink-0">
-        <KpiCard
-          label="Net P&L"
-          value={`${m.netPnL >= 0 ? '+' : ''}$${m.netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          sub={`${m.totalTrades} trade${m.totalTrades > 1 ? 's' : ''}`}
-          colorClass={isPositive ? 'text-emerald-400' : 'text-red-400'}
-          icon={
-            <div className="p-2 rounded-xl bg-[#20222c]">
-              {isPositive
-                ? <TrendingUp className="w-4 h-4 text-emerald-400" />
-                : <TrendingDown className="w-4 h-4 text-red-400" />}
+
+        {/* ── Net P&L ──────────────────────────────────────────────────────── */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl px-4 py-3 hover:border-[#363948] transition-all">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Net P&L</span>
+            <span className="text-[9px] bg-[#262833] text-slate-400 px-1.5 py-0.5 rounded font-bold tabular-nums">{m.closedTrades}</span>
+          </div>
+          <div className={`text-[22px] font-black tabular-nums tracking-tight leading-none ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+            ${Math.abs(m.netPnL).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </div>
+        </div>
+
+        {/* ── Trade win % ──────────────────────────────────────────────────── */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl px-4 py-3 hover:border-[#363948] transition-all">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Trade win %</span>
+              <div className="text-[22px] font-black text-white tabular-nums tracking-tight leading-none">
+                {m.winRate.toFixed(2)}%
+              </div>
             </div>
-          }
-        />
-        <KpiCard
-          label="Trade win %"
-          value={`${m.winRate.toFixed(1)}%`}
-          sub={`${m.winCount}G · ${m.lossCount}P`}
-          colorClass="text-white"
-          icon={null}
-          gauge={<SemiCircleGauge percent={m.winRate} color={m.winRate >= 50 ? '#10b981' : '#ef4444'} />}
-        />
-        <KpiCard
-          label="Profit Factor"
-          value={m.profitFactor === Infinity ? '∞' : m.profitFactor.toFixed(2)}
-          sub={`G $${m.grossProfit.toFixed(0)} · P $${m.grossLoss.toFixed(0)}`}
-          colorClass="text-white"
-          icon={<div className="p-2 rounded-xl bg-[#20222c]"><Target className="w-4 h-4 text-[#818cf8]" /></div>}
-        />
-        <KpiCard
-          label="Day win %"
-          value={`${m.dayWinRate.toFixed(1)}%`}
-          sub="Jours gagnants / total"
-          colorClass="text-white"
-          icon={null}
-          gauge={<SemiCircleGauge percent={m.dayWinRate} color={m.dayWinRate >= 50 ? '#10b981' : '#ef4444'} />}
-        />
-        <KpiCard
-          label="Max Drawdown"
-          value={`-$${m.maxDrawdown.toFixed(2)}`}
-          sub="Perte max enregistrée"
-          colorClass="text-red-400"
-          icon={
-            <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
-              <TrendingDown className="w-4 h-4 text-red-400" />
+            <SemiGauge pct={m.winRate} color={m.winRate >= 50 ? '#10b981' : '#ef4444'} />
+          </div>
+          <DotLegend values={[m.winCount, beCount, m.lossCount]} />
+        </div>
+
+        {/* ── Profit Factor ────────────────────────────────────────────────── */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl px-4 py-3 hover:border-[#363948] transition-all">
+          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Profit factor</span>
+          <div className="text-[22px] font-black text-white tabular-nums tracking-tight leading-none">
+            {m.profitFactor >= 99 ? '∞' : m.profitFactor.toFixed(2)}
+          </div>
+        </div>
+
+        {/* ── Day win % ────────────────────────────────────────────────────── */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl px-4 py-3 hover:border-[#363948] transition-all">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Day win %</span>
+              <div className="text-[22px] font-black text-white tabular-nums tracking-tight leading-none">
+                {m.dayWinRate.toFixed(2)}%
+              </div>
             </div>
-          }
-        />
+            <SemiGauge pct={m.dayWinRate} color={m.dayWinRate >= 50 ? '#10b981' : '#ef4444'} />
+          </div>
+          <DotLegend values={[winDays, beDays, lossDays]} />
+        </div>
+
+        {/* ── Avg win/loss trade ────────────────────────────────────────────── */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl px-4 py-3 hover:border-[#363948] transition-all">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Avg win/loss trade</span>
+          </div>
+          <div className="text-[22px] font-black text-white tabular-nums tracking-tight leading-none mb-2">
+            {avgWinLossRatio.toFixed(2)}
+          </div>
+          {/* Mini horizontal bars */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 flex-1">
+              <div className="h-[6px] rounded-full bg-emerald-500 flex-1" style={{ maxWidth: `${Math.min((m.avgWin / Math.max(m.avgWin, m.avgLoss, 1)) * 100, 100)}%` }} />
+              <span className="text-[9px] text-emerald-400 font-bold tabular-nums whitespace-nowrap">${m.avgWin.toFixed(0)}</span>
+            </div>
+            <div className="flex items-center gap-1 flex-1">
+              <div className="h-[6px] rounded-full bg-red-500 flex-1" style={{ maxWidth: `${Math.min((m.avgLoss / Math.max(m.avgWin, m.avgLoss, 1)) * 100, 100)}%` }} />
+              <span className="text-[9px] text-red-400 font-bold tabular-nums whitespace-nowrap">-${m.avgLoss.toFixed(0)}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      {/* ── ROW 2 : CHARTS + METRICS ──────────────────────────────────────── */}
-      <div className="grid grid-cols-12 gap-3 flex-1 min-h-0">
+      {/* ══════════════════════════════════════════════════════════════════════
+          ROW 2 — 3 EQUAL PANELS (Radar + Equity + Daily P&L)
+          ══════════════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-3 gap-3 flex-1 min-h-0">
 
-        {/* Equity Curve — col 5 */}
-        <div className="col-span-5 bg-[#181920] border border-[#262833] rounded-xl p-4 flex flex-col gap-2 min-h-0">
-          <div className="flex items-center justify-between shrink-0">
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-              <span className="w-1 h-3 bg-[#6366f1] rounded-full" />
-              Equity Curve
-            </h3>
-            <span className={`text-xs font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-              {m.netPnL >= 0 ? '+' : ''}${m.netPnL.toFixed(2)}
-            </span>
+        {/* ── Seven Score (Radar) ───────────────────────────────────────────── */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-4 flex flex-col min-h-0">
+          <h3 className="text-[11px] font-bold text-slate-300 mb-2 shrink-0">Seven score</h3>
+
+          <div className="flex-1 min-h-0 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
+                <PolarGrid stroke="#262833" />
+                <PolarAngleAxis
+                  dataKey="metric"
+                  tick={{ fill: '#94a3b8', fontSize: 10 }}
+                />
+                <Radar
+                  dataKey="value"
+                  stroke="#818cf8"
+                  strokeWidth={2}
+                  fill="#6366f1"
+                  fillOpacity={0.25}
+                  dot={{ r: 3, fill: '#818cf8', strokeWidth: 0 }}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
           </div>
+
+          {/* Score bar at bottom */}
+          <div className="shrink-0 mt-2 border-t border-[#262833] pt-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-semibold text-slate-400">Your Seven Score</span>
+              <span className="text-lg font-black text-white tabular-nums">{sevenScore}</span>
+            </div>
+            {/* Gradient score bar */}
+            <div className="relative h-2 rounded-full overflow-hidden bg-[#262833]">
+              <div className="absolute inset-0 rounded-full"
+                style={{ background: 'linear-gradient(to right, #ef4444, #f59e0b, #10b981)' }} />
+              {/* Indicator dot */}
+              <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-[#0e0f12] shadow-lg transition-all"
+                style={{ left: `calc(${Math.min(sevenScore, 100)}% - 6px)` }} />
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[8px] text-slate-500">0</span>
+              <span className="text-[8px] text-slate-500">100</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Daily net cumulative P&L (Equity Curve) ───────────────────────── */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-4 flex flex-col min-h-0">
+          <h3 className="text-[11px] font-bold text-slate-300 mb-2 shrink-0">Daily net cumulative P&L</h3>
+
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={equityData} margin={{ top: 6, right: 6, left: -24, bottom: 0 }}>
+              <AreaChart data={equityChartData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="pnlGradGreen" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="pnlGradRed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false}
+                  interval="preserveStartEnd" />
+                <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false}
+                  tickFormatter={(v) => `$${v.toLocaleString()}`} />
                 <Tooltip content={<ChartTooltip />} />
                 <ReferenceLine y={0} stroke="#262833" strokeDasharray="3 3" />
-                <Area type="monotone" dataKey="pnl"
-                  stroke={isPositive ? '#10b981' : '#ef4444'} strokeWidth={2}
-                  fill={`url(#${isPositive ? 'pnlGradGreen' : 'pnlGradRed'})`} dot={false} />
+                <Area type="monotone" dataKey="pnl" stroke="#10b981" strokeWidth={2}
+                  fill="url(#eqGrad)" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Performance par Mois (graphique) — col 4 */}
-        <div className="col-span-4 bg-[#181920] border border-[#262833] rounded-xl p-4 flex flex-col gap-2 min-h-0">
-          <div className="flex items-center justify-between shrink-0">
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-              <span className="w-1 h-3 bg-[#6366f1] rounded-full" />
-              Performance par Mois
-            </h3>
-            <BarChart2 className="w-3.5 h-3.5 text-slate-500" />
-          </div>
-          <div className="flex-1 min-h-0">
-            {monthlyChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyChartData} margin={{ top: 6, right: 6, left: -24, bottom: 0 }} barSize={14}>
-                  <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="month" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <ReferenceLine y={0} stroke="#262833" />
-                  <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
-                    {monthlyChartData.map((entry, i) => (
-                      <Cell key={i} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'}
-                        fillOpacity={0.85} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-500 text-xs">
-                Aucune donnée mensuelle.
-              </div>
-            )}
-          </div>
-        </div>
+        {/* ── Net daily P&L (Bar chart) ─────────────────────────────────────── */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-4 flex flex-col min-h-0">
+          <h3 className="text-[11px] font-bold text-slate-300 mb-2 shrink-0">Net daily P&L</h3>
 
-        {/* Métriques condensées — col 3 */}
-        <div className="col-span-3 flex flex-col gap-3 min-h-0">
-
-          {/* Détail */}
-          <div className="bg-[#181920] border border-[#262833] rounded-xl p-4 flex-1 flex flex-col gap-1 min-h-0">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5 shrink-0 mb-1">
-              <Activity className="w-3.5 h-3.5 text-[#6366f1]" />
-              Métriques
-            </h4>
-            <StatRow label="Meilleur Trade" value={m.bestTrade?.pnl ? `+$${m.bestTrade.pnl.toFixed(2)}` : '—'} colorClass="text-emerald-400" />
-            <StatRow label="Pire Trade" value={m.worstTrade?.pnl ? `$${m.worstTrade.pnl.toFixed(2)}` : '—'} colorClass="text-red-400" />
-            <StatRow label="Gain Moyen" value={`+$${m.avgWin.toFixed(2)}`} colorClass="text-emerald-400" />
-            <StatRow label="Perte Moyenne" value={`$${m.avgLoss.toFixed(2)}`} colorClass="text-red-400" />
-            <StatRow label="Payoff Ratio" value={m.avgLoss !== 0 ? Math.abs(m.avgWin / m.avgLoss).toFixed(2) : '—'} colorClass="text-[#818cf8]" />
-          </div>
-
-          {/* Psychologie */}
-          <div className="bg-[#181920] border border-[#262833] rounded-xl p-4 flex-1 flex flex-col gap-1 min-h-0">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5 shrink-0 mb-1">
-              <Brain className="w-3.5 h-3.5 text-[#6366f1]" />
-              Vue d'Ensemble
-            </h4>
-            <StatRow label="Trades clôturés" value={`${m.closedTrades}`} />
-            <StatRow label="Trades en cours" value={`${m.openTrades}`} colorClass="text-[#818cf8]" />
-            <StatRow label="Consistency" value={`${m.consistency.score.toFixed(1)}%`}
-              colorClass={m.consistency.alert ? 'text-red-400' : 'text-emerald-400'} />
-            <StatRow label="R-Mult. moyen" value={`${m.avgRMultiple >= 0 ? '+' : ''}${m.avgRMultiple.toFixed(2)} R`}
-              colorClass={m.avgRMultiple >= 0 ? 'text-emerald-400' : 'text-red-400'} />
-            <StatRow label="Gain Brut" value={`+$${m.grossProfit.toFixed(2)}`} colorClass="text-emerald-400" />
-          </div>
-
-        </div>
-      </div>
-
-      {/* ── ROW 3 : DAILY P&L BAR + 5 TRADES RÉCENTS ─────────────────────── */}
-      <div className="grid grid-cols-12 gap-3 shrink-0" style={{ height: '160px' }}>
-
-        {/* Daily P&L Bar */}
-        <div className="col-span-6 bg-[#181920] border border-[#262833] rounded-xl p-4 flex flex-col gap-2">
-          <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5 shrink-0">
-            <span className="w-1 h-3 bg-[#6366f1] rounded-full" />
-            Net Daily P&L
-          </h3>
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={m.dailyPnL} margin={{ top: 4, right: 6, left: -24, bottom: 0 }} barSize={10}>
-                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+              <BarChart data={dailyChartData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }} barSize={12}>
+                <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false}
+                  interval="preserveStartEnd" />
+                <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false}
+                  tickFormatter={(v) => `$${v}`} />
                 <Tooltip content={<ChartTooltip />} />
                 <ReferenceLine y={0} stroke="#262833" />
                 <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
-                  {m.dailyPnL.map((entry, i) => (
-                    <Cell key={i} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.8} />
+                  {dailyChartData.map((entry, i) => (
+                    <Cell key={i} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.85} />
                   ))}
                 </Bar>
               </BarChart>
@@ -283,44 +280,7 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* 5 Trades Récents */}
-        <div className="col-span-6 bg-[#181920] border border-[#262833] rounded-xl p-4 flex flex-col gap-2 overflow-hidden">
-          <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5 shrink-0">
-            <History className="w-3.5 h-3.5 text-[#6366f1]" />
-            5 Trades Récents
-          </h3>
-          {m.recentTrades.length === 0 ? (
-            <div className="flex items-center justify-center flex-1 text-slate-500 text-xs">
-              Aucun trade enregistré.
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1 overflow-hidden">
-              {m.recentTrades.map((t) => (
-                <div key={t.id}
-                  className="flex items-center justify-between text-[11px] px-2 py-1 rounded-lg bg-[#13141a] border border-[#1e2029]">
-                  <span className="font-bold text-white w-20">{t.pair}</span>
-                  <Badge variant={t.direction === 'BUY' ? 'green' : 'indigo'}>
-                    {t.direction}
-                  </Badge>
-                  <span className="text-slate-400 w-12 text-center">{t.size} lots</span>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                    t.result === 'TP' ? 'bg-emerald-500/10 text-emerald-400' :
-                    t.result === 'SL' ? 'bg-red-500/10 text-red-400' :
-                    'bg-slate-800 text-slate-400'
-                  }`}>
-                    {t.result}
-                  </span>
-                  <span className={`font-bold w-20 text-right tabular-nums ${t.pnl && t.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {t.pnl !== null ? `${t.pnl >= 0 ? '+' : ''}$${t.pnl.toFixed(2)}` : 'OPEN'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
       </div>
-
     </div>
   );
 };
