@@ -78,13 +78,13 @@ export const Dashboard: React.FC = () => {
   const isPositive = m.netPnL >= 0;
 
   return (
-    <div className="space-y-6 page-enter">
+    <div className="space-y-2 page-enter">
 
       {/* ── TOP KPI SUMMARY CARDS (TradeZella Style with Gauges & Max Drawdown) ──────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
         
         {/* Net P&L */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-3 hover:border-[#363948] transition-all flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-slate-400 block mb-1">Net P&L</span>
             <div className={`text-2xl font-black tabular-nums tracking-tight ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -100,7 +100,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Win Rate % */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-3 hover:border-[#363948] transition-all flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-slate-400 block mb-1">Trade win %</span>
             <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
@@ -114,7 +114,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Profit Factor */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-3 hover:border-[#363948] transition-all flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-slate-400 block mb-1">Profit factor</span>
             <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
@@ -130,7 +130,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Day Win Rate % */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-3 hover:border-[#363948] transition-all flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-slate-400 block mb-1">Day win %</span>
             <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
@@ -144,7 +144,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Max Drawdown */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-3 hover:border-[#363948] transition-all flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-slate-400 block mb-1">Max Drawdown</span>
             <div className="text-2xl font-bold text-red-400 tabular-nums tracking-tight">
@@ -162,10 +162,10 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* ── CHARTS SECTION (TradeZella Area + Bar Charts) ───────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
 
         {/* Cumulative P&L Area Chart */}
-        <div className="lg:col-span-2 bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
+        <div className="lg:col-span-2 bg-[#181920] border border-[#262833] rounded-xl p-3 space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
               <span className="w-1 h-3.5 bg-[#6366f1] rounded-full" />
@@ -176,7 +176,7 @@ export const Dashboard: React.FC = () => {
             </span>
           </div>
 
-          <div className="h-64">
+          <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={equityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
@@ -206,7 +206,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Daily P&L Bar Chart */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-3 space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
               <span className="w-1 h-3.5 bg-[#6366f1] rounded-full" />
@@ -214,7 +214,7 @@ export const Dashboard: React.FC = () => {
             </h3>
           </div>
 
-          <div className="h-64">
+          <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={m.dailyPnL} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
@@ -234,83 +234,83 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* ── METRICS BREAKDOWN ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
 
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-3 space-y-1">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <Activity className="w-4 h-4 text-[#6366f1]" />
             Détail des Métriques
           </h4>
           <div className="space-y-2 text-xs divide-y divide-[#262833]">
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">Meilleur Trade</span>
               <span className="font-bold text-emerald-400">{m.bestTrade?.pnl ? `+$${m.bestTrade.pnl.toFixed(2)}` : '—'}</span>
             </div>
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">Pire Trade</span>
               <span className="font-bold text-red-400">{m.worstTrade?.pnl ? `$${m.worstTrade.pnl.toFixed(2)}` : '—'}</span>
             </div>
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">Gain Moyen</span>
               <span className="font-bold text-emerald-400">+${m.avgWin.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">Perte Moyenne</span>
               <span className="font-bold text-red-400">${m.avgLoss.toFixed(2)}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-3 space-y-1">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <Zap className="w-4 h-4 text-[#6366f1]" />
             Vue d'Ensemble
           </h4>
           <div className="space-y-2 text-xs divide-y divide-[#262833]">
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">Positions Clôturées</span>
               <span className="font-bold text-slate-200">{m.closedTrades}</span>
             </div>
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">Positions En Cours</span>
               <span className="font-bold text-[#818cf8]">{m.openTrades}</span>
             </div>
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">Consistency Score</span>
               <span className={`font-bold ${m.consistency.alert ? 'text-red-400' : 'text-emerald-400'}`}>
                 {m.consistency.score.toFixed(1)}% {m.consistency.alert ? '(Alerte >15%)' : '(Normal)'}
               </span>
             </div>
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">Gain Brut</span>
               <span className="font-bold text-emerald-400">+${m.grossProfit.toFixed(2)}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-3 space-y-1">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <Brain className="w-4 h-4 text-[#6366f1]" />
             Psychologie & R-Multiple
           </h4>
           <div className="space-y-2 text-xs divide-y divide-[#262833]">
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">R-Multiple Moyen</span>
               <span className={`font-bold ${m.avgRMultiple >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {m.avgRMultiple >= 0 ? '+' : ''}{m.avgRMultiple.toFixed(2)} R
               </span>
             </div>
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">Total Positions</span>
               <span className="font-bold text-slate-200">{m.totalTrades}</span>
             </div>
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">Payoff Ratio</span>
               <span className="font-bold text-[#818cf8]">
                 {m.avgLoss !== 0 ? Math.abs(m.avgWin / m.avgLoss).toFixed(2) : '—'}
               </span>
             </div>
-            <div className="flex justify-between py-2">
+            <div className="flex justify-between py-1">
               <span className="text-slate-400">Statut Session</span>
               <span className="font-bold text-emerald-400">Actif / Régulier</span>
             </div>
@@ -320,10 +320,10 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* ── NEW SECTION: MONTHLY PERFORMANCE CHART & 3 RECENT TRADES ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
 
         {/* Performance par Mois (Graphique) */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4 flex flex-col justify-between">
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-3 space-y-2 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
               <Calendar className="w-4 h-4 text-[#6366f1]" />
@@ -331,7 +331,7 @@ export const Dashboard: React.FC = () => {
             </h3>
           </div>
 
-          <div className="h-48">
+          <div className="h-24">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={m.monthlyPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
@@ -355,7 +355,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* 3 Trades Récents */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-3 space-y-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
             <History className="w-4 h-4 text-[#6366f1]" />
             3 Trades Récents
