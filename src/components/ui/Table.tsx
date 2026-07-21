@@ -12,18 +12,18 @@ export const Table: React.FC<TableProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`overflow-x-auto w-full border border-bloomberg-border rounded-sm ${className}`}>
-      <table className="min-w-full divide-y divide-bloomberg-border text-left font-mono">
-        <thead className="bg-bloomberg-surface text-bloomberg-text-secondary text-[10px] uppercase tracking-wider">
+    <div className={`overflow-x-auto w-full border border-[#262833] rounded-xl bg-[#181920] ${className}`}>
+      <table className="min-w-full divide-y divide-[#262833] text-left">
+        <thead className="bg-[#121318] text-slate-400 text-xs font-semibold tracking-wider">
           <tr>
             {headers.map((header, idx) => (
-              <th key={idx} className="px-4 py-2 font-semibold">
+              <th key={idx} className="px-4 py-3">
                 {header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-bloomberg-border/50 text-xs text-bloomberg-text-primary bg-bloomberg-bg tabular-nums">
+        <tbody className="divide-y divide-[#262833] text-xs text-slate-200 bg-[#181920]">
           {children}
         </tbody>
       </table>
@@ -44,7 +44,7 @@ export const TableRow: React.FC<TableRowProps> = ({
 }) => {
   return (
     <tr
-      className={`hover:bg-bloomberg-surface/40 transition-colors ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`hover:bg-[#20222c] transition-colors ${onClick ? 'cursor-pointer' : ''} ${className}`}
       onClick={onClick}
     >
       {children}
@@ -64,7 +64,7 @@ export const TableCell: React.FC<TableCellProps> = ({
   colSpan,
 }) => {
   return (
-    <td colSpan={colSpan} className={`px-4 py-2.5 whitespace-nowrap ${className}`}>
+    <td colSpan={colSpan} className={`px-4 py-3 whitespace-nowrap ${className}`}>
       {children}
     </td>
   );

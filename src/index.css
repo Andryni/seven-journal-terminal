@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -10,133 +10,56 @@
   }
 
   body {
-    @apply bg-bloomberg-bg text-bloomberg-text-primary antialiased;
-    font-family: 'Inter', 'Outfit', system-ui, sans-serif;
+    background-color: #0e0f12;
+    color: #f8fafc;
+    font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
     color-scheme: dark;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   ::selection {
-    background: rgba(0, 117, 255, 0.3);
+    background: rgba(99, 102, 241, 0.3);
     color: #fff;
   }
 }
 
-/* ─── Premium Custom Scrollbar ─── */
+/* ─── TradeZella Custom Scrollbar ─── */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #020515;
+  background: #0e0f12;
 }
 ::-webkit-scrollbar-thumb {
-  background: #0d123e;
+  background: #262833;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #0075ff;
+  background: #6366f1;
 }
 
-/* ─── Tabular nums utility ─── */
+/* ─── Tabular Nums Utility ─── */
 .tabular-nums {
   font-family: 'JetBrains Mono', monospace;
   font-variant-numeric: tabular-nums;
 }
 
-/* ─── Glassmorphism panel ─── */
-.glass-panel {
-  background: rgba(6, 11, 40, 0.68);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.2);
+/* ─── TradeZella Glass & Card Panels ─── */
+.glass-panel, .tradezella-card {
+  background-color: #181920;
+  border: 1px solid #262833;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.2s ease, transform 0.15s ease;
 }
 
-/* ─── Shimmer text animation ─── */
-.shimmer-text {
-  background: linear-gradient(
-    90deg,
-    #0075ff 0%,
-    #59a2ff 30%,
-    #00c2ff 50%,
-    #59a2ff 70%,
-    #0075ff 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: shimmer 3s linear infinite;
+.tradezella-card-hover:hover {
+  border-color: #363948;
 }
 
-/* ─── Scan line overlay ─── */
-.scan-overlay {
-  position: relative;
-  overflow: hidden;
-}
-.scan-overlay::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(0, 117, 255, 0.06), transparent);
-  animation: scanLine 5s linear infinite;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* ─── Subtle background grid ─── */
-.bg-grid {
-  background-image: linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-/* ─── Blue glow border ─── */
-.border-glow-gold {
-  box-shadow: 0 0 16px rgba(0, 117, 255, 0.15), inset 0 0 8px rgba(0, 117, 255, 0.02);
-}
-
-/* ─── KPI number counter shimmer ─── */
-.kpi-value {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
-  letter-spacing: -0.02em;
-}
-
-/* ─── Card top accent line ─── */
-.card-accent {
-  position: relative;
-}
-.card-accent::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 117, 255, 0.3), transparent);
-  pointer-events: none;
-}
-
-/* ─── Ticker tape ─── */
-.ticker-wrap {
-  overflow: hidden;
-  white-space: nowrap;
-}
-.ticker-content {
-  display: inline-block;
-  animation: ticker 25s linear infinite;
-}
-.ticker-content:hover {
-  animation-play-state: paused;
-}
-
-/* ─── Nav active indicator ─── */
+/* ─── Navigation Active Indicator ─── */
 .nav-active-indicator {
   position: relative;
 }
@@ -147,10 +70,10 @@
   top: 50%;
   transform: translateY(-50%);
   width: 3px;
-  height: 50%;
-  background: #0075ff;
+  height: 60%;
+  background: #6366f1;
   border-radius: 0 4px 4px 0;
-  box-shadow: 0 0 10px rgba(0, 117, 255, 0.8);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
 }
 
 /* ─── Input focus ring ─── */
@@ -158,85 +81,78 @@
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .input-focus-ring:focus {
-  box-shadow: 0 0 0 2px rgba(0, 117, 255, 0.15), 0 0 12px rgba(0, 117, 255, 0.1);
-  border-color: rgba(0, 117, 255, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  border-color: #6366f1 !important;
 }
 
-/* ─── Profit / Loss text glow ─── */
+/* ─── Profit / Loss Text Colors & Glow ─── */
+.text-profit {
+  color: #10b981;
+}
+.text-loss {
+  color: #ef4444;
+}
+.text-indigo-accent {
+  color: #6366f1;
+}
+
 .text-glow-green {
-  text-shadow: 0 0 12px rgba(5, 205, 153, 0.5);
+  text-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
 }
 .text-glow-red {
-  text-shadow: 0 0 12px rgba(238, 93, 80, 0.5);
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
 }
-.text-glow-gold {
-  text-shadow: 0 0 12px rgba(0, 117, 255, 0.5);
+.text-glow-indigo {
+  text-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
 }
 
-/* ─── Fade-in page transitions ─── */
+/* ─── Page transitions ─── */
 .page-enter {
-  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* ─── Button press effect ─── */
 .btn-press:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
   transition: transform 0.08s ease;
 }
 
-/* ─── Badge pulse for locked state ─── */
-.pulse-danger {
-  animation: glowPulse 1.5s ease-in-out infinite;
-  box-shadow: 0 0 0 0 rgba(238, 93, 80, 0.4);
-}
-
-/* ─── Chart tooltip ─── */
+/* ─── Recharts Tooltip Customization ─── */
 .recharts-tooltip-wrapper {
-  border-radius: 12px !important;
+  border-radius: 8px !important;
   overflow: hidden;
 }
 
-/* ─── Data table row hover ─── */
-.data-row {
-  transition: background 0.15s ease;
-}
-.data-row:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-/* ─── Ambient Glow Spheres for Background ─── */
-.ambient-glow-1 {
-  position: absolute;
-  top: 5%;
-  right: 15%;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(0, 117, 255, 0.15) 0%, rgba(2, 5, 21, 0) 70%);
-  filter: blur(40px);
-  pointer-events: none;
-  z-index: 0;
-  animation: float 10s ease-in-out infinite alternate;
+.recharts-default-tooltip {
+  background-color: #181920 !important;
+  border: 1px solid #262833 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
 }
 
-.ambient-glow-2 {
-  position: absolute;
-  bottom: 10%;
-  left: 5%;
-  width: 350px;
-  height: 350px;
-  background: radial-gradient(circle, rgba(132, 0, 255, 0.1) 0%, rgba(2, 5, 21, 0) 70%);
-  filter: blur(45px);
-  pointer-events: none;
-  z-index: 0;
-  animation: float 12s ease-in-out infinite alternate-reverse;
+/* ─── TradeZella Calendar Cell Styling ─── */
+.calendar-cell-profit {
+  background-color: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.calendar-cell-profit:hover {
+  background-color: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.5);
 }
 
-@keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 0px rgba(0, 117, 255, 0); }
-  50% { box-shadow: 0 0 20px rgba(0, 117, 255, 0.3); }
+.calendar-cell-loss {
+  background-color: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.calendar-cell-loss:hover {
+  background-color: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
-@keyframes float {
-  0% { transform: translateY(0px) rotate(0deg); }
-  100% { transform: translateY(-20px) rotate(10deg); }
+.calendar-cell-empty {
+  background-color: #181920;
+  border: 1px solid #262833;
+}
+.calendar-cell-empty:hover {
+  background-color: #20222c;
 }

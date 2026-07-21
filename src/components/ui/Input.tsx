@@ -10,25 +10,25 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col space-y-1.5 w-full group">
         {label && (
-          <label className="text-[9px] uppercase tracking-[0.14em] text-[#a0aec0] font-sans font-bold transition-colors duration-150 group-focus-within:text-[#0075ff]">
+          <label className="text-xs font-semibold text-slate-400 group-focus-within:text-[#6366f1] transition-colors">
             {label}
           </label>
         )}
         <input
           ref={ref}
           className={[
-            'bg-[#0f143c]/40 border border-bloomberg-border rounded-xl px-3 py-2',
-            'text-xs font-mono text-white placeholder-bloomberg-text-muted',
-            'focus:outline-none focus:border-[#0075ff] input-focus-ring',
+            'bg-[#121318] border border-[#262833] rounded-xl px-3.5 py-2.5',
+            'text-xs font-medium text-white placeholder-slate-500',
+            'focus:outline-none focus:border-[#6366f1] input-focus-ring',
             'transition-colors duration-150',
-            error ? 'border-bloomberg-red focus:border-bloomberg-red' : '',
+            error ? 'border-red-500 focus:border-red-500' : '',
             className,
           ].join(' ')}
           {...props}
         />
         {error && (
-          <span className="text-[9px] text-bloomberg-red-light font-mono animate-fade-in flex items-center gap-1">
-            <span className="w-1 h-1 rounded-full bg-bloomberg-red inline-block" />
+          <span className="text-xs text-red-400 animate-fade-in flex items-center gap-1">
+            <span className="w-1 h-1 rounded-full bg-red-500 inline-block" />
             {error}
           </span>
         )}
@@ -50,7 +50,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="flex flex-col space-y-1.5 w-full group">
         {label && (
-          <label className="text-[9px] uppercase tracking-[0.14em] text-[#a0aec0] font-sans font-bold transition-colors duration-150 group-focus-within:text-[#0075ff]">
+          <label className="text-xs font-semibold text-slate-400 group-focus-within:text-[#6366f1] transition-colors">
             {label}
           </label>
         )}
@@ -58,32 +58,31 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           <select
             ref={ref}
             className={[
-              'w-full bg-[#0f143c]/40 border border-bloomberg-border rounded-xl px-3 py-2',
-              'text-xs font-mono text-white',
-              'focus:outline-none focus:border-[#0075ff] input-focus-ring',
+              'w-full bg-[#121318] border border-[#262833] rounded-xl px-3.5 py-2.5',
+              'text-xs font-medium text-white',
+              'focus:outline-none focus:border-[#6366f1] input-focus-ring',
               'transition-colors duration-150 appearance-none cursor-pointer',
-              'pr-7',
-              error ? 'border-bloomberg-red' : '',
+              'pr-9',
+              error ? 'border-red-500' : '',
               className,
             ].join(' ')}
             {...props}
           >
             {options.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-[#0b0f29]">
+              <option key={opt.value} value={opt.value} className="bg-[#181920]">
                 {opt.label}
               </option>
             ))}
           </select>
-          {/* Custom chevron */}
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-            <svg className="w-3 h-3 text-[#a0aec0]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
         </div>
         {error && (
-          <span className="text-[9px] text-bloomberg-red-light font-mono animate-fade-in flex items-center gap-1">
-            <span className="w-1 h-1 rounded-full bg-bloomberg-red inline-block" />
+          <span className="text-xs text-red-400 animate-fade-in flex items-center gap-1">
+            <span className="w-1 h-1 rounded-full bg-red-500 inline-block" />
             {error}
           </span>
         )}
@@ -104,25 +103,25 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="flex flex-col space-y-1.5 w-full group">
         {label && (
-          <label className="text-[9px] uppercase tracking-[0.14em] text-[#a0aec0] font-sans font-bold transition-colors duration-150 group-focus-within:text-[#0075ff]">
+          <label className="text-xs font-semibold text-slate-400 group-focus-within:text-[#6366f1] transition-colors">
             {label}
           </label>
         )}
         <textarea
           ref={ref}
           className={[
-            'bg-[#0f143c]/40 border border-bloomberg-border rounded-xl px-3 py-2.5',
-            'text-xs font-mono text-white placeholder-bloomberg-text-muted',
-            'focus:outline-none focus:border-[#0075ff] input-focus-ring',
-            'transition-colors duration-150 min-h-[80px] resize-y',
-            error ? 'border-bloomberg-red' : '',
+            'bg-[#121318] border border-[#262833] rounded-xl px-3.5 py-2.5',
+            'text-xs font-medium text-white placeholder-slate-500',
+            'focus:outline-none focus:border-[#6366f1] input-focus-ring',
+            'transition-colors duration-150 min-h-[85px] resize-y',
+            error ? 'border-red-500' : '',
             className,
           ].join(' ')}
           {...props}
         />
         {error && (
-          <span className="text-[9px] text-bloomberg-red-light font-mono animate-fade-in flex items-center gap-1">
-            <span className="w-1 h-1 rounded-full bg-bloomberg-red inline-block" />
+          <span className="text-xs text-red-400 animate-fade-in flex items-center gap-1">
+            <span className="w-1 h-1 rounded-full bg-red-500 inline-block" />
             {error}
           </span>
         )}
