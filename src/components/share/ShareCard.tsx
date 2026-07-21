@@ -105,51 +105,49 @@ function computeStats(trades: Trade[], period: Period): PeriodStats {
   };
 }
 
-// ─── Mini Equity Curve SVG ───────────────────────────────────────────────────────
-const EquityCurveSVG: React.FC<{ data: number[]; positive: boolean; trades: Trade[] }> = ({ data, positive, trades }) => {
+// ─── SVG Equity Curve ──────────────────────────────────────────────────────────
+const EquityCurveSVG = ({ data, positive, trades }: { data: number[]; positive: boolean; trades: Trade[] }) => {
   if (data.length < 2) return null;
-  const w = 516, h = 100;
+  const w = 530, h = 110;
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
   
-  // Grid lines (horizontal & vertical)
   const hLines = 4;
-  const vLines = 5;
 
   const pts = data.map((v, i) => {
-    const x = 50 + (i / (data.length - 1)) * (w - 70);
-    const y = 15 + (1 - (v - min) / range) * (h - 30);
+    const x = 55 + (i / (data.length - 1)) * (w - 75);
+    const y = 15 + (1 - (v - min) / range) * (h - 35);
     return { x, y, val: v };
   });
 
-  const color = positive ? '#01b574' : '#e53e3e';
-  const fillColor = positive ? 'rgba(1,181,116,0.08)' : 'rgba(229,62,62,0.08)';
+  const color = positive ? '#10b981' : '#ef4444';
   const polylinePoints = pts.map(p => `${p.x},${p.y}`).join(' ');
-  const polygonPoints = `50,${h - 15} ${polylinePoints} ${pts[pts.length - 1].x},${h - 15}`;
+  const polygonPoints = `55,${h - 20} ${polylinePoints} ${pts[pts.length - 1].x},${h - 20}`;
 
   return (
     <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="shareEqGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+          <stop offset="100%" stopColor={color} stopOpacity={0.0} />
+        </linearGradient>
+      </defs>
+
       {/* Grid lines */}
       {Array.from({ length: hLines }).map((_, i) => {
-        const y = 15 + (i / (hLines - 1)) * (h - 30);
+        const y = 15 + (i / (hLines - 1)) * (h - 35);
         return (
-          <line key={i} x1="50" y1={y} x2={w - 20} y2={y} stroke="rgba(255,255,255,0.05)" strokeDasharray="3,3" />
-        );
-      })}
-      {Array.from({ length: vLines }).map((_, i) => {
-        const x = 50 + (i / (vLines - 1)) * (w - 70);
-        return (
-          <line key={i} x1={x} y1="15" x2={x} y2={h - 15} stroke="rgba(255,255,255,0.05)" strokeDasharray="3,3" />
+          <line key={i} x1="55" y1={y} x2={w - 15} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
         );
       })}
 
       {/* Y Axis Labels */}
       {Array.from({ length: hLines }).map((_, i) => {
-        const y = 15 + (i / (hLines - 1)) * (h - 30);
+        const y = 15 + (i / (hLines - 1)) * (h - 35);
         const val = max - (i / (hLines - 1)) * range;
         return (
-          <text key={i} x="42" y={y + 3} fill="rgba(255,255,255,0.3)" fontSize="8" fontFamily="monospace" textAnchor="end">
+          <text key={i} x="46" y={y + 3} fill="rgba(255,255,255,0.35)" fontSize="9" fontFamily="monospace" textAnchor="end">
             {val.toFixed(0)}$
           </text>
         );
@@ -161,7 +159,7 @@ const EquityCurveSVG: React.FC<{ data: number[]; positive: boolean; trades: Trad
           const tradeTime = trades[i]?.entry_time ? new Date(trades[i].entry_time) : new Date();
           const timeStr = `${tradeTime.getDate()}/${tradeTime.getMonth() + 1} ${tradeTime.getHours().toString().padStart(2, '0')}:00`;
           return (
-            <text key={i} x={p.x} y={h - 2} fill="rgba(255,255,255,0.3)" fontSize="8" fontFamily="monospace" textAnchor="middle">
+            <text key={i} x={p.x} y={h - 3} fill="rgba(255,255,255,0.35)" fontSize="8.5" fontFamily="monospace" textAnchor="middle">
               {timeStr}
             </text>
           );
@@ -169,76 +167,81 @@ const EquityCurveSVG: React.FC<{ data: number[]; positive: boolean; trades: Trad
         return null;
       })}
 
-      {/* Area & Line */}
-      <polygon points={polygonPoints} fill={fillColor} />
-      <polyline points={polylinePoints} stroke={color} strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+      {/* Gradient Fill & Stroke Line */}
+      <polygon points={polygonPoints} fill="url(#shareEqGrad)" />
+      <polyline points={polylinePoints} stroke={color} strokeWidth="2" fill="none" strokeLinejoin="round" />
 
-      {/* Data Circles */}
+      {/* Point Circles */}
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="3" fill="#020515" stroke={color} strokeWidth="1.5" />
+        <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#090b13" stroke={color} strokeWidth="2" />
       ))}
     </svg>
   );
 };
 
-// ─── Share Card (the visual to be captured) ──────────────────────────────────────
+// ─── Share Card (the visual captured to image) ──────────────────────────────────
 const ShareCardVisual = React.forwardRef<HTMLDivElement, {
   stats: PeriodStats;
   period: Period;
   account: TradingAccount | null;
   trades: Trade[];
-}>(({ stats, period, account, trades }, ref) => {
+}>(({ stats, account, trades }, ref) => {
   const isPositive = stats.totalPnl >= 0;
-  const profitColor = isPositive ? '#01b574' : '#e53e3e';
-
-  const periodEmoji: Record<Period, string> = {
-    daily: '📅', weekly: '📆', monthly: '🗓️', yearly: '📊'
-  };
+  const profitColor = isPositive ? '#10b981' : '#ef4444';
 
   return (
     <div
       ref={ref}
       style={{
         width: '600px',
-        background: 'linear-gradient(135deg, #020515 0%, #0a1035 50%, #020515 100%)',
-        fontFamily: '"Inter", sans-serif',
-        padding: '32px',
+        background: 'linear-gradient(145deg, #070913 0%, #0e1224 50%, #070913 100%)',
+        fontFamily: '"Inter", "Plus Jakarta Sans", system-ui, sans-serif',
+        padding: '36px',
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: '20px',
+        borderRadius: '24px',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
       }}
     >
-      {/* Background glow */}
+      {/* Background glow radial overlays */}
       <div style={{
-        position: 'absolute', top: '-80px', right: '-80px',
-        width: '300px', height: '300px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0,117,255,0.15) 0%, transparent 70%)',
+        position: 'absolute', top: '-100px', left: '50%', transform: 'translateX(-50%)',
+        width: '380px', height: '380px', borderRadius: '50%',
+        background: isPositive 
+          ? 'radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%)'
+          : 'radial-gradient(circle, rgba(239, 68, 68, 0.12) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
       <div style={{
-        position: 'absolute', bottom: '-60px', left: '-60px',
-        width: '200px', height: '200px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(1,181,116,0.08) 0%, transparent 70%)',
+        position: 'absolute', bottom: '-80px', right: '-80px',
+        width: '260px', height: '260px', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>SEVEN</span>
-            <span style={{ fontSize: '16px', fontWeight: 900, color: '#818cf8', letterSpacing: '2px' }}>TRACKING</span>
+            <span style={{ fontSize: '18px', fontWeight: 900, color: '#ffffff', letterSpacing: '2px' }}>SEVEN</span>
+            <span style={{ fontSize: '18px', fontWeight: 900, color: '#818cf8', letterSpacing: '2px' }}>TRACKING</span>
           </div>
-          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 600 }}>
-            {periodEmoji[period]} {stats.periodLabel}
+          <div style={{ fontSize: '11px', color: '#64748b', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>📅</span>
+            <span>{stats.periodLabel}</span>
           </div>
         </div>
+
+        {/* Account Badge Top Right */}
         <div style={{
-          background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)',
-          borderRadius: '12px', padding: '8px 14px',
-          display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-end',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '14px', padding: '10px 16px',
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
         }}>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', letterSpacing: '1px', lineHeight: 1.2 }}>
+          <div style={{ fontSize: '11px', fontWeight: 800, color: '#ffffff', letterSpacing: '1px', lineHeight: 1.2 }}>
             {account ? account.name.toUpperCase() : 'TOUS LES COMPTES'}
           </div>
           {account && (
@@ -249,51 +252,52 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
         </div>
       </div>
 
-      {/* Main P&L */}
+      {/* Main Net P&L Display */}
       <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', marginBottom: '6px' }}>
+        <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', letterSpacing: '2.5px', textTransform: 'uppercase', marginBottom: '8px' }}>
           P&L NET
         </div>
         <div style={{
-          fontSize: '52px',
+          fontSize: '56px',
           fontWeight: 900,
           color: profitColor,
           lineHeight: 1,
           letterSpacing: '-1px',
-          textShadow: `0 0 20px ${isPositive ? 'rgba(1, 181, 116, 0.4)' : 'rgba(229, 62, 62, 0.4)'}`,
+          filter: `drop-shadow(0 0 25px ${isPositive ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'})`,
         }}>
           {stats.totalPnl >= 0 ? '+' : ''}{stats.totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}$
         </div>
-        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>
+        <div style={{ fontSize: '12.5px', color: '#94a3b8', marginTop: '8px', fontWeight: 500 }}>
           {stats.avgR >= 0 ? '+' : ''}{stats.avgR.toFixed(2)} R moyen · {stats.tradeCount} trade{stats.tradeCount > 1 ? 's' : ''}
         </div>
       </div>
 
-      {/* Equity Curve */}
+      {/* Equity Curve Container */}
       {stats.equityCurve.length >= 2 && (
         <div style={{
-          background: 'rgba(255,255,255,0.02)', borderRadius: '12px',
-          padding: '16px', marginBottom: '24px',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(18, 19, 24, 0.6)', borderRadius: '16px',
+          padding: '18px', marginBottom: '22px',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.4)',
         }}>
-          <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', marginBottom: '12px' }}>
+          <div style={{ fontSize: '9.5px', fontWeight: 800, color: '#64748b', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
             EQUITY CURVE
           </div>
           <EquityCurveSVG data={stats.equityCurve} positive={isPositive} trades={trades} />
         </div>
       )}
 
-      {/* Stats Grid */}
+      {/* Stats Cards Grid (2 rows x 3 cols) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
         {[
           {
             label: 'TAUX DE RÉUSSITE',
             value: `${stats.winRate.toFixed(1)}%`,
-            color: '#01b574',
-            bgColor: 'rgba(1,181,116,0.04)',
-            borderColor: 'rgba(1,181,116,0.2)',
+            color: '#10b981',
+            bgColor: 'rgba(16, 185, 129, 0.06)',
+            borderColor: 'rgba(16, 185, 129, 0.25)',
             icon: (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#01b574" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
               </svg>
             )
@@ -301,11 +305,11 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
           {
             label: 'GAGNANTS',
             value: stats.wins.toString(),
-            color: '#01b574',
-            bgColor: 'rgba(1,181,116,0.04)',
-            borderColor: 'rgba(1,181,116,0.2)',
+            color: '#10b981',
+            bgColor: 'rgba(16, 185, 129, 0.06)',
+            borderColor: 'rgba(16, 185, 129, 0.25)',
             icon: (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#01b574" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" /><path d="M12 2a6 6 0 0 1 6 6v1H6V8a6 6 0 0 1 6-6z" />
               </svg>
             )
@@ -313,11 +317,11 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
           {
             label: 'PERDANTS',
             value: stats.losses.toString(),
-            color: '#e53e3e',
-            bgColor: 'rgba(229,62,62,0.04)',
-            borderColor: 'rgba(229,62,62,0.2)',
+            color: '#ef4444',
+            bgColor: 'rgba(239, 68, 68, 0.06)',
+            borderColor: 'rgba(239, 68, 68, 0.25)',
             icon: (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" /><polyline points="16 17 22 17 22 11" />
               </svg>
             )
@@ -325,11 +329,11 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
           {
             label: 'MEILLEUR TRADE',
             value: `+${stats.bestTrade.toFixed(2)}$`,
-            color: '#01b574',
-            bgColor: 'rgba(1,181,116,0.04)',
-            borderColor: 'rgba(1,181,116,0.2)',
+            color: '#10b981',
+            bgColor: 'rgba(16, 185, 129, 0.06)',
+            borderColor: 'rgba(16, 185, 129, 0.25)',
             icon: (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#01b574" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" />
               </svg>
             )
@@ -337,11 +341,11 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
           {
             label: 'PIRE TRADE',
             value: `${stats.worstTrade.toFixed(2)}$`,
-            color: '#e53e3e',
-            bgColor: 'rgba(229,62,62,0.04)',
-            borderColor: 'rgba(229,62,62,0.2)',
+            color: '#ef4444',
+            bgColor: 'rgba(239, 68, 68, 0.06)',
+            borderColor: 'rgba(239, 68, 68, 0.25)',
             icon: (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="7" y1="7" x2="17" y2="17" /><polyline points="17 7 17 17 7 17" />
               </svg>
             )
@@ -349,11 +353,11 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
           {
             label: 'ACTIFS',
             value: stats.pairs.length > 0 ? stats.pairs.slice(0, 2).join(', ') : '—',
-            color: '#fff',
-            bgColor: 'rgba(255,255,255,0.02)',
-            borderColor: 'rgba(255,255,255,0.1)',
+            color: '#ffffff',
+            bgColor: 'rgba(255, 255, 255, 0.03)',
+            borderColor: 'rgba(255, 255, 255, 0.12)',
             icon: (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a0aec0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
               </svg>
             )
@@ -361,69 +365,71 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
         ].map(({ label, value, color, bgColor, borderColor, icon }) => (
           <div key={label} style={{
             background: bgColor,
-            borderRadius: '12px',
-            padding: '12px',
-            border: `1.5px solid ${borderColor}`,
+            borderRadius: '14px',
+            padding: '14px',
+            border: `1px solid ${borderColor}`,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
             position: 'relative',
-            height: '68px',
+            height: '72px',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', letterSpacing: '1px', fontWeight: 700 }}>
+              <div style={{ fontSize: '8.5px', color: '#94a3b8', letterSpacing: '1px', fontWeight: 800, textTransform: 'uppercase' }}>
                 {label}
               </div>
-              <div style={{ opacity: 0.8 }}>
+              <div style={{ opacity: 0.9 }}>
                 {icon}
               </div>
             </div>
-            <div style={{ fontSize: '15px', fontWeight: 800, color, fontFamily: 'monospace' }}>
+            <div style={{ fontSize: '16px', fontWeight: 800, color, fontFamily: 'monospace' }}>
               {value}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Sessions */}
-      {stats.sessions.length > 0 && (
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
-          {stats.sessions.map(s => (
+      {/* Trading Sessions Badges */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
+        {['NEW YORK', 'LONDON', 'ASIA', 'OVER SESSION'].map(s => {
+          const isActive = stats.sessions.map(x => x.toUpperCase()).includes(s);
+          return (
             <span key={s} style={{
-              fontSize: '10px', fontWeight: 800, height: '22px', padding: '0 10px',
-              borderRadius: '8px', border: '1px solid rgba(0,117,255,0.2)',
-              background: 'rgba(0,117,255,0.06)', color: '#0075ff', letterSpacing: '1px',
+              fontSize: '10px', fontWeight: 800, height: '26px', padding: '0 12px',
+              borderRadius: '12px',
+              border: isActive ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
+              background: isActive ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+              color: isActive ? '#818cf8' : '#64748b',
+              letterSpacing: '1px',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               lineHeight: 1,
             }}>
-              {s.toUpperCase()}
+              {s}
             </span>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
 
       {/* Separator line and Sparkle */}
       <div style={{
-        borderTop: '1px solid rgba(255,255,255,0.06)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
         position: 'relative',
         margin: '20px 0 16px 0',
       }}>
-        {/* Star Sparkle icon on the separator line */}
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="#60a5fa" style={{
+        {/* Star Sparkle icon on the separator line bottom right */}
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="#94a3b8" style={{
           position: 'absolute',
-          right: '20px',
-          top: '-12px',
-          opacity: 0.7,
+          right: '24px',
+          top: '-13px',
+          opacity: 0.6,
         }}>
           <path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z" />
         </svg>
       </div>
 
       {/* Footer */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontSize: '9.5px', color: '#64748b', letterSpacing: '1px', fontWeight: 500 }}>
           Generated by Seven Journal
         </div>
         <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px' }}>
