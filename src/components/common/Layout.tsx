@@ -11,8 +11,7 @@ import {
   CalendarRange,
   BookMarked,
   LogOut,
-  Plus,
-  Flame
+  Plus
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
@@ -46,16 +45,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
       {/* ── DESKTOP SIDEBAR ────────────────────────────────────────────── */}
       <aside className="w-64 bg-[#121318] border-r border-[#262833] hidden md:flex flex-col shrink-0 z-20">
         
-        {/* Logo TradeZella Style */}
+        {/* Logo Seven Tracking */}
         <div className="h-16 px-6 flex items-center gap-3 border-b border-[#262833]">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#4f46e5] flex items-center justify-center shadow-indigo-glow">
-            <Flame className="w-4 h-4 text-white" />
+            <BarChart3 className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
-            <div className="text-sm font-extrabold tracking-tight text-white flex items-center gap-1">
-              SEVEN<span className="text-[#6366f1]">ZELLA</span>
+            <div className="text-sm font-black tracking-tight text-white flex items-center gap-1">
+              SEVEN<span className="text-[#6366f1]">TRACKING</span>
             </div>
-            <div className="text-[10px] font-medium text-slate-400">Trading Terminal</div>
+            <div className="text-[10px] font-medium text-slate-400">Journal & Analytics</div>
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { calculateConsistencyScore, calculateRMultiple } from '@/utils/financials';
-import type { Trade } from '@/features/trades/useTrades';
+import { calculateConsistencyScore, calculateRMultiple } from '../../utils/financials';
+import type { Trade } from '../trades/useTrades';
 
 export interface PerformanceMetrics {
   totalTrades: number;
@@ -18,15 +18,15 @@ export interface PerformanceMetrics {
   worstTrade: Trade | null;
   avgWin: number;
   avgLoss: number;
+  maxDrawdown: number;
+  dayWinRate: number;
+  recentTrades: Trade[];
+  monthlyPerformance: { month: string; pnl: number; count: number; winRate: number }[];
   consistency: { score: number; alert: boolean };
   equityCurve: { tradeIndex: number; pnl: number; date: string }[];
   dailyPnL: { date: string; pnl: number }[];
 }
 
-/**
- * Hook pur de calcul de métriques de performance à partir d'une liste de trades.
- * Mémoïsé — ne recalcule que si les trades changent.
- */
 export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
   return useMemo(() => {
     const closedTrades = trades.filter(
@@ -50,14 +50,13 @@ export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
     const avgWin = winTrades.length > 0 ? grossProfit / winTrades.length : 0;
     const avgLoss = lossTrades.length > 0 ? grossLoss / lossTrades.length : 0;
 
-    // R-Multiple moyen (recalculé à partir des données brutes pour être fiable)
+    // R-Multiple moyen
     const rMultiples = closedTrades.map((t) =>
       t.r_multiple !== null
         ? t.r_multiple
         : calculateRMultiple({
             direction: t.direction,
             entryPrice: t.entry_price,
-            // exit_price est garanti non-null via le filtre closedTrades
             exitPrice: (t.exit_price as number),
             stopLoss: t.stop_loss,
           })
@@ -83,13 +82,20 @@ export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
       closedTrades.map((t) => ({ pnl: t.pnl, exit_time: t.exit_time }))
     );
 
-    // Equity curve — ordre chronologique
+    // Equity curve & Max Drawdown calculation
     let cumPnL = 0;
+    let peak = 0;
+    let maxDrawdown = 0;
+
     const equityCurve = closedTrades
       .slice()
       .sort((a, b) => new Date(a.exit_time).getTime() - new Date(b.exit_time).getTime())
       .map((t, i) => {
         cumPnL += t.pnl;
+        if (cumPnL > peak) peak = cumPnL;
+        const dd = peak - cumPnL;
+        if (dd > maxDrawdown) maxDrawdown = dd;
+
         return {
           tradeIndex: i + 1,
           pnl: Number(cumPnL.toFixed(2)),
@@ -100,7 +106,7 @@ export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
         };
       });
 
-    // Daily P&L aggregation
+    // Daily P&L & Day Win Rate calculation
     const dailyMap: Record<string, number> = {};
     closedTrades.forEach((t) => {
       const dateKey = t.exit_time.split('T')[0];
@@ -109,6 +115,34 @@ export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
     const dailyPnL = Object.entries(dailyMap)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, pnl]) => ({ date, pnl: Number(pnl.toFixed(2)) }));
+
+    const greenDays = dailyPnL.filter(d => d.pnl > 0).length;
+    const dayWinRate = dailyPnL.length > 0 ? (greenDays / dailyPnL.length) * 100 : 0;
+
+    // Monthly performance calculation
+    const monthlyMap: Record<string, { pnl: number; count: number; wins: number }> = {};
+    closedTrades.forEach((t) => {
+      const date = new Date(t.exit_time);
+      const monthKey = date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+      if (!monthlyMap[monthKey]) {
+        monthlyMap[monthKey] = { pnl: 0, count: 0, wins: 0 };
+      }
+      monthlyMap[monthKey].pnl += t.pnl;
+      monthlyMap[monthKey].count += 1;
+      if (t.pnl > 0) monthlyMap[monthKey].wins += 1;
+    });
+
+    const monthlyPerformance = Object.entries(monthlyMap).map(([month, data]) => ({
+      month: month.toUpperCase(),
+      pnl: Number(data.pnl.toFixed(2)),
+      count: data.count,
+      winRate: Number(((data.wins / data.count) * 100).toFixed(1)),
+    }));
+
+    // Recent 5 trades
+    const recentTrades = [...trades]
+      .sort((a, b) => new Date(b.entry_time).getTime() - new Date(a.entry_time).getTime())
+      .slice(0, 5);
 
     return {
       totalTrades: trades.length,
@@ -126,6 +160,10 @@ export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
       worstTrade: worstTrade as Trade | null,
       avgWin: Number(avgWin.toFixed(2)),
       avgLoss: Number(avgLoss.toFixed(2)),
+      maxDrawdown: Number(maxDrawdown.toFixed(2)),
+      dayWinRate: Number(dayWinRate.toFixed(1)),
+      recentTrades,
+      monthlyPerformance,
       consistency,
       equityCurve,
       dailyPnL,

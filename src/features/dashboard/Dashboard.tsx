@@ -2,14 +2,16 @@ import React from 'react';
 import { useTrades } from '../trades/useTrades';
 import { usePerformanceMetrics } from './usePerformanceMetrics';
 import {
-  TrendingUp, Percent, Target,
-  TrendingDown, Activity, Award, Zap, Brain
+  TrendingUp, Target,
+  TrendingDown, Activity, Zap, Brain, Calendar, History
 } from 'lucide-react';
 import {
   AreaChart, Area,
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell
 } from 'recharts';
+import { Table, TableRow, TableCell } from '../../components/ui/Table';
+import { Badge } from '../../components/ui/Badge';
 
 const ChartTooltip = ({ active, payload, label }: {
   active?: boolean; payload?: { value: number }[]; label?: string;
@@ -26,31 +28,35 @@ const ChartTooltip = ({ active, payload, label }: {
   );
 };
 
-const KpiTile = ({ label, value, sub, icon: Icon, isPositive }: {
-  label: string;
-  value: string;
-  sub: string;
-  icon: React.FC<{ className?: string }>;
-  isPositive?: boolean;
-}) => {
+// ── Gauge SVG Component ────────────────────────────────────────────────────────
+const SemiCircleGauge = ({ percent, color = '#10b981' }: { percent: number; color?: string }) => {
+  const radius = 28;
+  const circumference = Math.PI * radius;
+  const strokeDashoffset = circumference - (Math.min(Math.max(percent, 0), 100) / 100) * circumference;
+
   return (
-    <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex flex-col justify-between">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold text-slate-400">{label}</span>
-        <div className="p-2 rounded-lg bg-[#20222c] text-slate-300">
-          <Icon className="w-4 h-4" />
-        </div>
-      </div>
-      <div>
-        <div className={`text-2xl font-bold tabular-nums tracking-tight mb-1 ${
-          isPositive === true ? 'text-emerald-400' : isPositive === false ? 'text-red-400' : 'text-white'
-        }`}>
-          {value}
-        </div>
-        <div className="text-xs text-slate-500 font-medium">
-          {sub}
-        </div>
-      </div>
+    <div className="relative w-16 h-10 flex items-center justify-center shrink-0">
+      <svg className="w-16 h-10 transform -rotate-180" viewBox="0 0 64 36">
+        {/* Background Arc */}
+        <path
+          d="M 6 32 A 26 26 0 0 1 58 32"
+          fill="none"
+          stroke="#262833"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+        {/* Value Arc */}
+        <path
+          d="M 6 32 A 26 26 0 0 1 58 32"
+          fill="none"
+          stroke={color}
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+        />
+      </svg>
     </div>
   );
 };
@@ -63,7 +69,7 @@ export const Dashboard: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
         <div className="w-8 h-8 border-2 border-[#6366f1]/30 border-t-[#6366f1] rounded-full animate-spin" />
-        <span className="text-xs text-slate-400 font-medium">Chargement des métriques...</span>
+        <span className="text-xs text-slate-400 font-medium">Chargement du Dashboard Seven Tracking...</span>
       </div>
     );
   }
@@ -74,39 +80,88 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6 page-enter">
 
-      {/* ── TOP KPI SUMMARY CARDS ────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiTile
-          label="Net P&L"
-          value={`${m.netPnL >= 0 ? '+' : ''}$${m.netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          sub={`${m.totalTrades} trade${m.totalTrades > 1 ? 's' : ''} au total`}
-          icon={m.netPnL >= 0 ? TrendingUp : TrendingDown}
-          isPositive={isPositive}
-        />
-        <KpiTile
-          label="Win Rate %"
-          value={`${m.winRate.toFixed(1)}%`}
-          sub={`${m.winCount} Gagnants · ${m.lossCount} Perdants`}
-          icon={Percent}
-          isPositive={m.winRate >= 50}
-        />
-        <KpiTile
-          label="Profit Factor"
-          value={m.profitFactor === Infinity ? '∞' : m.profitFactor.toFixed(2)}
-          sub={`Gains: $${m.grossProfit.toFixed(0)} · Pertes: $${m.grossLoss.toFixed(0)}`}
-          icon={Target}
-          isPositive={m.profitFactor >= 1.5}
-        />
-        <KpiTile
-          label="Avg R-Multiple"
-          value={`${m.avgRMultiple >= 0 ? '+' : ''}${m.avgRMultiple.toFixed(2)} R`}
-          sub={`Consistency Score: ${m.consistency.score.toFixed(1)}%`}
-          icon={Award}
-          isPositive={m.avgRMultiple >= 0}
-        />
+      {/* ── TOP KPI SUMMARY CARDS (TradeZella Style with Gauges & Max Drawdown) ──────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        
+        {/* Net P&L */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Net P&L</span>
+            <div className={`text-2xl font-black tabular-nums tracking-tight ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+              {m.netPnL >= 0 ? '+' : ''}${m.netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </div>
+            <div className="text-[11px] text-slate-500 font-medium mt-1">
+              {m.totalTrades} trade{m.totalTrades > 1 ? 's' : ''} au total
+            </div>
+          </div>
+          <div className="p-2.5 rounded-xl bg-[#20222c] text-[#6366f1]">
+            {isPositive ? <TrendingUp className="w-5 h-5 text-emerald-400" /> : <TrendingDown className="w-5 h-5 text-red-400" />}
+          </div>
+        </div>
+
+        {/* Win Rate % */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Trade win %</span>
+            <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
+              {m.winRate.toFixed(1)}%
+            </div>
+            <div className="text-[11px] text-slate-500 font-medium mt-1">
+              <span className="text-emerald-400 font-semibold">{m.winCount} G</span> · <span className="text-red-400 font-semibold">{m.lossCount} P</span>
+            </div>
+          </div>
+          <SemiCircleGauge percent={m.winRate} color={m.winRate >= 50 ? '#10b981' : '#ef4444'} />
+        </div>
+
+        {/* Profit Factor */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Profit factor</span>
+            <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
+              {m.profitFactor === Infinity ? '∞' : m.profitFactor.toFixed(2)}
+            </div>
+            <div className="text-[11px] text-slate-500 font-medium mt-1">
+              Gains: ${m.grossProfit.toFixed(0)} · Pertes: ${m.grossLoss.toFixed(0)}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-xl bg-[#20222c] text-[#818cf8]">
+            <Target className="w-5 h-5 text-[#818cf8]" />
+          </div>
+        </div>
+
+        {/* Day Win Rate % */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Day win %</span>
+            <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
+              {m.dayWinRate.toFixed(1)}%
+            </div>
+            <div className="text-[11px] text-slate-500 font-medium mt-1">
+              Jours gagnants / total
+            </div>
+          </div>
+          <SemiCircleGauge percent={m.dayWinRate} color={m.dayWinRate >= 50 ? '#10b981' : '#ef4444'} />
+        </div>
+
+        {/* Max Drawdown */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Max Drawdown</span>
+            <div className="text-2xl font-bold text-red-400 tabular-nums tracking-tight">
+              -${m.maxDrawdown.toFixed(2)}
+            </div>
+            <div className="text-[11px] text-slate-500 font-medium mt-1">
+              Perte max enregistrée
+            </div>
+          </div>
+          <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
+            <TrendingDown className="w-5 h-5" />
+          </div>
+        </div>
+
       </div>
 
-      {/* ── CHARTS SECTION (TradeZella Style) ───────────────────────── */}
+      {/* ── CHARTS SECTION (TradeZella Area + Bar Charts) ───────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Cumulative P&L Area Chart */}
@@ -114,7 +169,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
               <span className="w-1 h-3.5 bg-[#6366f1] rounded-full" />
-              P&L Cumulé ($)
+              Daily Net Cumulative P&L ($)
             </h3>
             <span className={`text-xs font-bold font-mono ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
               {m.netPnL >= 0 ? '+' : ''}${m.netPnL.toFixed(2)}
@@ -126,11 +181,11 @@ export const Dashboard: React.FC = () => {
               <AreaChart data={equityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="pnlGradGreen" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="pnlGradRed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.35} />
                     <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                   </linearGradient>
                 </defs>
@@ -142,7 +197,7 @@ export const Dashboard: React.FC = () => {
                   type="monotone"
                   dataKey="pnl"
                   stroke={isPositive ? '#10b981' : '#ef4444'}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   fill={`url(#${isPositive ? 'pnlGradGreen' : 'pnlGradRed'})`}
                 />
               </AreaChart>
@@ -155,7 +210,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
               <span className="w-1 h-3.5 bg-[#6366f1] rounded-full" />
-              P&L par Jour ($)
+              Net Daily P&L ($)
             </h3>
           </div>
 
@@ -178,10 +233,9 @@ export const Dashboard: React.FC = () => {
 
       </div>
 
-      {/* ── ADDITIONAL STATS TILES ──────────────────────────────────── */}
+      {/* ── METRICS BREAKDOWN ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {/* Key Metrics Breakdown */}
         <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <Activity className="w-4 h-4 text-[#6366f1]" />
@@ -207,7 +261,6 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Streaks & Discipline */}
         <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <Zap className="w-4 h-4 text-[#6366f1]" />
@@ -235,7 +288,6 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Mindset & Psychology */}
         <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <Brain className="w-4 h-4 text-[#6366f1]" />
@@ -263,6 +315,80 @@ export const Dashboard: React.FC = () => {
               <span className="font-bold text-emerald-400">Actif / Régulier</span>
             </div>
           </div>
+        </div>
+
+      </div>
+
+      {/* ── NEW SECTION: MONTHLY PERFORMANCE & 5 RECENT TRADES (Zones Libres) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Performance par Mois */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-[#6366f1]" />
+            Performance par Mois
+          </h3>
+
+          <Table headers={['MOIS', 'TRADES', 'WIN RATE', 'NET P&L']}>
+            {m.monthlyPerformance.map((mon, idx) => (
+              <TableRow key={idx}>
+                <TableCell className="font-bold text-white">{mon.month}</TableCell>
+                <TableCell>{mon.count} trades</TableCell>
+                <TableCell className={mon.winRate >= 50 ? 'text-emerald-400 font-semibold' : 'text-red-400 font-semibold'}>
+                  {mon.winRate}%
+                </TableCell>
+                <TableCell className={`font-bold ${mon.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {mon.pnl >= 0 ? '+' : ''}${mon.pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </TableCell>
+              </TableRow>
+            ))}
+          </Table>
+
+          {m.monthlyPerformance.length === 0 && (
+            <div className="text-center py-6 text-slate-500 text-xs font-medium">
+              Aucune donnée mensuelle disponible.
+            </div>
+          )}
+        </div>
+
+        {/* 5 Trades Récents */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+            <History className="w-4 h-4 text-[#6366f1]" />
+            5 Trades Récents
+          </h3>
+
+          <Table headers={['PAIRE', 'DIRECTION', 'LOTS', 'RESULT', 'P&L']}>
+            {m.recentTrades.map((t) => (
+              <TableRow key={t.id}>
+                <TableCell className="font-bold text-white">{t.pair}</TableCell>
+                <TableCell>
+                  <Badge variant={t.direction === 'BUY' ? 'green' : 'indigo'}>
+                    {t.direction}
+                  </Badge>
+                </TableCell>
+                <TableCell>{t.size}</TableCell>
+                <TableCell>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                    t.result === 'TP' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                    t.result === 'SL' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                    'bg-slate-800 text-slate-400'
+                  }`}>
+                    {t.result}
+                  </span>
+                </TableCell>
+                <TableCell className={`font-bold ${t.pnl && t.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {t.pnl !== null ? `${t.pnl >= 0 ? '+' : ''}$${t.pnl.toFixed(2)}` : 'OPEN'}
+                </TableCell>
+              </TableRow>
+            ))}
+          </Table>
+
+          {m.recentTrades.length === 0 && (
+            <div className="text-center py-6 text-slate-500 text-xs font-medium">
+              Aucun trade récent enregistré.
+            </div>
+          )}
         </div>
 
       </div>

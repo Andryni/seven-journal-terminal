@@ -24,19 +24,19 @@ import { ShareButton } from '../../components/share/ShareCard';
 
 // ─── KPI tile ─────────────────────────────────────────────────────────────────
 const KpiTile = ({ label, value, sub, positive }: { label: string; value: string; sub?: string; positive?: boolean }) => (
-  <div className="bg-bloomberg-surface border border-bloomberg-border p-3 rounded-sm">
-    <div className="text-[9px] text-bloomberg-text-secondary uppercase tracking-wider mb-1">{label}</div>
-    <div className={`text-xl font-bold tabular-nums font-mono ${positive === undefined ? 'text-white' : positive ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
+  <div className="bg-[#181920] border border-[#262833] p-4 rounded-xl hover:border-[#363948] transition-all">
+    <div className="text-xs font-semibold text-slate-400 mb-1">{label}</div>
+    <div className={`text-xl font-bold tabular-nums ${positive === undefined ? 'text-white' : positive ? 'text-emerald-400' : 'text-red-400'}`}>
       {value}
     </div>
-    {sub && <div className="text-[9px] text-bloomberg-text-muted mt-0.5">{sub}</div>}
+    {sub && <div className="text-[11px] text-slate-500 font-medium mt-1">{sub}</div>}
   </div>
 );
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 const Empty = () => (
-  <div className="h-[200px] flex flex-col items-center justify-center text-bloomberg-text-secondary text-[10px] uppercase tracking-wider space-y-2">
-    <AlertCircle className="w-5 h-5 opacity-30" />
+  <div className="h-[200px] flex flex-col items-center justify-center text-slate-500 text-xs font-medium space-y-2">
+    <AlertCircle className="w-5 h-5 opacity-40" />
     <span>Pas encore assez de données</span>
   </div>
 );
@@ -49,8 +49,8 @@ const AnalyticsTooltip = ({ active, payload, label }: {
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#08080b] border border-[#2a2a32] px-3 py-2 text-[10px] font-mono shadow-xl">
-      <div className="text-[#71717a] mb-1 font-bold uppercase tracking-wider">{label}</div>
+    <div className="bg-[#181920] border border-[#262833] px-3.5 py-2.5 rounded-xl text-xs shadow-2xl">
+      <div className="text-slate-400 mb-1 font-semibold uppercase tracking-wider text-[10px]">{label}</div>
       <div className="space-y-1">
         {payload.map((item, idx) => {
           const val = Number(item.value);
@@ -72,8 +72,8 @@ const AnalyticsTooltip = ({ active, payload, label }: {
           const suffix = isDrawdown || isWinrate ? '%' : '';
 
           return (
-            <div key={idx} className="flex items-center gap-2">
-              <span className="text-[#a1a1aa]">{item.name} :</span>
+            <div key={idx} className="flex items-center justify-between gap-4">
+              <span className="text-slate-400">{item.name} :</span>
               <span className={textClass}>
                 {prefix}{val.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}{suffix}
               </span>
@@ -390,40 +390,43 @@ export const Analytics: React.FC = () => {
     <div className="space-y-5">
 
       {/* PAGE HEADER */}
-      <div className="flex items-center justify-between border-b border-bloomberg-border pb-4">
+      <div className="flex items-center justify-between border-b border-[#262833] pb-4">
         <div>
-          <h2 className="text-sm font-extrabold uppercase tracking-widest text-white">ANALYTICS AVANCÉS</h2>
-          <p className="text-[10px] text-bloomberg-text-secondary mt-0.5">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-white">ANALYTICS AVANCÉS</h2>
+          <p className="text-xs text-slate-400 mt-0.5">
             {closed.length} trades clôturés analysés · Toutes métriques calculées en temps réel
           </p>
         </div>
         <div className="flex items-center space-x-3">
           <ShareButton />
-          <div className="text-right font-mono">
-            <div className={`text-xl font-bold tabular-nums ${netPnL >= 0 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
-              {netPnL >= 0 ? '+' : ''}{netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          <div className="text-right">
+            <div className={`text-xl font-bold tabular-nums ${netPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {netPnL >= 0 ? '+' : ''}${netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </div>
-            <div className="text-[9px] text-bloomberg-text-secondary">P&L CUMULÉ</div>
+            <div className="text-[10px] font-semibold text-slate-500 uppercase">P&L CUMULÉ</div>
           </div>
         </div>
       </div>
 
       {/* TABS */}
-      <div className="flex flex-wrap gap-1 border-b border-bloomberg-border pb-0">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex items-center space-x-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-colors ${
-              activeTab === id
-                ? 'border-bloomberg-gold text-bloomberg-gold'
-                : 'border-transparent text-bloomberg-text-secondary hover:text-white'
-            }`}
-          >
-            <Icon className="w-3 h-3" />
-            <span>{label}</span>
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-2 border-b border-[#262833] pb-3">
+        {TABS.map(({ id, label, icon: Icon }) => {
+          const active = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                active
+                  ? 'bg-[#6366f1]/15 text-[#818cf8] border border-[#6366f1]/30 shadow-indigo-glow'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-[#181920] border border-transparent'
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 ${active ? 'text-[#818cf8]' : 'text-slate-400'}`} />
+              <span>{label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ── TAB: VUE D'ENSEMBLE ───────────────────────────────────────────── */}
