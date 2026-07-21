@@ -165,15 +165,11 @@ function AppContent() {
     <Layout currentTab={currentTab} setCurrentTab={setCurrentTab}>
       <ErrorBoundary>
         {currentTab === 'dashboard' && <Dashboard />}
-        {currentTab !== 'dashboard' && (
-          <div className="overflow-y-auto h-full">
-            {currentTab === 'trades' && <Trades />}
-            {currentTab === 'accounts' && <Accounts />}
-            {currentTab === 'analytics' && <Analytics />}
-            {currentTab === 'calendar' && <Calendar />}
-            {currentTab === 'playbook' && <Playbook />}
-          </div>
-        )}
+        {currentTab === 'trades' && <Trades />}
+        {currentTab === 'accounts' && <Accounts />}
+        {currentTab === 'analytics' && <Analytics />}
+        {currentTab === 'calendar' && <Calendar />}
+        {currentTab === 'playbook' && <Playbook />}
       </ErrorBoundary>
     </Layout>
   );

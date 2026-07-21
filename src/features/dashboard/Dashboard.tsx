@@ -2,277 +2,228 @@ import React from 'react';
 import { useTrades } from '../trades/useTrades';
 import { usePerformanceMetrics } from './usePerformanceMetrics';
 import {
+  TrendingUp, Target,
+  TrendingDown, Activity, Zap, Brain, Calendar, History
+} from 'lucide-react';
+import {
   AreaChart, Area,
   BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, ReferenceLine, Cell, CartesianGrid,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis
+  ResponsiveContainer, ReferenceLine, Cell
 } from 'recharts';
+import { Table, TableRow, TableCell } from '../../components/ui/Table';
+import { Badge } from '../../components/ui/Badge';
 
-/* ── Shared Tooltip ─────────────────────────────────────────────────────────── */
 const ChartTooltip = ({ active, payload, label }: {
   active?: boolean; payload?: { value: number }[]; label?: string;
 }) => {
   if (!active || !payload?.length) return null;
   const val = payload[0].value;
   return (
-    <div className="bg-[#181920] border border-[#262833] px-3 py-1.5 rounded-lg text-xs shadow-xl">
-      <div className="text-slate-500 text-[10px]">{label}</div>
-      <div className={`font-bold tabular-nums ${val >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+    <div className="bg-[#181920] border border-[#262833] px-3.5 py-2 rounded-xl text-xs shadow-xl">
+      <div className="text-slate-400 text-[11px] mb-1">{label}</div>
+      <div className={`font-bold tabular-nums text-sm ${val >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
         {val >= 0 ? '+' : ''}${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}
       </div>
     </div>
   );
 };
 
-/* ── Semi-circle Gauge (like TradeZella win % arc) ──────────────────────────── */
-const SemiGauge = ({ pct, color }: { pct: number; color: string }) => {
-  const r = 22;
-  const circ = Math.PI * r;
-  const off = circ - (Math.min(Math.max(pct, 0), 100) / 100) * circ;
+// ── Gauge SVG Component ────────────────────────────────────────────────────────
+const SemiCircleGauge = ({ percent, color = '#10b981' }: { percent: number; color?: string }) => {
+  const radius = 28;
+  const circumference = Math.PI * radius;
+  const strokeDashoffset = circumference - (Math.min(Math.max(percent, 0), 100) / 100) * circumference;
+
   return (
-    <svg className="w-[52px] h-[30px] -rotate-180" viewBox="0 0 52 28">
-      <path d="M 4 26 A 20 20 0 0 1 48 26" fill="none" stroke="#262833" strokeWidth="4.5" strokeLinecap="round" />
-      <path d="M 4 26 A 20 20 0 0 1 48 26" fill="none" stroke={color} strokeWidth="4.5"
-        strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off}
-        style={{ transition: 'stroke-dashoffset .6s ease-out' }} />
-    </svg>
+    <div className="relative w-16 h-10 flex items-center justify-center shrink-0">
+      <svg className="w-16 h-10 transform -rotate-180" viewBox="0 0 64 36">
+        {/* Background Arc */}
+        <path
+          d="M 6 32 A 26 26 0 0 1 58 32"
+          fill="none"
+          stroke="#262833"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+        {/* Value Arc */}
+        <path
+          d="M 6 32 A 26 26 0 0 1 58 32"
+          fill="none"
+          stroke={color}
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+        />
+      </svg>
+    </div>
   );
 };
 
-/* ── Dot Legend (green / gray / red) ────────────────────────────────────────── */
-const DotLegend = ({ values }: { values: [number, number, number] }) => (
-  <div className="flex items-center gap-3 mt-1">
-    {[['#10b981', values[0]], ['#6b7280', values[1]], ['#ef4444', values[2]]].map(([c, v], i) => (
-      <span key={i} className="flex items-center gap-1 text-[10px] tabular-nums text-slate-400">
-        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c as string }} />
-        {v as number}
-      </span>
-    ))}
-  </div>
-);
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   DASHBOARD
-   ═══════════════════════════════════════════════════════════════════════════════ */
 export const Dashboard: React.FC = () => {
   const { trades, isLoading } = useTrades();
   const m = usePerformanceMetrics(trades);
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3">
+      <div className="flex flex-col items-center justify-center h-64 gap-3">
         <div className="w-8 h-8 border-2 border-[#6366f1]/30 border-t-[#6366f1] rounded-full animate-spin" />
-        <span className="text-xs text-slate-400 font-medium">Chargement de Seven Tracking...</span>
+        <span className="text-xs text-slate-400 font-medium">Chargement du Dashboard Seven Tracking...</span>
       </div>
     );
   }
 
-  const isPositive = m.netPnL >= 0;
   const equityData = [{ tradeIndex: 0, pnl: 0, date: 'Début' }, ...m.equityCurve];
-  const beCount = Math.max(m.closedTrades - m.winCount - m.lossCount, 0);
-  const avgWinLossRatio = m.avgLoss !== 0 ? Math.abs(m.avgWin / m.avgLoss) : 0;
-
-  // Day-level stats
-  const winDays = m.dailyPnL.filter(d => d.pnl > 0).length;
-  const lossDays = m.dailyPnL.filter(d => d.pnl < 0).length;
-  const beDays = m.dailyPnL.filter(d => d.pnl === 0).length;
-
-  // ── Radar data (Seven Score) ──────────────────────────────────────────────
-  const recoveryFactor = m.maxDrawdown > 0 ? m.netPnL / m.maxDrawdown : 0;
-  const radarData = [
-    { metric: 'Win %', value: Math.min(m.winRate, 100), fullMark: 100 },
-    { metric: 'Profit factor', value: Math.min(m.profitFactor === Infinity ? 100 : (m.profitFactor / 5) * 100, 100), fullMark: 100 },
-    { metric: 'Avg win/loss', value: Math.min((avgWinLossRatio / 3) * 100, 100), fullMark: 100 },
-    { metric: 'Recovery factor', value: Math.min((Math.max(recoveryFactor, 0) / 5) * 100, 100), fullMark: 100 },
-    { metric: 'Max drawdown', value: m.netPnL > 0 ? Math.max(100 - (m.maxDrawdown / m.netPnL) * 100, 0) : 0, fullMark: 100 },
-    { metric: 'Consistency', value: Math.max(100 - m.consistency.score * 2, 0), fullMark: 100 },
-  ];
-  const sevenScore = radarData.length > 0
-    ? Number((radarData.reduce((s, d) => s + d.value, 0) / radarData.length).toFixed(1))
-    : 0;
-
-  // Format dates for charts
-  const equityChartData = equityData.map(d => ({
-    ...d,
-    date: d.date.length > 6 ? d.date : d.date,
-  }));
-  const dailyChartData = m.dailyPnL.map(d => ({
-    ...d,
-    date: new Date(d.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
-  }));
+  const isPositive = m.netPnL >= 0;
 
   return (
-    <div className="flex flex-col gap-3 h-full page-enter">
+    <div className="space-y-6 page-enter">
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          ROW 1 — 5 KPI CARDS (matching TradeZella exactly)
-          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-5 gap-3 shrink-0">
-
-        {/* ── Net P&L ──────────────────────────────────────────────────────── */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl px-4 py-3 hover:border-[#363948] transition-all">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Net P&L</span>
-            <span className="text-[9px] bg-[#262833] text-slate-400 px-1.5 py-0.5 rounded font-bold tabular-nums">{m.closedTrades}</span>
+      {/* ── TOP KPI SUMMARY CARDS (TradeZella Style with Gauges & Max Drawdown) ──────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        
+        {/* Net P&L */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Net P&L</span>
+            <div className={`text-2xl font-black tabular-nums tracking-tight ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+              {m.netPnL >= 0 ? '+' : ''}${m.netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </div>
+            <div className="text-[11px] text-slate-500 font-medium mt-1">
+              {m.totalTrades} trade{m.totalTrades > 1 ? 's' : ''} au total
+            </div>
           </div>
-          <div className={`text-[22px] font-black tabular-nums tracking-tight leading-none ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-            ${Math.abs(m.netPnL).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          <div className="p-2.5 rounded-xl bg-[#20222c] text-[#6366f1]">
+            {isPositive ? <TrendingUp className="w-5 h-5 text-emerald-400" /> : <TrendingDown className="w-5 h-5 text-red-400" />}
           </div>
         </div>
 
-        {/* ── Trade win % ──────────────────────────────────────────────────── */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl px-4 py-3 hover:border-[#363948] transition-all">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Trade win %</span>
-              <div className="text-[22px] font-black text-white tabular-nums tracking-tight leading-none">
-                {m.winRate.toFixed(2)}%
-              </div>
+        {/* Win Rate % */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Trade win %</span>
+            <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
+              {m.winRate.toFixed(1)}%
             </div>
-            <SemiGauge pct={m.winRate} color={m.winRate >= 50 ? '#10b981' : '#ef4444'} />
+            <div className="text-[11px] text-slate-500 font-medium mt-1">
+              <span className="text-emerald-400 font-semibold">{m.winCount} G</span> · <span className="text-red-400 font-semibold">{m.lossCount} P</span>
+            </div>
           </div>
-          <DotLegend values={[m.winCount, beCount, m.lossCount]} />
+          <SemiCircleGauge percent={m.winRate} color={m.winRate >= 50 ? '#10b981' : '#ef4444'} />
         </div>
 
-        {/* ── Profit Factor ────────────────────────────────────────────────── */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl px-4 py-3 hover:border-[#363948] transition-all">
-          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Profit factor</span>
-          <div className="text-[22px] font-black text-white tabular-nums tracking-tight leading-none">
-            {m.profitFactor >= 99 ? '∞' : m.profitFactor.toFixed(2)}
+        {/* Profit Factor */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Profit factor</span>
+            <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
+              {m.profitFactor === Infinity ? '∞' : m.profitFactor.toFixed(2)}
+            </div>
+            <div className="text-[11px] text-slate-500 font-medium mt-1">
+              Gains: ${m.grossProfit.toFixed(0)} · Pertes: ${m.grossLoss.toFixed(0)}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-xl bg-[#20222c] text-[#818cf8]">
+            <Target className="w-5 h-5 text-[#818cf8]" />
           </div>
         </div>
 
-        {/* ── Day win % ────────────────────────────────────────────────────── */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl px-4 py-3 hover:border-[#363948] transition-all">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">Day win %</span>
-              <div className="text-[22px] font-black text-white tabular-nums tracking-tight leading-none">
-                {m.dayWinRate.toFixed(2)}%
-              </div>
+        {/* Day Win Rate % */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Day win %</span>
+            <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
+              {m.dayWinRate.toFixed(1)}%
             </div>
-            <SemiGauge pct={m.dayWinRate} color={m.dayWinRate >= 50 ? '#10b981' : '#ef4444'} />
+            <div className="text-[11px] text-slate-500 font-medium mt-1">
+              Jours gagnants / total
+            </div>
           </div>
-          <DotLegend values={[winDays, beDays, lossDays]} />
+          <SemiCircleGauge percent={m.dayWinRate} color={m.dayWinRate >= 50 ? '#10b981' : '#ef4444'} />
         </div>
 
-        {/* ── Avg win/loss trade ────────────────────────────────────────────── */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl px-4 py-3 hover:border-[#363948] transition-all">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Avg win/loss trade</span>
-          </div>
-          <div className="text-[22px] font-black text-white tabular-nums tracking-tight leading-none mb-2">
-            {avgWinLossRatio.toFixed(2)}
-          </div>
-          {/* Mini horizontal bars */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 flex-1">
-              <div className="h-[6px] rounded-full bg-emerald-500 flex-1" style={{ maxWidth: `${Math.min((m.avgWin / Math.max(m.avgWin, m.avgLoss, 1)) * 100, 100)}%` }} />
-              <span className="text-[9px] text-emerald-400 font-bold tabular-nums whitespace-nowrap">${m.avgWin.toFixed(0)}</span>
+        {/* Max Drawdown */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-400 block mb-1">Max Drawdown</span>
+            <div className="text-2xl font-bold text-red-400 tabular-nums tracking-tight">
+              -${m.maxDrawdown.toFixed(2)}
             </div>
-            <div className="flex items-center gap-1 flex-1">
-              <div className="h-[6px] rounded-full bg-red-500 flex-1" style={{ maxWidth: `${Math.min((m.avgLoss / Math.max(m.avgWin, m.avgLoss, 1)) * 100, 100)}%` }} />
-              <span className="text-[9px] text-red-400 font-bold tabular-nums whitespace-nowrap">-${m.avgLoss.toFixed(0)}</span>
+            <div className="text-[11px] text-slate-500 font-medium mt-1">
+              Perte max enregistrée
             </div>
+          </div>
+          <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
+            <TrendingDown className="w-5 h-5" />
           </div>
         </div>
 
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          ROW 2 — 3 EQUAL PANELS (Radar + Equity + Daily P&L)
-          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-3 gap-3 flex-1 min-h-0">
+      {/* ── CHARTS SECTION (TradeZella Area + Bar Charts) ───────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* ── Seven Score (Radar) ───────────────────────────────────────────── */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-4 flex flex-col min-h-0">
-          <h3 className="text-[11px] font-bold text-slate-300 mb-2 shrink-0">Seven score</h3>
-
-          <div className="flex-1 min-h-0 flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
-                <PolarGrid stroke="#262833" />
-                <PolarAngleAxis
-                  dataKey="metric"
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                />
-                <Radar
-                  dataKey="value"
-                  stroke="#818cf8"
-                  strokeWidth={2}
-                  fill="#6366f1"
-                  fillOpacity={0.25}
-                  dot={{ r: 3, fill: '#818cf8', strokeWidth: 0 }}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+        {/* Cumulative P&L Area Chart */}
+        <div className="lg:col-span-2 bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <span className="w-1 h-3.5 bg-[#6366f1] rounded-full" />
+              Daily Net Cumulative P&L ($)
+            </h3>
+            <span className={`text-xs font-bold font-mono ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+              {m.netPnL >= 0 ? '+' : ''}${m.netPnL.toFixed(2)}
+            </span>
           </div>
 
-          {/* Score bar at bottom */}
-          <div className="shrink-0 mt-2 border-t border-[#262833] pt-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-semibold text-slate-400">Your Seven Score</span>
-              <span className="text-lg font-black text-white tabular-nums">{sevenScore}</span>
-            </div>
-            {/* Gradient score bar */}
-            <div className="relative h-2 rounded-full overflow-hidden bg-[#262833]">
-              <div className="absolute inset-0 rounded-full"
-                style={{ background: 'linear-gradient(to right, #ef4444, #f59e0b, #10b981)' }} />
-              {/* Indicator dot */}
-              <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-[#0e0f12] shadow-lg transition-all"
-                style={{ left: `calc(${Math.min(sevenScore, 100)}% - 6px)` }} />
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[8px] text-slate-500">0</span>
-              <span className="text-[8px] text-slate-500">100</span>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Daily net cumulative P&L (Equity Curve) ───────────────────────── */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-4 flex flex-col min-h-0">
-          <h3 className="text-[11px] font-bold text-slate-300 mb-2 shrink-0">Daily net cumulative P&L</h3>
-
-          <div className="flex-1 min-h-0">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={equityChartData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
+              <AreaChart data={equityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.4} />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                  <linearGradient id="pnlGradGreen" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="pnlGradRed" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false}
-                  interval="preserveStartEnd" />
-                <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false}
-                  tickFormatter={(v) => `$${v.toLocaleString()}`} />
+                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
                 <Tooltip content={<ChartTooltip />} />
                 <ReferenceLine y={0} stroke="#262833" strokeDasharray="3 3" />
-                <Area type="monotone" dataKey="pnl" stroke="#10b981" strokeWidth={2}
-                  fill="url(#eqGrad)" dot={false} />
+                <Area
+                  type="monotone"
+                  dataKey="pnl"
+                  stroke={isPositive ? '#10b981' : '#ef4444'}
+                  strokeWidth={2.5}
+                  fill={`url(#${isPositive ? 'pnlGradGreen' : 'pnlGradRed'})`}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* ── Net daily P&L (Bar chart) ─────────────────────────────────────── */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-4 flex flex-col min-h-0">
-          <h3 className="text-[11px] font-bold text-slate-300 mb-2 shrink-0">Net daily P&L</h3>
+        {/* Daily P&L Bar Chart */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <span className="w-1 h-3.5 bg-[#6366f1] rounded-full" />
+              Net Daily P&L ($)
+            </h3>
+          </div>
 
-          <div className="flex-1 min-h-0">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyChartData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }} barSize={12}>
-                <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false}
-                  interval="preserveStartEnd" />
-                <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false}
-                  tickFormatter={(v) => `$${v}`} />
+              <BarChart data={m.dailyPnL} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <ReferenceLine y={0} stroke="#262833" />
-                <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
-                  {dailyChartData.map((entry, i) => (
-                    <Cell key={i} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.85} />
+                <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                  {m.dailyPnL.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -281,6 +232,167 @@ export const Dashboard: React.FC = () => {
         </div>
 
       </div>
+
+      {/* ── METRICS BREAKDOWN ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <Activity className="w-4 h-4 text-[#6366f1]" />
+            Détail des Métriques
+          </h4>
+          <div className="space-y-2 text-xs divide-y divide-[#262833]">
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">Meilleur Trade</span>
+              <span className="font-bold text-emerald-400">{m.bestTrade?.pnl ? `+$${m.bestTrade.pnl.toFixed(2)}` : '—'}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">Pire Trade</span>
+              <span className="font-bold text-red-400">{m.worstTrade?.pnl ? `$${m.worstTrade.pnl.toFixed(2)}` : '—'}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">Gain Moyen</span>
+              <span className="font-bold text-emerald-400">+${m.avgWin.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">Perte Moyenne</span>
+              <span className="font-bold text-red-400">${m.avgLoss.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <Zap className="w-4 h-4 text-[#6366f1]" />
+            Vue d'Ensemble
+          </h4>
+          <div className="space-y-2 text-xs divide-y divide-[#262833]">
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">Positions Clôturées</span>
+              <span className="font-bold text-slate-200">{m.closedTrades}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">Positions En Cours</span>
+              <span className="font-bold text-[#818cf8]">{m.openTrades}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">Consistency Score</span>
+              <span className={`font-bold ${m.consistency.alert ? 'text-red-400' : 'text-emerald-400'}`}>
+                {m.consistency.score.toFixed(1)}% {m.consistency.alert ? '(Alerte >15%)' : '(Normal)'}
+              </span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">Gain Brut</span>
+              <span className="font-bold text-emerald-400">+${m.grossProfit.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <Brain className="w-4 h-4 text-[#6366f1]" />
+            Psychologie & R-Multiple
+          </h4>
+          <div className="space-y-2 text-xs divide-y divide-[#262833]">
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">R-Multiple Moyen</span>
+              <span className={`font-bold ${m.avgRMultiple >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {m.avgRMultiple >= 0 ? '+' : ''}{m.avgRMultiple.toFixed(2)} R
+              </span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">Total Positions</span>
+              <span className="font-bold text-slate-200">{m.totalTrades}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">Payoff Ratio</span>
+              <span className="font-bold text-[#818cf8]">
+                {m.avgLoss !== 0 ? Math.abs(m.avgWin / m.avgLoss).toFixed(2) : '—'}
+              </span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-slate-400">Statut Session</span>
+              <span className="font-bold text-emerald-400">Actif / Régulier</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── NEW SECTION: MONTHLY PERFORMANCE & 5 RECENT TRADES (Zones Libres) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Performance par Mois */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-[#6366f1]" />
+            Performance par Mois
+          </h3>
+
+          <Table headers={['MOIS', 'TRADES', 'WIN RATE', 'NET P&L']}>
+            {m.monthlyPerformance.map((mon, idx) => (
+              <TableRow key={idx}>
+                <TableCell className="font-bold text-white">{mon.month}</TableCell>
+                <TableCell>{mon.count} trades</TableCell>
+                <TableCell className={mon.winRate >= 50 ? 'text-emerald-400 font-semibold' : 'text-red-400 font-semibold'}>
+                  {mon.winRate}%
+                </TableCell>
+                <TableCell className={`font-bold ${mon.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {mon.pnl >= 0 ? '+' : ''}${mon.pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </TableCell>
+              </TableRow>
+            ))}
+          </Table>
+
+          {m.monthlyPerformance.length === 0 && (
+            <div className="text-center py-6 text-slate-500 text-xs font-medium">
+              Aucune donnée mensuelle disponible.
+            </div>
+          )}
+        </div>
+
+        {/* 5 Trades Récents */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+            <History className="w-4 h-4 text-[#6366f1]" />
+            5 Trades Récents
+          </h3>
+
+          <Table headers={['PAIRE', 'DIRECTION', 'LOTS', 'RESULT', 'P&L']}>
+            {m.recentTrades.map((t) => (
+              <TableRow key={t.id}>
+                <TableCell className="font-bold text-white">{t.pair}</TableCell>
+                <TableCell>
+                  <Badge variant={t.direction === 'BUY' ? 'green' : 'indigo'}>
+                    {t.direction}
+                  </Badge>
+                </TableCell>
+                <TableCell>{t.size}</TableCell>
+                <TableCell>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                    t.result === 'TP' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                    t.result === 'SL' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                    'bg-slate-800 text-slate-400'
+                  }`}>
+                    {t.result}
+                  </span>
+                </TableCell>
+                <TableCell className={`font-bold ${t.pnl && t.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {t.pnl !== null ? `${t.pnl >= 0 ? '+' : ''}$${t.pnl.toFixed(2)}` : 'OPEN'}
+                </TableCell>
+              </TableRow>
+            ))}
+          </Table>
+
+          {m.recentTrades.length === 0 && (
+            <div className="text-center py-6 text-slate-500 text-xs font-medium">
+              Aucun trade récent enregistré.
+            </div>
+          )}
+        </div>
+
+      </div>
+
     </div>
   );
 };
