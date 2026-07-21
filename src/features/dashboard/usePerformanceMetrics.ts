@@ -139,10 +139,10 @@ export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
       winRate: Number(((data.wins / data.count) * 100).toFixed(1)),
     }));
 
-    // Recent 5 trades
+    // Recent 3 trades
     const recentTrades = [...trades]
       .sort((a, b) => new Date(b.entry_time).getTime() - new Date(a.entry_time).getTime())
-      .slice(0, 5);
+      .slice(0, 3);
 
     return {
       totalTrades: trades.length,

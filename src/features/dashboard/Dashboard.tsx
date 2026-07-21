@@ -319,30 +319,33 @@ export const Dashboard: React.FC = () => {
 
       </div>
 
-      {/* ── NEW SECTION: MONTHLY PERFORMANCE & 5 RECENT TRADES (Zones Libres) ── */}
+      {/* ── NEW SECTION: MONTHLY PERFORMANCE CHART & 3 RECENT TRADES ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Performance par Mois */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-[#6366f1]" />
-            Performance par Mois
-          </h3>
+        {/* Performance par Mois (Graphique) */}
+        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-[#6366f1]" />
+              Performance par Mois ($)
+            </h3>
+          </div>
 
-          <Table headers={['MOIS', 'TRADES', 'WIN RATE', 'NET P&L']}>
-            {m.monthlyPerformance.map((mon, idx) => (
-              <TableRow key={idx}>
-                <TableCell className="font-bold text-white">{mon.month}</TableCell>
-                <TableCell>{mon.count} trades</TableCell>
-                <TableCell className={mon.winRate >= 50 ? 'text-emerald-400 font-semibold' : 'text-red-400 font-semibold'}>
-                  {mon.winRate}%
-                </TableCell>
-                <TableCell className={`font-bold ${mon.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {mon.pnl >= 0 ? '+' : ''}${mon.pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </TableCell>
-              </TableRow>
-            ))}
-          </Table>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={m.monthlyPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+                <Tooltip content={<ChartTooltip />} />
+                <ReferenceLine y={0} stroke="#262833" />
+                <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                  {m.monthlyPerformance.map((entry, index) => (
+                    <Cell key={`cell-mon-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
           {m.monthlyPerformance.length === 0 && (
             <div className="text-center py-6 text-slate-500 text-xs font-medium">
@@ -351,11 +354,11 @@ export const Dashboard: React.FC = () => {
           )}
         </div>
 
-        {/* 5 Trades Récents */}
+        {/* 3 Trades Récents */}
         <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
             <History className="w-4 h-4 text-[#6366f1]" />
-            5 Trades Récents
+            3 Trades Récents
           </h3>
 
           <Table headers={['PAIRE', 'DIRECTION', 'LOTS', 'RESULT', 'P&L']}>
