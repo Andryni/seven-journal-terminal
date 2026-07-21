@@ -226,23 +226,23 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '3px' }}>SEVEN</span>
-            <span style={{ fontSize: '16px', fontWeight: 900, color: '#0075ff', letterSpacing: '3px' }}>JOURNAL</span>
+            <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>SEVEN</span>
+            <span style={{ fontSize: '16px', fontWeight: 900, color: '#818cf8', letterSpacing: '2px' }}>TRACKING</span>
           </div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 600 }}>
             {periodEmoji[period]} {stats.periodLabel}
           </div>
         </div>
         <div style={{
-          background: 'rgba(0,117,255,0.1)', border: '1px solid rgba(0,117,255,0.3)',
-          borderRadius: '10px', padding: '8px 14px',
+          background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)',
+          borderRadius: '12px', padding: '8px 14px',
           display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-end',
         }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '1px', lineHeight: 1.2 }}>
+          <div style={{ fontSize: '11px', fontWeight: 800, color: '#fff', letterSpacing: '1px', lineHeight: 1.2 }}>
             {account ? account.name.toUpperCase() : 'TOUS LES COMPTES'}
           </div>
           {account && (
-            <div style={{ fontSize: '9px', fontWeight: 600, color: '#0075ff', letterSpacing: '1px', marginTop: '2px', lineHeight: 1 }}>
+            <div style={{ fontSize: '9px', fontWeight: 700, color: '#818cf8', letterSpacing: '1px', marginTop: '2px', lineHeight: 1 }}>
               {account.type.toUpperCase()}
             </div>
           )}
@@ -503,109 +503,100 @@ export const ShareModal: React.FC<ShareModalProps> = ({ onClose }) => {
   ];
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999] p-4 overflow-y-auto">
-      <div className="bg-[#0a1035] border border-white/10 rounded-[24px] w-full max-w-3xl shadow-2xl">
+    <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-[9999] p-4 overflow-y-auto backdrop-blur-sm animate-scale-up">
+      <div className="bg-[#181920] border border-[#262833] rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden">
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/5">
+        <div className="flex items-center justify-between p-6 border-b border-[#262833]">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-[#0075ff]/10 border border-[#0075ff]/20 flex items-center justify-center">
-              <Camera className="w-4 h-4 text-[#0075ff]" />
+            <div className="w-10 h-10 rounded-xl bg-[#6366f1]/15 border border-[#6366f1]/30 flex items-center justify-center shadow-indigo-glow">
+              <Camera className="w-5 h-5 text-[#818cf8]" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white uppercase tracking-widest">Partager le Journal</h2>
-              <p className="text-[10px] text-white/30">Génère une image stylée de vos performances</p>
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Partager le Journal</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Génère une image stylée de vos performances pour vos réseaux</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-[#20222c] text-slate-400 hover:text-white transition-all">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 
-          {/* Controls */}
+          {/* Left Controls */}
           <div className="space-y-5">
-            {/* Period */}
+            {/* Period selector */}
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-white/40 block mb-2">Période</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Période</label>
               <div className="grid grid-cols-2 gap-2">
-                {PERIODS.map(({ key, label }) => (
+                {PERIODS.map(p => (
                   <button
-                    key={key}
-                    onClick={() => { setPeriod(key); setPreview(null); }}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
-                      period === key
-                        ? 'border-[#0075ff] bg-[#0075ff]/10 text-[#0075ff]'
-                        : 'border-white/10 text-white/40 hover:border-white/30 hover:text-white'
+                    key={p.key}
+                    onClick={() => { setPeriod(p.key); setPreview(null); }}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                      period === p.key
+                        ? 'bg-[#6366f1] text-white shadow-indigo-glow'
+                        : 'bg-[#121318] border border-[#262833] text-slate-400 hover:text-white hover:border-[#363948]'
                     }`}
                   >
-                    {label}
+                    {p.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Account */}
+            {/* Account selector */}
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-white/40 block mb-2">Compte</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Compte</label>
               <select
                 value={selectedAccountId}
                 onChange={e => { setSelectedAccountId(e.target.value); setPreview(null); }}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#0075ff] transition-colors"
+                className="w-full bg-[#121318] border border-[#262833] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#6366f1] transition-all cursor-pointer"
               >
                 <option value="all">Tous les comptes</option>
-                {accounts.map(a => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
+                {accounts.map(acc => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.name} ({acc.type})
+                  </option>
                 ))}
               </select>
             </div>
 
-            {/* Stats preview */}
-            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-2">
-              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3">Aperçu des données</p>
+            {/* Stats preview info */}
+            <div className="bg-[#121318] border border-[#262833] rounded-xl p-4 space-y-2">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aperçu des données</div>
               <div className="grid grid-cols-2 gap-2 text-xs">
+                <div><span className="text-slate-500">Période :</span> <span className="font-semibold text-white">{stats.periodLabel}</span></div>
+                <div><span className="text-slate-500">Trades :</span> <span className="font-semibold text-white">{stats.tradeCount}</span></div>
                 <div>
-                  <span className="text-white/40">Période :</span>{' '}
-                  <span className="text-white font-mono">{stats.periodLabel}</span>
-                </div>
-                <div>
-                  <span className="text-white/40">Trades :</span>{' '}
-                  <span className="text-white font-bold">{stats.tradeCount}</span>
-                </div>
-                <div>
-                  <span className="text-white/40">P&L :</span>{' '}
-                  <span className={`font-bold ${stats.totalPnl >= 0 ? 'text-[#01b574]' : 'text-red-400'}`}>
-                    {stats.totalPnl >= 0 ? '+' : ''}{stats.totalPnl.toFixed(2)}$
+                  <span className="text-slate-500">P&L :</span>{' '}
+                  <span className={`font-bold ${stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {stats.totalPnl >= 0 ? '+' : ''}${stats.totalPnl.toFixed(2)}
                   </span>
                 </div>
-                <div>
-                  <span className="text-white/40">Win Rate :</span>{' '}
-                  <span className="text-white font-bold">{stats.winRate.toFixed(1)}%</span>
-                </div>
+                <div><span className="text-slate-500">Win Rate :</span> <span className="font-semibold text-white">{stats.winRate.toFixed(1)}%</span></div>
               </div>
             </div>
 
-            {/* Buttons */}
-            <div className="space-y-2">
+            {/* Actions */}
+            <div className="space-y-2 pt-1">
               <button
                 onClick={handleCapture}
                 disabled={isCapturing}
-                className="w-full bg-[#0075ff] hover:bg-[#0060cc] text-white font-bold text-xs py-3 rounded-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="w-full py-3 bg-[#6366f1] hover:bg-[#4f46e5] disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center space-x-2 shadow-indigo-glow transition-all active:scale-[0.98]"
               >
-                {isCapturing ? (
-                  <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Génération...</span></>
-                ) : (
-                  <><Share2 className="w-4 h-4" /><span>GÉNÉRER L'IMAGE</span></>
-                )}
+                <Share2 className="w-4 h-4" />
+                <span>{isCapturing ? 'Génération en cours...' : "Générer l'image"}</span>
               </button>
+
               {preview && (
                 <button
                   onClick={handleDownload}
-                  className="w-full border border-[#01b574]/40 bg-[#01b574]/10 text-[#01b574] font-bold text-xs py-3 rounded-xl transition-all flex items-center justify-center space-x-2 hover:bg-[#01b574]/20"
+                  className="w-full py-3 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center space-x-2 transition-all active:scale-[0.98]"
                 >
                   <Download className="w-4 h-4" />
-                  <span>TÉLÉCHARGER EN PNG</span>
+                  <span>Télécharger en PNG</span>
                 </button>
               )}
             </div>

@@ -1090,56 +1090,59 @@ export const Trades: React.FC = () => {
 
       {/* DETAIL MODAL POPUP */}
       {viewingTrade && createPortal(
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[9999] font-mono">
-          <div className="bg-bloomberg-surface border border-bloomberg-border w-full max-w-2xl p-6 relative rounded-sm max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-[9999] overflow-y-auto backdrop-blur-sm animate-scale-up">
+          <div className="bg-[#181920] border border-[#262833] w-full max-w-2xl p-6 relative rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => setViewingTrade(null)} 
-              className="absolute top-4 right-4 text-bloomberg-text-secondary hover:text-white"
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-sm font-extrabold uppercase text-bloomberg-gold tracking-widest border-b border-bloomberg-border pb-2 mb-4">
-              DÉTAIL DU POSITIONNEMENT: {viewingTrade.pair} ({viewingTrade.direction})
-            </h3>
+            <div className="flex items-center gap-2 border-b border-[#262833] pb-3 mb-5">
+              <div className="w-1 h-5 bg-[#6366f1] rounded-full" />
+              <h3 className="text-sm font-bold uppercase text-white tracking-wider">
+                DÉTAIL DU POSITIONNEMENT: <span className="text-[#818cf8]">{viewingTrade.pair}</span> ({viewingTrade.direction})
+              </h3>
+            </div>
 
             <div className="grid grid-cols-2 gap-6 text-xs mb-6">
               <div className="space-y-1">
-                <div className="flex justify-between border-b border-bloomberg-border pb-1">
-                  <span className="text-bloomberg-text-secondary">Date d'Entrée:</span>
-                  <span className="text-white">{new Date(viewingTrade.entry_time).toLocaleString('fr-FR')}</span>
+                <div className="flex justify-between border-b border-[#262833] pb-2">
+                  <span className="text-slate-400">Date d'Entrée:</span>
+                  <span className="text-white font-medium">{new Date(viewingTrade.entry_time).toLocaleString('fr-FR')}</span>
                 </div>
-                <div className="flex justify-between border-b border-bloomberg-border pb-1">
-                  <span className="text-bloomberg-text-secondary">Timeframe:</span>
+                <div className="flex justify-between border-b border-[#262833] pb-2">
+                  <span className="text-slate-400">Timeframe:</span>
                   <span className="text-white font-bold">{viewingTrade.timeframe}</span>
                 </div>
-                <div className="flex justify-between border-b border-bloomberg-border pb-1">
-                  <span className="text-bloomberg-text-secondary">Session de Trading:</span>
-                  <span className="text-bloomberg-gold font-bold">{viewingTrade.session || '—'}</span>
+                <div className="flex justify-between border-b border-[#262833] pb-2">
+                  <span className="text-slate-400">Session de Trading:</span>
+                  <span className="text-[#818cf8] font-bold">{viewingTrade.session || '—'}</span>
                 </div>
-                <div className="flex justify-between border-b border-bloomberg-border pb-1">
-                  <span className="text-bloomberg-text-secondary">Volume:</span>
-                  <span className="text-white">{viewingTrade.size} Lots</span>
+                <div className="flex justify-between border-b border-[#262833] pb-2">
+                  <span className="text-slate-400">Volume:</span>
+                  <span className="text-white font-medium">{viewingTrade.size} Lots</span>
                 </div>
-                <div className="flex justify-between border-b border-bloomberg-border pb-1">
-                  <span className="text-bloomberg-text-secondary">Entrée / SL / TP:</span>
-                  <span className="text-white">{viewingTrade.entry_price} / {viewingTrade.stop_loss} / {viewingTrade.take_profit}</span>
+                <div className="flex justify-between border-b border-[#262833] pb-2">
+                  <span className="text-slate-400">Entrée / SL / TP:</span>
+                  <span className="text-white font-mono">{viewingTrade.entry_price} / {viewingTrade.stop_loss} / {viewingTrade.take_profit}</span>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <div className="flex justify-between border-b border-bloomberg-border pb-1">
-                  <span className="text-bloomberg-text-secondary">Statut du Trade:</span>
+                <div className="flex justify-between border-b border-[#262833] pb-2">
+                  <span className="text-slate-400">Statut du Trade:</span>
                   <span className="text-white font-bold">{viewingTrade.result}</span>
                 </div>
-                <div className="flex justify-between border-b border-bloomberg-border pb-1">
-                  <span className="text-bloomberg-text-secondary">R-Multiple Moyen:</span>
+                <div className="flex justify-between border-b border-[#262833] pb-2">
+                  <span className="text-slate-400">R-Multiple Moyen:</span>
                   <span className="text-white font-bold">{viewingTrade.r_multiple !== null ? `${viewingTrade.r_multiple} R` : '—'}</span>
                 </div>
-                <div className="flex justify-between border-b border-bloomberg-border pb-1">
-                  <span className="text-bloomberg-text-secondary">P&L Net:</span>
-                  <span className={`font-bold ${viewingTrade.pnl && viewingTrade.pnl >= 0 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
-                    {viewingTrade.pnl !== null ? `${viewingTrade.pnl >= 0 ? '+' : ''}${viewingTrade.pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'OPEN'}
+                <div className="flex justify-between border-b border-[#262833] pb-2">
+                  <span className="text-slate-400">P&L Net:</span>
+                  <span className={`font-bold tabular-nums ${viewingTrade.pnl && viewingTrade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {viewingTrade.pnl !== null ? `${viewingTrade.pnl >= 0 ? '+' : ''}$${viewingTrade.pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'OPEN'}
                   </span>
                 </div>
               </div>
@@ -1147,12 +1150,12 @@ export const Trades: React.FC = () => {
 
             {/* Confirmations techniques SMC */}
             <div className="space-y-2 mb-6">
-              <h4 className="text-[10px] font-bold text-bloomberg-gold uppercase tracking-wider">Confirmations Techniques SMC/ICT</h4>
-              <div className="flex flex-wrap gap-1.5">
-                {viewingTrade.setup_structures.map(s => <span key={s} className="bg-bloomberg-border border border-bloomberg-border px-2 py-0.5 rounded text-[10px] text-white font-bold">{s}</span>)}
-                {viewingTrade.setup_ob && <span className="bg-bloomberg-border border border-bloomberg-border px-2 py-0.5 rounded text-[10px] text-white">ORDER BLOCK</span>}
-                {viewingTrade.setup_fvg && <span className="bg-bloomberg-border border border-bloomberg-border px-2 py-0.5 rounded text-[10px] text-white">FAIR VALUE GAP (FVG)</span>}
-                {viewingTrade.setup_liquidity_sweep && <span className="bg-bloomberg-border border border-bloomberg-border px-2 py-0.5 rounded text-[10px] text-white">LIQUIDITY SWEEP</span>}
+              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Confirmations Techniques SMC/ICT</h4>
+              <div className="flex flex-wrap gap-2">
+                {viewingTrade.setup_structures.map(s => <span key={s} className="bg-[#121318] border border-[#262833] px-2.5 py-1 rounded-lg text-xs text-white font-semibold">{s}</span>)}
+                {viewingTrade.setup_ob && <span className="bg-[#121318] border border-[#262833] px-2.5 py-1 rounded-lg text-xs text-white font-semibold">ORDER BLOCK</span>}
+                {viewingTrade.setup_fvg && <span className="bg-[#121318] border border-[#262833] px-2.5 py-1 rounded-lg text-xs text-white font-semibold">FAIR VALUE GAP (FVG)</span>}
+                {viewingTrade.setup_liquidity_sweep && <span className="bg-[#121318] border border-[#262833] px-2.5 py-1 rounded-lg text-xs text-white font-semibold">LIQUIDITY SWEEP</span>}
               </div>
             </div>
 
