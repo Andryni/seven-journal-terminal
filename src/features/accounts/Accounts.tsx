@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { useAccounts } from './useAccounts';
 import type { TradingAccount } from './useAccounts';
 import { useTrades } from '../trades/useTrades';
-import { Button } from '../../components/ui/Button';
 import { Input, Select } from '../../components/ui/Input';
 import { Plus, AlertCircle, Trash2, Edit3, TrendingUp, DollarSign, Wallet, CheckCircle, X } from 'lucide-react';
 
@@ -117,47 +116,46 @@ export const Accounts: React.FC = () => {
     <div className="space-y-6">
       
       {/* PAGE HEADER */}
-      <div className="flex items-center justify-between border-b border-bloomberg-border pb-4">
+      <div className="flex items-center justify-between border-b border-[#262833] pb-4">
         <div>
-          <h2 className="text-sm font-extrabold uppercase tracking-widest text-white">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-white">
             COMPTES DE TRADING
           </h2>
-          <p className="text-[10px] text-bloomberg-text-secondary">
-            Gérez vos différents portefeuilles Prop Firms (Challenge, Funded) et comptes personnels
+          <p className="text-xs text-slate-400 mt-0.5">
+            Gérez vos portefeuilles Prop Firms (Challenge, Funded) et comptes personnels
           </p>
         </div>
-        <Button 
-          variant="outline" 
+        <button 
           onClick={() => setShowAddForm(true)}
-          className="flex items-center space-x-1.5"
+          className="flex items-center space-x-2 bg-[#6366f1] hover:bg-[#4f46e5] text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-indigo-glow transition-all active:scale-[0.98]"
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span>AJOUTER UN COMPTE</span>
-        </Button>
+          <Plus className="w-4 h-4" />
+          <span>Ajouter un compte</span>
+        </button>
       </div>
 
       {/* MODAL FORMULAIRE COMPTE — STYLE BLOOMBERG */}
       {showAddForm && createPortal(
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[9999] font-mono overflow-y-auto">
-          <div className="bg-bloomberg-surface border border-bloomberg-border w-full max-w-xl p-6 relative rounded-sm my-8">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[9999] overflow-y-auto backdrop-blur-sm animate-scale-up">
+          <div className="bg-[#181920] border border-[#262833] w-full max-w-xl p-6 relative rounded-2xl shadow-2xl my-8">
             {/* Header */}
             <button
               type="button"
               onClick={handleCancelEdit}
-              className="absolute top-4 right-4 text-bloomberg-text-secondary hover:text-white transition-colors"
+              className="absolute top-5 right-5 text-slate-400 hover:text-white transition-colors p-1"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="border-b border-bloomberg-border pb-4 mb-6">
+            <div className="border-b border-[#262833] pb-4 mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-0.5 h-6 bg-bloomberg-gold" />
+                <div className="w-1 h-6 bg-[#6366f1] rounded-full" />
                 <div>
-                  <h2 className="text-xs font-extrabold tracking-widest text-white uppercase">
-                    {editingAccount ? '— MODIFIER LE COMPTE —' : '— NOUVEAU COMPTE —'}
+                  <h2 className="text-sm font-bold tracking-wider text-white uppercase">
+                    {editingAccount ? 'Modifier le compte' : 'Nouveau compte'}
                   </h2>
-                  <p className="text-[10px] text-bloomberg-text-muted mt-0.5">
-                    {editingAccount ? `Édition : ${editingAccount.name.toUpperCase()}` : 'Prop Firm / Compte Personnel / Demo'}
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {editingAccount ? `Édition : ${editingAccount.name}` : 'Prop Firm / Compte Personnel / Demo'}
                   </p>
                 </div>
               </div>

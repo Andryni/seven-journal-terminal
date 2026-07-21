@@ -46,15 +46,26 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
       <aside className="w-64 bg-[#121318] border-r border-[#262833] hidden md:flex flex-col shrink-0 z-20">
         
         {/* Logo Seven Tracking */}
-        <div className="h-16 px-6 flex items-center gap-3 border-b border-[#262833]">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#4f46e5] flex items-center justify-center shadow-indigo-glow">
-            <BarChart3 className="w-4.5 h-4.5 text-white" />
+        <div className="h-16 px-5 flex items-center gap-3 border-b border-[#262833] bg-[#121318]/50 backdrop-blur-md">
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#6366f1] to-[#10b981] rounded-xl blur opacity-50 group-hover:opacity-100 transition duration-300 animate-pulse-glow" />
+            <img 
+              src="/assets/seven_tracking_logo.png" 
+              alt="Seven Tracking Logo" 
+              className="relative w-9 h-9 rounded-xl object-cover border border-[#262833] shadow-md group-hover:scale-105 transition-transform duration-300"
+            />
           </div>
           <div>
             <div className="text-sm font-black tracking-tight text-white flex items-center gap-1">
-              SEVEN<span className="text-[#6366f1]">TRACKING</span>
+              <span className="tracking-wider">SEVEN</span>
+              <span className="bg-gradient-to-r from-[#6366f1] via-[#818cf8] to-[#10b981] bg-clip-text text-transparent font-black tracking-widest animate-shimmer">
+                TRACKING
+              </span>
             </div>
-            <div className="text-[10px] font-medium text-slate-400">Journal & Analytics</div>
+            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              Journal & Analytics
+            </div>
           </div>
         </div>
 
