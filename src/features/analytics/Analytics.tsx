@@ -110,15 +110,20 @@ export const Analytics: React.FC = () => {
   );
 
   // ── Equity curve + Drawdown ────────────────────────────────────────────────
+  const initialBalance = useMemo(() => {
+    return 10000; // Capital de départ standard Prop Firm ($10,000)
+  }, []);
+
   const equityCurve = useMemo(() => {
     const sorted = [...closed].sort(
       (a, b) => new Date(a.exit_time).getTime() - new Date(b.exit_time).getTime()
     );
-    let cum = 0, peak = 0;
+    let cum = 0, peak = initialBalance;
     return sorted.map((t, i) => {
       cum += t.pnl;
-      if (cum > peak) peak = cum;
-      const dd = peak > 0 ? ((cum - peak) / peak) * 100 : 0;
+      const currentBalance = initialBalance + cum;
+      if (currentBalance > peak) peak = currentBalance;
+      const dd = ((currentBalance - peak) / peak) * 100;
       return {
         i: i + 1,
         date: new Date(t.exit_time).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
@@ -127,7 +132,7 @@ export const Analytics: React.FC = () => {
         trade_pnl: Number(t.pnl.toFixed(2)),
       };
     });
-  }, [closed]);
+  }, [closed, initialBalance]);
 
   const maxDrawdown = useMemo(() => Math.min(0, ...equityCurve.map(e => e.drawdown)), [equityCurve]);
   const netPnL = useMemo(() => closed.reduce((s, t) => s + t.pnl, 0), [closed]);
@@ -981,13 +986,13 @@ export const Analytics: React.FC = () => {
 
             <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-2">
               <span className="text-xs font-semibold text-slate-400">Consistency Score Prop Firm</span>
-              <div className={`text-2xl font-bold tabular-nums ${netPnL > 0 && (winTrades.length > 0 ? (Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100 : 0) > 15 ? 'text-red-400' : 'text-emerald-400'}`}>
-                {netPnL > 0 && winTrades.length > 0 ? ((Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100).toFixed(1) : 0}%
+              <div className={`text-2xl font-bold tabular-nums ${netPnL > 0 && winTrades.length > 0 && (Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100 > 15 ? 'text-[#818cf8]' : 'text-emerald-400'}`}>
+                {netPnL > 0 && winTrades.length > 0 ? Math.min(((Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100), 100).toFixed(1) : '0.0'}%
               </div>
               <div className="text-[10px] text-slate-500 font-medium">
                 {netPnL > 0 && winTrades.length > 0 && (Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100 > 15
-                  ? '⚠️ Alerte : Votre meilleur jour représente >15% du profit total (Regle de consistance prop firm)'
-                  : '✓ Respect de la règle de régularité (Pas de jour >15%)'}
+                  ? 'ℹ️ Conseil : Votre meilleur jour représente la majorité de vos gains cumulés actuel'
+                  : '✓ Excellente répartition des profits sur l\'ensemble des jours'}
               </div>
             </div>
           </div>
