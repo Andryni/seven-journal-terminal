@@ -22,17 +22,6 @@ import {
 } from 'lucide-react';
 import { ShareButton } from '../../components/share/ShareCard';
 
-// ─── KPI tile ─────────────────────────────────────────────────────────────────
-const KpiTile = ({ label, value, sub, positive }: { label: string; value: string; sub?: string; positive?: boolean }) => (
-  <div className="bg-[#181920] border border-[#262833] p-4 rounded-xl hover:border-[#363948] transition-all">
-    <div className="text-xs font-semibold text-slate-400 mb-1">{label}</div>
-    <div className={`text-xl font-bold tabular-nums ${positive === undefined ? 'text-white' : positive ? 'text-emerald-400' : 'text-red-400'}`}>
-      {value}
-    </div>
-    {sub && <div className="text-[11px] text-slate-500 font-medium mt-1">{sub}</div>}
-  </div>
-);
-
 // ─── Empty state ──────────────────────────────────────────────────────────────
 const Empty = () => (
   <div className="h-[200px] flex flex-col items-center justify-center text-slate-500 text-xs font-medium space-y-2">
@@ -453,57 +442,211 @@ export const Analytics: React.FC = () => {
 
       {/* ── TAB: VUE D'ENSEMBLE ───────────────────────────────────────────── */}
       {activeTab === 'overview' && (
-        <div className="space-y-5">
-          {/* KPI grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <KpiTile label="Win Rate" value={`${winRate.toFixed(1)}%`} sub={`${winTrades.length}W / ${lossTrades.length}L`} positive={winRate >= 50} />
-            <KpiTile label="Profit Factor" value={profitFactor.toFixed(2)} sub="Seuil viable ≥ 1.5" positive={profitFactor >= 1.5} />
-            <KpiTile label="Avg R-Multiple" value={`${avgR >= 0 ? '+' : ''}${avgR.toFixed(2)}R`} positive={avgR >= 0} />
-            <KpiTile label="Expectancy / Trade" value={`$${expectancy.toFixed(2)}`} positive={expectancy >= 0} />
-            <KpiTile label="Max Drawdown" value={`${maxDrawdown.toFixed(1)}%`} positive={maxDrawdown > -10} />
-            <KpiTile label="Streak actuel" value={`${streakData.cur} ${streakData.curType}`} positive={streakData.curType === 'W'} />
-          </div>
+        <div className="space-y-6">
+          
+          {/* TOP 3 FINTECH CHART CARDS (Win Rate Gauge, Profit Factor & Expectancy Bar, Win/Loss Comparison) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            
+            {/* 1. RADIAL WIN RATE GAUGE CHART */}
+            <div className="bg-[#181920] border border-[#262833] rounded-2xl p-5 hover:border-[#363948] transition-all flex flex-col justify-between">
+              <div className="flex items-center justify-between border-b border-[#262833] pb-3 mb-2">
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <PieChart className="w-4 h-4 text-[#818cf8]" />
+                  <span>RÉPARTITION WIN / LOSS</span>
+                </span>
+                <span className={`text-xs font-extrabold px-2 py-0.5 rounded-lg ${winRate >= 50 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                  {winRate.toFixed(1)}% WR
+                </span>
+              </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <KpiTile label="Avg Win" value={`+$${avgWin.toFixed(0)}`} positive={true} />
-            <KpiTile label="Avg Loss" value={`-$${avgLoss.toFixed(0)}`} positive={false} />
-            <KpiTile label="Meilleure série W" value={`${streakData.bestWin} gains`} positive={true} />
-            <KpiTile label="Pire série L" value={`${streakData.worstLoss} pertes`} positive={false} />
-            <KpiTile label="Total trades" value={`${trades.length}`} />
-            <KpiTile label="P&L / Mois" value={monthlyData.length > 0 ? `$${(netPnL / Math.max(monthlyData.length, 1)).toFixed(0)}` : '—'} positive={netPnL >= 0} />
-          </div>
-
-          {/* Monthly P&L bar */}
-          <Card title="P&L MENSUEL (CUMULÉ MENSUEL)" headerAction={<Flame className="w-3.5 h-3.5 text-bloomberg-gold" />}>
-            {monthlyData.length > 0 ? (
-              <div className="h-[200px]">
+              <div className="h-[150px] relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="glowWin" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
-                        <stop offset="100%" stopColor="#059669" stopOpacity={0.2} />
-                      </linearGradient>
-                      <linearGradient id="glowLoss" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8} />
-                        <stop offset="100%" stopColor="#b91c1c" stopOpacity={0.2} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="month" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
-                    <YAxis stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={42}
+                      outerRadius={58}
+                      startAngle={180}
+                      endAngle={0}
+                      dataKey="value"
+                      paddingAngle={4}
+                    >
+                      <Cell fill="#10b981" />
+                      <Cell fill="#ef4444" />
+                    </Pie>
                     <Tooltip content={<AnalyticsTooltip />} />
-                    <ReferenceLine y={0} stroke="#3f3f46" />
-                    <Bar dataKey="pnl" name="P&L">
-                      {monthlyData.map((d, i) => (
-                        <Cell key={i} fill={d.pnl >= 0 ? 'url(#glowWin)' : 'url(#glowLoss)'} />
-                      ))}
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute top-[55%] text-center transform -translate-y-1/2">
+                  <div className="text-xl font-extrabold text-white tabular-nums">{winTrades.length}W - {lossTrades.length}L</div>
+                  <div className="text-[10px] text-slate-400 font-medium">Ratio Gagnants/Perdants</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-center text-xs pt-2 border-t border-[#262833]">
+                <div className="bg-[#121318] p-2 rounded-xl">
+                  <span className="text-slate-400 block text-[10px]">Gain Moyen</span>
+                  <span className="font-bold text-emerald-400 tabular-nums">+${avgWin.toFixed(0)}</span>
+                </div>
+                <div className="bg-[#121318] p-2 rounded-xl">
+                  <span className="text-slate-400 block text-[10px]">Perte Moyenne</span>
+                  <span className="font-bold text-red-400 tabular-nums">-${avgLoss.toFixed(0)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. PROFIT FACTOR & EXPECTANCY CHART */}
+            <div className="bg-[#181920] border border-[#262833] rounded-2xl p-5 hover:border-[#363948] transition-all flex flex-col justify-between">
+              <div className="flex items-center justify-between border-b border-[#262833] pb-3 mb-2">
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-[#818cf8]" />
+                  <span>PROFIT FACTOR & EXPECTANCY</span>
+                </span>
+                <span className="text-xs font-extrabold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-lg border border-indigo-500/20">
+                  PF: {profitFactor.toFixed(2)}
+                </span>
+              </div>
+
+              <div className="h-[150px] flex items-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={[
+                    { name: 'Avg Win', amount: avgWin, fill: '#10b981' },
+                    { name: 'Expectancy', amount: Math.max(expectancy, 0), fill: '#818cf8' },
+                    { name: 'Avg Loss', amount: avgLoss, fill: '#ef4444' },
+                  ]} layout="vertical" margin={{ left: 10, right: 20 }}>
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" stroke="#94a3b8" tick={{ fontSize: 10, fontFamily: 'sans-serif' }} axisLine={false} tickLine={false} width={75} />
+                    <Tooltip content={<AnalyticsTooltip />} />
+                    <Bar dataKey="amount" radius={[0, 8, 8, 0]} barSize={16}>
+                      {[
+                        <Cell key="0" fill="#10b981" />,
+                        <Cell key="1" fill="#818cf8" />,
+                        <Cell key="2" fill="#ef4444" />,
+                      ]}
                     </Bar>
-                    <Line type="monotone" dataKey="winRate" name="Win% (ligne)" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2, fill: '#f59e0b' }} yAxisId={0} />
-                  </ComposedChart>
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
-            ) : <Empty />}
-          </Card>
+
+              <div className="bg-[#121318] p-2.5 rounded-xl flex items-center justify-between text-xs">
+                <span className="text-slate-400 text-[11px]">Espérance Mathématique :</span>
+                <span className={`font-bold tabular-nums ${expectancy >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {expectancy >= 0 ? '+' : ''}${expectancy.toFixed(2)} / trade
+                </span>
+              </div>
+            </div>
+
+            {/* 3. STREAKS & DRAWDOWN PROGRESS CHART */}
+            <div className="bg-[#181920] border border-[#262833] rounded-2xl p-5 hover:border-[#363948] transition-all flex flex-col justify-between">
+              <div className="flex items-center justify-between border-b border-[#262833] pb-3 mb-2">
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-amber-400" />
+                  <span>SÉRIES & DRAWDOWN MAX</span>
+                </span>
+                <span className={`text-xs font-extrabold px-2 py-0.5 rounded-lg ${streakData.curType === 'W' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                  Streak: {streakData.cur}{streakData.curType}
+                </span>
+              </div>
+
+              <div className="space-y-3 my-auto">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-slate-400">Meilleure Série de Wins</span>
+                    <span className="text-emerald-400 font-bold">{streakData.bestWin} Gains consécutifs</span>
+                  </div>
+                  <div className="w-full bg-[#121318] h-2 rounded-full overflow-hidden border border-[#262833]">
+                    <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${Math.min((streakData.bestWin / 10) * 100, 100)}%` }} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-slate-400">Pire Série de Losses</span>
+                    <span className="text-red-400 font-bold">{streakData.worstLoss} Pertes consécutives</span>
+                  </div>
+                  <div className="w-full bg-[#121318] h-2 rounded-full overflow-hidden border border-[#262833]">
+                    <div className="bg-red-400 h-full rounded-full" style={{ width: `${Math.min((streakData.worstLoss / 10) * 100, 100)}%` }} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-slate-400">Max Drawdown subi</span>
+                    <span className="text-amber-400 font-bold">{maxDrawdown.toFixed(2)}%</span>
+                  </div>
+                  <div className="w-full bg-[#121318] h-2 rounded-full overflow-hidden border border-[#262833]">
+                    <div className="bg-amber-400 h-full rounded-full" style={{ width: `${Math.min((Math.abs(maxDrawdown) / 10) * 100, 100)}%` }} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-[#121318] p-2.5 rounded-xl flex items-center justify-between text-xs">
+                <span className="text-slate-400 text-[11px]">R-Multiple Moyen :</span>
+                <span className={`font-bold tabular-nums ${avgR >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {avgR >= 0 ? '+' : ''}{avgR.toFixed(2)}R
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* R-MULTIPLE HISTOGRAM SPARKBAR & MONTHLY P&L */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* R-DISTRIBUTION HISTOGRAM */}
+            <Card className="lg:col-span-1" title="DISTRIBUTION DES R-MULTIPLES" headerAction={<BarChart3 className="w-4 h-4 text-[#818cf8]" />}>
+              {rDistribution.length > 0 ? (
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={rDistribution} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                      <XAxis dataKey="bucket" stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                      <YAxis stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                      <Tooltip content={<AnalyticsTooltip />} />
+                      <Bar dataKey="count" name="Nombre de trades">
+                        {rDistribution.map((d, i) => (
+                          <Cell key={i} fill={d.positive ? '#10b981' : '#ef4444'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : <Empty />}
+            </Card>
+
+            {/* Monthly P&L COMPOSED CHART */}
+            <Card className="lg:col-span-2" title="P&L MENSUEL ET WIN RATE CUMULÉ" headerAction={<Flame className="w-4 h-4 text-amber-400" />}>
+              {monthlyData.length > 0 ? (
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="glowWin" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                          <stop offset="100%" stopColor="#059669" stopOpacity={0.2} />
+                        </linearGradient>
+                        <linearGradient id="glowLoss" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8} />
+                          <stop offset="100%" stopColor="#b91c1c" stopOpacity={0.2} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="month" stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                      <YAxis stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                      <Tooltip content={<AnalyticsTooltip />} />
+                      <ReferenceLine y={0} stroke="#52525b" />
+                      <Bar dataKey="pnl" name="P&L ($)">
+                        {monthlyData.map((d, i) => (
+                          <Cell key={i} fill={d.pnl >= 0 ? 'url(#glowWin)' : 'url(#glowLoss)'} />
+                        ))}
+                      </Bar>
+                      <Line type="monotone" dataKey="winRate" name="WinRate (%)" stroke="#818cf8" strokeWidth={2} dot={{ r: 3, fill: '#818cf8' }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : <Empty />}
+            </Card>
+          </div>
+
         </div>
       )}
 
