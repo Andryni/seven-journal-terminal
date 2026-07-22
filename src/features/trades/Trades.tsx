@@ -48,6 +48,7 @@ export const Trades: React.FC = () => {
   // Form State
   const [accountId, setAccountId] = useState('');
   const [pair, setPair] = useState('XAUUSD');
+  const [entryDate, setEntryDate] = useState(() => new Date().toISOString().slice(0, 16));
   const [direction, setDirection] = useState<'BUY' | 'SELL'>('BUY');
   const [entryPrice, setEntryPrice] = useState('');
   const [exitPrice, setExitPrice] = useState('');
@@ -87,18 +88,11 @@ export const Trades: React.FC = () => {
   const [riskType, setRiskType] = useState<'percent' | 'usd'>('percent');
   const [riskValue, setRiskValue] = useState('');
 
-  // SMC confirmations
+  // SMC confirmations (BOS, OB, FVG, Liquidity Sweep)
   const [bos, setBos] = useState(false);
-  const [choch, setChoch] = useState(false);
   const [fvg, setFvg] = useState(false);
   const [ob, setOb] = useState(false);
   const [liquiditySweep, setLiquiditySweep] = useState(false);
-
-  // Bookmap
-  const [absorption, setAbsorption] = useState('');
-  const [passiveOrders, setPassiveOrders] = useState('');
-  const [aggressiveOrders, setAggressiveOrders] = useState('');
-  const [vwapPosition, setVwapPosition] = useState<'above' | 'below' | 'at' | ''>('');
 
   // Goggins / Mental
   const [mentalState, setMentalState] = useState<'focused' | 'anxious' | 'greedy' | 'revenge' | 'fomo' | 'tired'>('focused');
@@ -172,6 +166,12 @@ export const Trades: React.FC = () => {
     setEditingTrade(trade);
     setAccountId(trade.account_id);
     setPair(trade.pair);
+    if (trade.entry_time) {
+      const dt = new Date(trade.entry_time);
+      if (!isNaN(dt.getTime())) {
+        setEntryDate(dt.toISOString().slice(0, 16));
+      }
+    }
     setDirection(trade.direction);
     setEntryPrice(trade.entry_price.toString());
     setExitPrice(trade.exit_price ? trade.exit_price.toString() : '');
@@ -188,14 +188,9 @@ export const Trades: React.FC = () => {
     setScreenshotBeforeType(trade.screenshot_before_url?.startsWith('data:') ? 'file' : 'url');
     setScreenshotAfterType(trade.screenshot_after_url?.startsWith('data:') ? 'file' : 'url');
     setBos(trade.setup_structures.includes('BOS'));
-    setChoch(trade.setup_structures.includes('CHoCH'));
     setOb(trade.setup_ob);
     setFvg(trade.setup_fvg);
     setLiquiditySweep(trade.setup_liquidity_sweep);
-    setVwapPosition(trade.bookmap_vwap_position || '');
-    setAbsorption(trade.bookmap_absorption || '');
-    setPassiveOrders(trade.bookmap_passive_orders || '');
-    setAggressiveOrders(trade.bookmap_aggressive_orders || '');
     setMentalState(trade.mental_state);
     setCookieJar(trade.cookie_jar_ref);
     setRule40(trade.rule_40_percent);
@@ -210,6 +205,7 @@ export const Trades: React.FC = () => {
   };
 
   const clearForm = () => {
+    setEntryDate(new Date().toISOString().slice(0, 16));
     setEntryPrice('');
     setExitPrice('');
     setStopLoss('');
@@ -223,16 +219,11 @@ export const Trades: React.FC = () => {
     setScreenshotAfterType('url');
     setNotes('');
     setBos(false);
-    setChoch(false);
     setFvg(false);
     setOb(false);
     setLiquiditySweep(false);
     setCookieJar(false);
     setRule40(false);
-    setVwapPosition('');
-    setAbsorption('');
-    setPassiveOrders('');
-    setAggressiveOrders('');
     setResult('OPEN');
     setSession('');
     setRiskValue('');
@@ -268,7 +259,8 @@ export const Trades: React.FC = () => {
     // Set structures array
     const setup_structures: string[] = [];
     if (bos) setup_structures.push('BOS');
-    if (choch) setup_structures.push('CHoCH');
+
+    const formattedEntryTime = entryDate ? new Date(entryDate).toISOString() : new Date().toISOString();
 
     const tradeData: any = {
       account_id: accountId,
@@ -279,7 +271,7 @@ export const Trades: React.FC = () => {
       stop_loss: sl,
       take_profit: tp,
       size: lotSize,
-      entry_time: editingTrade ? editingTrade.entry_time : new Date().toISOString(),
+      entry_time: formattedEntryTime,
       exit_time: exit ? (editingTrade?.exit_time || new Date().toISOString()) : null,
       pnl: finalPnl,
       r_multiple: finalRMultiple,
@@ -288,10 +280,10 @@ export const Trades: React.FC = () => {
       setup_fvg: fvg,
       setup_ob: ob,
       setup_liquidity_sweep: liquiditySweep,
-      bookmap_absorption: absorption || null,
-      bookmap_passive_orders: passiveOrders || null,
-      bookmap_aggressive_orders: aggressiveOrders || null,
-      bookmap_vwap_position: vwapPosition ? (vwapPosition as any) : null,
+      bookmap_absorption: null,
+      bookmap_passive_orders: null,
+      bookmap_aggressive_orders: null,
+      bookmap_vwap_position: null,
       mental_state: mentalState,
       cookie_jar_ref: cookieJar,
       rule_40_percent: rule40,
@@ -613,38 +605,47 @@ export const Trades: React.FC = () => {
 
       {showCalculator && <PositionCalculator />}
 
-      {/* NOUVEAU FORMULAIRE EN MODAL STYLE DETAIL */}
+      {/* NOUVEAU FORMULAIRE EN MODAL STYLE TRADEZELLA / SEVEN TRACKING */}
       {showAddForm && createPortal(
-        <div className="fixed inset-0 bg-black/90 flex items-start md:items-center justify-center p-2 sm:p-4 z-[9999] font-mono overflow-y-auto">
-          <div className="bg-bloomberg-surface border border-bloomberg-border w-full max-w-4xl p-4 sm:p-6 relative rounded-sm my-2 md:my-8 max-h-[95vh] md:max-h-none overflow-y-auto">
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-[9999] overflow-y-auto backdrop-blur-sm animate-scale-up">
+          <div className="bg-[#181920] border border-[#262833] w-full max-w-4xl p-6 relative rounded-2xl my-8 max-h-[90vh] overflow-y-auto shadow-2xl">
             <button 
               type="button"
               onClick={handleCancelEdit} 
-              className="absolute top-4 right-4 text-bloomberg-text-secondary hover:text-white z-10"
+              className="absolute top-5 right-5 text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-[#20222c] z-10"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-sm font-extrabold uppercase text-bloomberg-gold tracking-widest border-b border-bloomberg-border pb-2 mb-6">
-              {editingTrade ? "EDITION DU POSITIONNEMENT" : "NOUVELLE SAISIE DE POSITION"}
-            </h3>
+            <div className="flex items-center gap-3 border-b border-[#262833] pb-4 mb-6">
+              <div className="w-2.5 h-6 bg-gradient-to-b from-[#6366f1] to-[#10b981] rounded-full" />
+              <div>
+                <h3 className="text-sm font-extrabold uppercase text-white tracking-wider">
+                  {editingTrade ? "ÉDITION DU TRADE" : "ENREGISTRER UN NOUVEAU TRADE"}
+                </h3>
+                <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                  Renseignez les métriques et configurations pour votre journal Seven Tracking
+                </p>
+              </div>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {(validationError || createError) && (
-                <div className="p-3 bg-bloomberg-red/10 border border-bloomberg-red text-bloomberg-red-light text-xs flex items-center space-x-2">
+                <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl flex items-center space-x-2">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>{validationError || (createError as Error).message}</span>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* SECTION 1: PARAMETRES & METRIQUES */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-bold text-bloomberg-gold uppercase tracking-wider border-b border-bloomberg-border/50 pb-1">
-                    1. Paramètres Principaux
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* SECTION 1: PARAMÈTRES PRINCIPAUX */}
+                <div className="space-y-4 bg-[#121318] p-4 rounded-xl border border-[#262833]">
+                  <h4 className="text-xs font-bold text-[#818cf8] uppercase tracking-wider flex items-center gap-2 border-b border-[#262833] pb-2">
+                    <span className="w-2 h-2 rounded-full bg-[#6366f1]" />
+                    1. Paramètres Principaux & Date
                   </h4>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <Select
                       label="Compte *"
                       value={accountId}
@@ -659,7 +660,16 @@ export const Trades: React.FC = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-400 block">Date & Heure d'entrée *</label>
+                      <input
+                        type="datetime-local"
+                        value={entryDate}
+                        onChange={(e) => setEntryDate(e.target.value)}
+                        className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-xs font-medium text-white focus:outline-none focus:border-[#6366f1] transition-colors"
+                      />
+                    </div>
                     <Select
                       label="Direction *"
                       value={direction}
@@ -669,6 +679,9 @@ export const Trades: React.FC = () => {
                         { value: 'SELL', label: 'SELL / SHORT' },
                       ]}
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <Select
                       label="Timeframe *"
                       value={timeframe}
@@ -682,9 +695,6 @@ export const Trades: React.FC = () => {
                         { value: 'D1', label: 'D1' },
                       ]}
                     />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
                     <Select
                       label="Session *"
                       value={session}
@@ -697,6 +707,9 @@ export const Trades: React.FC = () => {
                         { value: 'Over Session', label: 'OVER SESSION' },
                       ]}
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <Input 
                       label="Volume (Lots) *" 
                       placeholder="1.0" 
@@ -705,9 +718,6 @@ export const Trades: React.FC = () => {
                       type="number" 
                       step="0.01" 
                     />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4">
                     <Input 
                       label="Prix d'entrée *" 
                       placeholder="2350.50" 
@@ -718,7 +728,7 @@ export const Trades: React.FC = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <Input 
                       label="Stop Loss *" 
                       placeholder="2345.00" 
@@ -737,7 +747,7 @@ export const Trades: React.FC = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 border-t border-bloomberg-border/30 pt-4">
+                  <div className="grid grid-cols-2 gap-3 border-t border-[#262833] pt-3">
                     <Select
                       label="Résultat *"
                       value={result}
@@ -759,7 +769,7 @@ export const Trades: React.FC = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <Select
                       label="Risque *"
                       value={riskType}
@@ -779,7 +789,7 @@ export const Trades: React.FC = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <Input 
                       label="Gain en R (Auto/Manuel)" 
                       placeholder="ex: 2.50" 
@@ -799,61 +809,36 @@ export const Trades: React.FC = () => {
                   </div>
                 </div>
 
-                {/* SECTION 2: CONFIRMATIONS & CONTEXTE */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-bold text-bloomberg-gold uppercase tracking-wider border-b border-bloomberg-border/50 pb-1">
-                    2. Contexte & Confirmations
+                {/* SECTION 2: CONTEXTE & CONFIRMATIONS */}
+                <div className="space-y-4 bg-[#121318] p-4 rounded-xl border border-[#262833]">
+                  <h4 className="text-xs font-bold text-[#818cf8] uppercase tracking-wider flex items-center gap-2 border-b border-[#262833] pb-2">
+                    <span className="w-2 h-2 rounded-full bg-[#10b981]" />
+                    2. Contexte & Confirmations SMC / ICT
                   </h4>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-wider text-bloomberg-text-secondary">Structures de Prix SMC/ICT</label>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <label className="flex items-center space-x-2 text-bloomberg-text-primary cursor-pointer">
-                        <input type="checkbox" checked={bos} onChange={(e) => setBos(e.target.checked)} className="rounded border-bloomberg-border bg-bloomberg-bg text-bloomberg-gold focus:ring-0 focus:ring-offset-0" />
-                        <span>BOS</span>
+                    <label className="text-[11px] font-semibold text-slate-400 block">Structures de Prix & Confirmations</label>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <label className="flex items-center space-x-2 text-slate-200 cursor-pointer bg-[#181920] border border-[#262833] p-2 rounded-xl hover:border-[#363948] transition-all">
+                        <input type="checkbox" checked={bos} onChange={(e) => setBos(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
+                        <span className="font-medium">BOS (Break of Structure)</span>
                       </label>
-                      <label className="flex items-center space-x-2 text-bloomberg-text-primary cursor-pointer">
-                        <input type="checkbox" checked={choch} onChange={(e) => setChoch(e.target.checked)} className="rounded border-bloomberg-border bg-bloomberg-bg text-bloomberg-gold focus:ring-0 focus:ring-offset-0" />
-                        <span>CHoCH</span>
+                      <label className="flex items-center space-x-2 text-slate-200 cursor-pointer bg-[#181920] border border-[#262833] p-2 rounded-xl hover:border-[#363948] transition-all">
+                        <input type="checkbox" checked={ob} onChange={(e) => setOb(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
+                        <span className="font-medium">Order Block</span>
                       </label>
-                      <label className="flex items-center space-x-2 text-bloomberg-text-primary cursor-pointer">
-                        <input type="checkbox" checked={ob} onChange={(e) => setOb(e.target.checked)} className="rounded border-bloomberg-border bg-bloomberg-bg text-bloomberg-gold focus:ring-0 focus:ring-offset-0" />
-                        <span>Order Block</span>
+                      <label className="flex items-center space-x-2 text-slate-200 cursor-pointer bg-[#181920] border border-[#262833] p-2 rounded-xl hover:border-[#363948] transition-all">
+                        <input type="checkbox" checked={fvg} onChange={(e) => setFvg(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
+                        <span className="font-medium">Fair Value Gap (FVG)</span>
                       </label>
-                      <label className="flex items-center space-x-2 text-bloomberg-text-primary cursor-pointer">
-                        <input type="checkbox" checked={fvg} onChange={(e) => setFvg(e.target.checked)} className="rounded border-bloomberg-border bg-bloomberg-bg text-bloomberg-gold focus:ring-0 focus:ring-offset-0" />
-                        <span>FVG</span>
-                      </label>
-                      <label className="col-span-2 flex items-center space-x-2 text-bloomberg-text-primary cursor-pointer">
-                        <input type="checkbox" checked={liquiditySweep} onChange={(e) => setLiquiditySweep(e.target.checked)} className="rounded border-bloomberg-border bg-bloomberg-bg text-bloomberg-gold focus:ring-0 focus:ring-offset-0" />
-                        <span>Liquidity Sweep</span>
+                      <label className="flex items-center space-x-2 text-slate-200 cursor-pointer bg-[#181920] border border-[#262833] p-2 rounded-xl hover:border-[#363948] transition-all">
+                        <input type="checkbox" checked={liquiditySweep} onChange={(e) => setLiquiditySweep(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
+                        <span className="font-medium">Liquidity Sweep</span>
                       </label>
                     </div>
                   </div>
 
-                  <div className="space-y-3 pt-2">
-                    <label className="text-[10px] uppercase tracking-wider text-bloomberg-text-secondary">Bookmap Order Flow</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Select
-                        label="Position VWAP"
-                        value={vwapPosition}
-                        onChange={(e) => setVwapPosition(e.target.value as any)}
-                        options={[
-                          { value: '', label: '[ SÉLECTIONNER ]' },
-                          { value: 'above', label: 'AU-DESSUS DU VWAP' },
-                          { value: 'below', label: 'EN DESSOUS DU VWAP' },
-                          { value: 'at', label: 'SUR LE VWAP' },
-                        ]}
-                      />
-                      <Input label="Absorption" placeholder="Ordres bloquants..." value={absorption} onChange={(e) => setAbsorption(e.target.value)} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input label="Liquidités Passives" placeholder="Ordres passifs..." value={passiveOrders} onChange={(e) => setPassiveOrders(e.target.value)} />
-                      <Input label="Ordres Agressifs" placeholder="Market volume..." value={aggressiveOrders} onChange={(e) => setAggressiveOrders(e.target.value)} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 border-t border-bloomberg-border/30 pt-4">
+                  <div className="space-y-3 border-t border-[#262833] pt-3">
                     <div className="grid grid-cols-2 gap-3">
                       <Select
                         label="Psychologie"
@@ -868,15 +853,15 @@ export const Trades: React.FC = () => {
                           { value: 'tired', label: 'TIRED - Fatigué' },
                         ]}
                       />
-                      <div className="space-y-2 pt-2">
-                        <label className="text-[10px] uppercase tracking-wider text-bloomberg-text-secondary">Frameworks</label>
-                        <div className="flex flex-col gap-1.5">
-                          <label className="flex items-center space-x-2 text-xs text-bloomberg-text-primary cursor-pointer">
-                            <input type="checkbox" checked={cookieJar} onChange={(e) => setCookieJar(e.target.checked)} className="rounded border-bloomberg-border bg-bloomberg-bg text-bloomberg-gold focus:ring-0 focus:ring-offset-0" />
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-semibold text-slate-400 block">Frameworks Mentaux</label>
+                        <div className="flex flex-col gap-2 pt-1">
+                          <label className="flex items-center space-x-2 text-xs text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked={cookieJar} onChange={(e) => setCookieJar(e.target.checked)} className="rounded border-[#262833] bg-[#181920] text-[#6366f1] focus:ring-0" />
                             <span>Cookie Jar</span>
                           </label>
-                          <label className="flex items-center space-x-2 text-xs text-bloomberg-text-primary cursor-pointer">
-                            <input type="checkbox" checked={rule40} onChange={(e) => setRule40(e.target.checked)} className="rounded border-bloomberg-border bg-bloomberg-bg text-bloomberg-gold focus:ring-0 focus:ring-offset-0" />
+                          <label className="flex items-center space-x-2 text-xs text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked={rule40} onChange={(e) => setRule40(e.target.checked)} className="rounded border-[#262833] bg-[#181920] text-[#6366f1] focus:ring-0" />
                             <span>40% Rule</span>
                           </label>
                         </div>
@@ -884,16 +869,17 @@ export const Trades: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-3 pt-2">
-                    <h4 className="text-[10px] font-bold text-bloomberg-gold uppercase tracking-wider border-b border-bloomberg-border/30 pb-1 mb-2">
-                      3. Screenshots Graphiques
+                  <div className="space-y-3 pt-3 border-t border-[#262833]">
+                    <h4 className="text-xs font-bold text-[#818cf8] uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#818cf8]" />
+                      3. Screenshots Graphiques TradingView
                     </h4>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {/* SCREENSHOT BEFORE */}
-                      <div className="space-y-2 p-3 bg-black/20 border border-bloomberg-border/40 rounded-sm">
+                      <div className="space-y-2 p-3 bg-[#181920] border border-[#262833] rounded-xl">
                         <div className="flex items-center justify-between">
-                          <label className="text-[10px] uppercase font-bold text-white tracking-wider">Screenshot Avant</label>
+                          <label className="text-[11px] font-semibold text-slate-300">Screenshot Avant</label>
                           <div className="flex gap-1">
                             {(['url', 'file'] as const).map((type) => (
                               <button
@@ -903,10 +889,10 @@ export const Trades: React.FC = () => {
                                   setScreenshotBeforeType(type);
                                   setScreenshotBefore('');
                                 }}
-                                className={`text-[8px] font-bold uppercase px-2 py-0.5 border ${
+                                className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-lg border transition-all ${
                                   screenshotBeforeType === type
-                                    ? 'bg-amber-500/20 border-amber-500 text-amber-400'
-                                    : 'bg-transparent border-[#1a1a1f] text-[#52525b] hover:text-white'
+                                    ? 'bg-[#6366f1]/20 border-[#6366f1] text-[#818cf8]'
+                                    : 'bg-transparent border-[#262833] text-slate-400 hover:text-slate-200'
                                 }`}
                               >
                                 {type === 'url' ? 'Lien URL' : 'Fichier'}
@@ -927,11 +913,11 @@ export const Trades: React.FC = () => {
                               type="file" 
                               accept="image/*"
                               onChange={(e) => handleFileChange(e, 'before')} 
-                              className="text-[10px] text-bloomberg-text-secondary bg-[#050506] border border-[#1a1a1f] p-1.5 w-full focus:outline-none"
+                              className="text-xs text-slate-400 bg-[#121318] border border-[#262833] rounded-xl p-2 w-full focus:outline-none"
                             />
                             {screenshotBefore && (
-                              <div className="text-[8px] text-emerald-400 font-bold truncate">
-                                Image chargée avec succès !
+                              <div className="text-[10px] text-emerald-400 font-bold">
+                                ✓ Image chargée avec succès !
                               </div>
                             )}
                           </div>
@@ -939,9 +925,9 @@ export const Trades: React.FC = () => {
                       </div>
 
                       {/* SCREENSHOT AFTER */}
-                      <div className="space-y-2 p-3 bg-black/20 border border-bloomberg-border/40 rounded-sm">
+                      <div className="space-y-2 p-3 bg-[#181920] border border-[#262833] rounded-xl">
                         <div className="flex items-center justify-between">
-                          <label className="text-[10px] uppercase font-bold text-white tracking-wider">Screenshot Après</label>
+                          <label className="text-[11px] font-semibold text-slate-300">Screenshot Après</label>
                           <div className="flex gap-1">
                             {(['url', 'file'] as const).map((type) => (
                               <button
@@ -951,10 +937,10 @@ export const Trades: React.FC = () => {
                                   setScreenshotAfterType(type);
                                   setScreenshotAfter('');
                                 }}
-                                className={`text-[8px] font-bold uppercase px-2 py-0.5 border ${
+                                className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-lg border transition-all ${
                                   screenshotAfterType === type
-                                    ? 'bg-amber-500/20 border-amber-500 text-amber-400'
-                                    : 'bg-transparent border-[#1a1a1f] text-[#52525b] hover:text-white'
+                                    ? 'bg-[#6366f1]/20 border-[#6366f1] text-[#818cf8]'
+                                    : 'bg-transparent border-[#262833] text-slate-400 hover:text-slate-200'
                                 }`}
                               >
                                 {type === 'url' ? 'Lien URL' : 'Fichier'}
@@ -975,11 +961,11 @@ export const Trades: React.FC = () => {
                               type="file" 
                               accept="image/*"
                               onChange={(e) => handleFileChange(e, 'after')} 
-                              className="text-[10px] text-bloomberg-text-secondary bg-[#050506] border border-[#1a1a1f] p-1.5 w-full focus:outline-none"
+                              className="text-xs text-slate-400 bg-[#121318] border border-[#262833] rounded-xl p-2 w-full focus:outline-none"
                             />
                             {screenshotAfter && (
-                              <div className="text-[8px] text-emerald-400 font-bold truncate">
-                                Image chargée avec succès !
+                              <div className="text-[10px] text-emerald-400 font-bold">
+                                ✓ Image chargée avec succès !
                               </div>
                             )}
                           </div>
@@ -988,17 +974,25 @@ export const Trades: React.FC = () => {
                     </div>
                   </div>
 
-                  <Textarea label="Remarques & Leçons" placeholder="Analyse qualitative..." value={notes} onChange={(e) => setNotes(e.target.value)} />
+                  <Textarea label="Remarques & Leçons du Trade" placeholder="Analyse qualitative, psychologie, erreurs..." value={notes} onChange={(e) => setNotes(e.target.value)} />
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3 pt-6 border-t border-bloomberg-border">
-                <Button type="submit" className="flex-1 py-3" disabled={isLocked && !editingTrade}>
+              <div className="flex items-center space-x-3 pt-4 border-t border-[#262833]">
+                <button
+                  type="submit"
+                  disabled={isLocked && !editingTrade}
+                  className="flex-1 bg-[#6366f1] hover:bg-[#4f46e5] disabled:opacity-50 text-white font-bold text-xs py-3 px-6 rounded-xl shadow-indigo-glow transition-all active:scale-[0.99]"
+                >
                   {editingTrade ? "SAUVEGARDER LES MODIFICATIONS" : "ENREGISTRER LA POSITION"}
-                </Button>
-                <Button type="button" variant="outline" onClick={handleCancelEdit} className="py-3 px-6">
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="bg-[#181920] hover:bg-[#20222c] text-slate-300 font-semibold text-xs py-3 px-6 rounded-xl border border-[#262833] transition-all"
+                >
                   ANNULER
-                </Button>
+                </button>
               </div>
             </form>
           </div>
