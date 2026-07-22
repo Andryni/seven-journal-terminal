@@ -43,12 +43,14 @@ const AnalyticsTooltip = ({ active, payload, label }: {
       <div className="space-y-1">
         {payload.map((item, idx) => {
           const val = Number(item.value);
-          const isDrawdown = item.name.toLowerCase().includes('drawdown');
-          const isWinrate = item.name.toLowerCase().includes('win%') || item.name.toLowerCase().includes('winrate');
-          
+          const nameLower = (item.name || '').toLowerCase();
+          const isDrawdown = nameLower.includes('drawdown');
+          const isWinrate = nameLower.includes('win%') || nameLower.includes('winrate');
+          const isAvgLoss = nameLower.includes('avg loss') || nameLower.includes('perte');
+
           let textClass = 'text-white';
           if (!isNaN(val)) {
-            if (isDrawdown) {
+            if (isDrawdown || isAvgLoss) {
               textClass = 'text-red-400 font-bold';
             } else if (isWinrate) {
               textClass = val >= 50 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold';
@@ -57,14 +59,21 @@ const AnalyticsTooltip = ({ active, payload, label }: {
             }
           }
 
-          const prefix = isDrawdown || isWinrate ? '' : (val >= 0 ? '+' : '');
+          let prefix = '';
+          if (!isDrawdown && !isWinrate) {
+            if (isAvgLoss) {
+              prefix = '-$';
+            } else {
+              prefix = val >= 0 ? '+$' : '-$';
+            }
+          }
           const suffix = isDrawdown || isWinrate ? '%' : '';
 
           return (
             <div key={idx} className="flex items-center justify-between gap-4">
               <span className="text-slate-400">{item.name} :</span>
               <span className={textClass}>
-                {prefix}{val.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}{suffix}
+                {prefix}{Math.abs(val).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}{suffix}
               </span>
             </div>
           );
