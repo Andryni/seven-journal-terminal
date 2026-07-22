@@ -37,14 +37,42 @@ export function useAccounts() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Utilisateur non authentifié');
 
-      const { data, error } = await supabase
+      const payload: any = {
+        name: newAccount.name,
+        type: newAccount.type,
+        balance: newAccount.balance,
+        initial_balance: newAccount.initial_balance,
+        currency: newAccount.currency,
+        is_active: newAccount.is_active,
+        max_daily_loss_limit: newAccount.max_daily_loss_limit,
+        user_id: user.id,
+      };
+
+      if (newAccount.max_drawdown_limit !== undefined && newAccount.max_drawdown_limit !== null) {
+        payload.max_drawdown_limit = newAccount.max_drawdown_limit;
+      }
+      if (newAccount.profit_target !== undefined && newAccount.profit_target !== null) {
+        payload.profit_target = newAccount.profit_target;
+      }
+
+      let { data, error } = await supabase
         .from('trading_accounts')
-        .insert({
-          ...newAccount,
-          user_id: user.id,
-        })
+        .insert(payload)
         .select()
         .single();
+
+      // Si les colonnes n'existent pas encore dans Postgres, réessayer sans ces colonnes facultatives
+      if (error && error.message?.includes('column')) {
+        delete payload.max_drawdown_limit;
+        delete payload.profit_target;
+        const res = await supabase
+          .from('trading_accounts')
+          .insert(payload)
+          .select()
+          .single();
+        data = res.data;
+        error = res.error;
+      }
 
       if (error) throw error;
       return data;
@@ -56,12 +84,27 @@ export function useAccounts() {
 
   const updateAccountMutation = useMutation({
     mutationFn: async (updatedAccount: Partial<TradingAccount> & { id: string }) => {
-      const { data, error } = await supabase
+      const payload: any = { ...updatedAccount };
+
+      let { data, error } = await supabase
         .from('trading_accounts')
-        .update(updatedAccount)
+        .update(payload)
         .eq('id', updatedAccount.id)
         .select()
         .single();
+
+      if (error && error.message?.includes('column')) {
+        delete payload.max_drawdown_limit;
+        delete payload.profit_target;
+        const res = await supabase
+          .from('trading_accounts')
+          .update(payload)
+          .eq('id', updatedAccount.id)
+          .select()
+          .single();
+        data = res.data;
+        error = res.error;
+      }
 
       if (error) throw error;
       return data;
