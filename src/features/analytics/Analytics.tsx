@@ -957,12 +957,12 @@ export const Analytics: React.FC = () => {
           </Card>
 
           {/* Setup table */}
-          <Card title="WIN RATE PAR CONFIRMATION SMC/ICT">
+          <Card title="WIN RATE PAR STRATÉGIE PLAYBOOK">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-bloomberg-border font-mono text-xs">
                 <thead className="bg-bloomberg-surface text-[9px] text-bloomberg-text-secondary uppercase">
                   <tr>
-                    <th className="px-4 py-2 text-left">Setup</th>
+                    <th className="px-4 py-2 text-left">Stratégie / Setup</th>
                     <th className="px-4 py-2 text-right">Trades</th>
                     <th className="px-4 py-2 text-right">Win Rate</th>
                     <th className="px-4 py-2 text-right">P&L Cumulé</th>

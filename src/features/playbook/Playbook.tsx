@@ -72,63 +72,11 @@ const StarRating: React.FC<{ value: number | null; onChange: (v: number) => void
 
 export const Playbook: React.FC = () => {
   const { debriefs, isLoading, saveDebrief, isSaving, deleteDebrief, uploadHtfImage } = usePlaybook();
-  const { setups: savedSetups, saveSetup } = usePlaybookSetups();
-
-  const DEFAULT_SETUPS: PlaybookSetup[] = [
-    {
-      id: 'default-1',
-      user_id: 'system',
-      title: 'ICT Silver Bullet & FVG',
-      description: 'Trading des décalages de prix et Fair Value Gaps pendant la Killzone de New York (10:00 - 11:00 EST).',
-      timeframes: ['m5', 'm15'],
-      validation_rules: [
-        'Identification de la prise de liquidité (BSL/SSL)',
-        'Changement de structure du marché (MSS) sur M5',
-        'Entrée sur le premier Fair Value Gap (FVG) formé',
-        'Invalidation sous le dernier plus bas/haut local',
-      ],
-      tags: ['#Indices', '#Forex', '#Killzone'],
-      image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'default-2',
-      user_id: 'system',
-      title: 'Liquidity Sweep & Order Block',
-      description: 'Analyse Smart Money Concepts avec chasse aux stops et réintégration impulsive dans la zone d\'ordre institutionnel.',
-      timeframes: ['m15', 'h1'],
-      validation_rules: [
-        'Balayage d\'un niveau-clé journalier ou hebdomadaire',
-        'Clôture sous la mèche (SFP - Swing Failure Pattern)',
-        'Re-test de l\'Order Block le plus récent avec volume',
-        'Objectif minimum R:R = 1:3',
-      ],
-      tags: ['#Gold', '#NASDAQ', '#SMC'],
-      image_url: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'default-3',
-      user_id: 'system',
-      title: 'Breakout Re-test Momentum',
-      description: 'Cassure de consolidation haute volatilité sur ouverture de session US avec confirmation de bougie d\'impulsion.',
-      timeframes: ['m15'],
-      validation_rules: [
-        'Plage de consolidation asiatique étroite',
-        'Cassure nette de la résistance/support avec fort volume',
-        'Achat/Vente sur le re-test du niveau cassé',
-        'Stop loss serré au milieu du range',
-      ],
-      tags: ['#NASDAQ', '#Breakout'],
-      image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=600&q=80',
-      created_at: new Date().toISOString(),
-    },
-  ];
-
-  const displaySetups = savedSetups.length > 0 ? savedSetups : DEFAULT_SETUPS;
+  const { setups: savedSetups, saveSetup, deleteSetup } = usePlaybookSetups();
 
   const [showAddSetupModal, setShowAddSetupModal] = useState(false);
   const [selectedSetupForModal, setSelectedSetupForModal] = useState<PlaybookSetup | null>(null);
+  const [editingSetupId, setEditingSetupId] = useState<string | null>(null);
 
   // New setup form state
   const [newSetupTitle, setNewSetupTitle] = useState('');
@@ -282,74 +230,107 @@ export const Playbook: React.FC = () => {
         </div>
 
         {/* Dynamic Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
-          {displaySetups.map((s: PlaybookSetup) => (
-            <div key={s.id} className="bg-[#181920] border border-[#262833] rounded-2xl overflow-hidden hover:border-[#363948] transition-all flex flex-col justify-between group">
-              {/* Card Image Header */}
-              <div className="relative h-44 w-full bg-[#0d0e14] overflow-hidden">
-                <img
-                  src={s.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80'}
-                  alt={s.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#181920] via-transparent to-black/40" />
-                
-                {/* Agrandir button */}
-                <button
-                  onClick={() => setSelectedSetupForModal(s)}
-                  className="absolute top-3 right-3 bg-black/60 backdrop-blur-md border border-white/10 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 hover:bg-black/80 transition-all cursor-pointer"
-                >
-                  <ImageIcon className="w-3 h-3" />
-                  <span>Agrandir</span>
-                </button>
-              </div>
-
-              {/* Card Content */}
-              <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20 text-[10px]">
-                      UT: {s.timeframes.join(' / ')}
-                    </span>
-                    <span className="text-emerald-400 font-bold text-xs">
-                      Winrate: 68.5%
-                    </span>
-                  </div>
-
-                  <h3 className="text-sm font-bold text-white tracking-tight">{s.title}</h3>
-                  {s.description && (
-                    <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed">
-                      {s.description}
-                    </p>
-                  )}
-
-                  {/* Validation Rules List */}
-                  <div className="mt-3 space-y-1.5 border-t border-[#262833] pt-2.5">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">RÈGLES DE VALIDATION :</span>
-                    {s.validation_rules.map((rule: string, idx: number) => (
-                      <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
-                        <span className="text-emerald-400 font-bold mt-0.5">✓</span>
-                        <span>{rule}</span>
-                      </div>
-                    ))}
+        {savedSetups.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
+            {savedSetups.map((s: PlaybookSetup) => (
+              <div key={s.id} className="bg-[#181920] border border-[#262833] rounded-2xl overflow-hidden hover:border-[#363948] transition-all flex flex-col justify-between group">
+                {/* Card Image Header */}
+                <div className="relative h-44 w-full bg-[#0d0e14] overflow-hidden">
+                  <img
+                    src={s.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80'}
+                    alt={s.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#181920] via-transparent to-black/40" />
+                  
+                  {/* Action buttons (Agrandir, Modifier, Supprimer) */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                    <button
+                      onClick={() => setSelectedSetupForModal(s)}
+                      className="bg-black/60 backdrop-blur-md border border-white/10 text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 hover:bg-black/80 transition-all cursor-pointer"
+                      title="Agrandir"
+                    >
+                      <ImageIcon className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingSetupId(s.id);
+                        setNewSetupTitle(s.title);
+                        setNewSetupDesc(s.description || '');
+                        setNewSetupTimeframes(s.timeframes.join(', '));
+                        setNewSetupRules(s.validation_rules.join('\n'));
+                        setNewSetupTags(s.tags.join(', '));
+                        setNewSetupImageUrl(s.image_url || '');
+                        setShowAddSetupModal(true);
+                      }}
+                      className="bg-black/60 backdrop-blur-md border border-white/10 text-indigo-400 text-[10px] font-bold p-1 rounded-lg hover:bg-black/80 transition-all cursor-pointer"
+                      title="Modifier le setup"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (confirm(`Voulez-vous supprimer le setup "${s.title}" ?`)) {
+                          await deleteSetup(s.id);
+                        }
+                      }}
+                      className="bg-black/60 backdrop-blur-md border border-white/10 text-red-400 text-[10px] font-bold p-1 rounded-lg hover:bg-black/80 transition-all cursor-pointer"
+                      title="Supprimer le setup"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
 
-                {/* Footer Tags */}
-                <div className="flex items-center justify-between border-t border-[#262833] pt-3 mt-2">
-                  <div className="flex flex-wrap gap-1">
-                    {s.tags.map((tag: string, idx: number) => (
-                      <span key={idx} className="text-[9px] font-medium bg-[#121318] text-slate-400 px-2 py-0.5 rounded border border-[#262833]">
-                        {tag}
+                {/* Card Content */}
+                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20 text-[10px]">
+                        UT: {s.timeframes.join(' / ')}
                       </span>
-                    ))}
+                    </div>
+
+                    <h3 className="text-sm font-bold text-white tracking-tight">{s.title}</h3>
+                    {s.description && (
+                      <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+                        {s.description}
+                      </p>
+                    )}
+
+                    {/* Validation Rules List */}
+                    <div className="mt-3 space-y-1.5 border-t border-[#262833] pt-2.5">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">RÈGLES DE VALIDATION :</span>
+                      {s.validation_rules.map((rule: string, idx: number) => (
+                        <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
+                          <span className="text-emerald-400 font-bold mt-0.5">✓</span>
+                          <span>{rule}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-medium">32 trades</span>
+
+                  {/* Footer Tags */}
+                  <div className="flex items-center justify-between border-t border-[#262833] pt-3 mt-2">
+                    <div className="flex flex-wrap gap-1">
+                      {s.tags.map((tag: string, idx: number) => (
+                        <span key={idx} className="text-[9px] font-medium bg-[#121318] text-slate-400 px-2 py-0.5 rounded border border-[#262833]">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10 bg-[#121318] border border-dashed border-[#262833] rounded-2xl space-y-2">
+            <BookOpen className="w-8 h-8 text-slate-500 mx-auto opacity-50" />
+            <p className="text-xs text-slate-400 font-medium">Aucun setup créé pour le moment.</p>
+            <p className="text-[11px] text-slate-500">Cliquez sur "+ Nouveau Setup" ci-dessus pour documenter votre première stratégie.</p>
+          </div>
+        )}
       </div>
 
       {/* ── Main grid ────────────────────────────────────────────────────────── */}
@@ -735,6 +716,7 @@ export const Playbook: React.FC = () => {
                 if (!newSetupTitle.trim()) return;
                 try {
                   await saveSetup({
+                    id: editingSetupId || undefined,
                     title: newSetupTitle,
                     description: newSetupDesc || null,
                     timeframes: newSetupTimeframes.split(',').map(t => t.trim()),
@@ -743,6 +725,7 @@ export const Playbook: React.FC = () => {
                     image_url: newSetupImageUrl || null,
                   });
                   setShowAddSetupModal(false);
+                  setEditingSetupId(null);
                   setNewSetupTitle('');
                   setNewSetupDesc('');
                   setNewSetupRules('');

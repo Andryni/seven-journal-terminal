@@ -6,6 +6,7 @@ import { useAccounts } from '../accounts/useAccounts';
 import { useDailyLock } from '../guard/useDailyLock';
 import { parseMT4MT5Report, parseTradingViewExport } from '../../utils/importParsers';
 
+import { usePlaybookSetups } from '../playbook/usePlaybook';
 import { Button } from '../../components/ui/Button';
 import { Input, Select, Textarea } from '../../components/ui/Input';
 import { Table, TableRow, TableCell } from '../../components/ui/Table';
@@ -30,6 +31,9 @@ export const Trades: React.FC = () => {
   const { trades, createTrade, updateTrade, deleteTrade, isLoading, error: createError } = useTrades();
   const { accounts } = useAccounts();
   const { isLocked } = useDailyLock();
+  const { setups: playbookSetups } = usePlaybookSetups();
+
+  const [selectedSetupTitle, setSelectedSetupTitle] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -833,31 +837,50 @@ export const Trades: React.FC = () => {
 
                   <div className="space-y-2">
                     <label className="text-[11px] font-semibold text-slate-400 block">Sélectionner votre Stratégie Playbook *</label>
-                    <div className="grid grid-cols-1 gap-2 text-xs">
-                      <label className={`flex items-center justify-between space-x-2 text-slate-200 cursor-pointer p-3 rounded-xl border transition-all ${bos ? 'bg-[#6366f1]/15 border-[#6366f1] text-white shadow-indigo-glow font-bold' : 'bg-[#181920] border-[#262833] hover:border-[#363948]'}`}>
-                        <div className="flex items-center space-x-2">
-                          <input type="checkbox" checked={bos} onChange={(e) => setBos(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
-                          <span>⚡ ICT Silver Bullet & FVG</span>
-                        </div>
-                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">68.5% WR</span>
-                      </label>
-
-                      <label className={`flex items-center justify-between space-x-2 text-slate-200 cursor-pointer p-3 rounded-xl border transition-all ${ob ? 'bg-[#6366f1]/15 border-[#6366f1] text-white shadow-indigo-glow font-bold' : 'bg-[#181920] border-[#262833] hover:border-[#363948]'}`}>
-                        <div className="flex items-center space-x-2">
-                          <input type="checkbox" checked={ob} onChange={(e) => setOb(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
-                          <span>🎯 Liquidity Sweep & Order Block</span>
-                        </div>
-                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">58% WR</span>
-                      </label>
-
-                      <label className={`flex items-center justify-between space-x-2 text-slate-200 cursor-pointer p-3 rounded-xl border transition-all ${fvg ? 'bg-[#6366f1]/15 border-[#6366f1] text-white shadow-indigo-glow font-bold' : 'bg-[#181920] border-[#262833] hover:border-[#363948]'}`}>
-                        <div className="flex items-center space-x-2">
-                          <input type="checkbox" checked={fvg} onChange={(e) => setFvg(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
-                          <span>🚀 Breakout Re-test Momentum</span>
-                        </div>
-                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">52% WR</span>
-                      </label>
-                    </div>
+                    
+                    {playbookSetups.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-2 text-xs">
+                        {playbookSetups.map((s) => {
+                          const isSelected = selectedSetupTitle === s.title;
+                          return (
+                            <label
+                              key={s.id}
+                              onClick={() => {
+                                setSelectedSetupTitle(s.title);
+                                setBos(true);
+                              }}
+                              className={`flex items-center justify-between space-x-2 text-slate-200 cursor-pointer p-3 rounded-xl border transition-all ${
+                                isSelected
+                                  ? 'bg-[#6366f1]/15 border-[#6366f1] text-white shadow-indigo-glow font-bold'
+                                  : 'bg-[#181920] border-[#262833] hover:border-[#363948]'
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  name="playbookSetup"
+                                  checked={selectedSetupTitle === s.title}
+                                  onChange={() => {
+                                    setSelectedSetupTitle(s.title);
+                                    setBos(true);
+                                  }}
+                                  className="border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0"
+                                />
+                                <span>🎯 {s.title}</span>
+                              </div>
+                              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                UT: {s.timeframes.join('/')}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-[#181920] border border-dashed border-[#262833] rounded-xl text-center space-y-1">
+                        <p className="text-xs text-slate-400 font-medium">Aucune stratégie enregistrée dans le Playbook.</p>
+                        <p className="text-[10px] text-slate-500">Ajoutez d'abord vos stratégies dans la page Playbook.</p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-3 border-t border-[#262833] pt-3">
