@@ -120,6 +120,10 @@ export const Analytics: React.FC = () => {
     return selectedAccount?.max_drawdown_limit || 10000;
   }, [selectedAccount]);
 
+  const consistencyRuleLimit = useMemo(() => {
+    return selectedAccount?.consistency_rule_percent || 15;
+  }, [selectedAccount]);
+
   const closed = useMemo(
     () => trades.filter((t): t is Trade & { exit_time: string; pnl: number } =>
       t.exit_time !== null && t.pnl !== null && (!activeAccountId || t.account_id === activeAccountId)),
@@ -1153,14 +1157,14 @@ export const Analytics: React.FC = () => {
             </div>
 
             <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-2">
-              <span className="text-xs font-semibold text-slate-400">Consistency Score Prop Firm</span>
-              <div className={`text-2xl font-bold tabular-nums ${netPnL > 0 && winTrades.length > 0 && (Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100 > 15 ? 'text-[#818cf8]' : 'text-emerald-400'}`}>
+              <span className="text-xs font-semibold text-slate-400">Consistency Score ({consistencyRuleLimit}% Max / Jour)</span>
+              <div className={`text-2xl font-bold tabular-nums ${netPnL > 0 && winTrades.length > 0 && (Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100 > consistencyRuleLimit ? 'text-amber-400' : 'text-emerald-400'}`}>
                 {netPnL > 0 && winTrades.length > 0 ? Math.min(((Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100), 100).toFixed(1) : '0.0'}%
               </div>
               <div className="text-[10px] text-slate-500 font-medium">
-                {netPnL > 0 && winTrades.length > 0 && (Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100 > 15
-                  ? 'ℹ️ Conseil : Votre meilleur jour représente la majorité de vos gains cumulés actuel'
-                  : '✓ Excellente répartition des profits sur l\'ensemble des jours'}
+                {netPnL > 0 && winTrades.length > 0 && (Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100 > consistencyRuleLimit
+                  ? `⚠️ Alerte : Votre meilleur jour dépasse le seuil de ${consistencyRuleLimit}% fixé par la Prop Firm`
+                  : `✓ Respect parfait de la règle de consistance (≤ ${consistencyRuleLimit}% / jour)`}
               </div>
             </div>
           </div>

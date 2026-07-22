@@ -21,6 +21,7 @@ export const Accounts: React.FC = () => {
   const [maxDailyLoss, setMaxDailyLoss] = useState('');
   const [maxDrawdownLimit, setMaxDrawdownLimit] = useState('');
   const [profitTarget, setProfitTarget] = useState('');
+  const [consistencyRulePercent, setConsistencyRulePercent] = useState('15');
   const [error, setError] = useState('');
 
   const handleEditClick = (acc: TradingAccount) => {
@@ -33,6 +34,7 @@ export const Accounts: React.FC = () => {
     setMaxDailyLoss(acc.max_daily_loss_limit !== null && acc.max_daily_loss_limit !== undefined ? acc.max_daily_loss_limit.toString() : '');
     setMaxDrawdownLimit(acc.max_drawdown_limit !== null && acc.max_drawdown_limit !== undefined ? acc.max_drawdown_limit.toString() : '');
     setProfitTarget(acc.profit_target !== null && acc.profit_target !== undefined ? acc.profit_target.toString() : '');
+    setConsistencyRulePercent(acc.consistency_rule_percent !== null && acc.consistency_rule_percent !== undefined ? acc.consistency_rule_percent.toString() : '15');
     setShowAddForm(true);
   };
 
@@ -49,6 +51,7 @@ export const Accounts: React.FC = () => {
     setMaxDailyLoss('');
     setMaxDrawdownLimit('');
     setProfitTarget('');
+    setConsistencyRulePercent('15');
     setError('');
   };
 
@@ -81,6 +84,7 @@ export const Accounts: React.FC = () => {
           max_daily_loss_limit: maxDailyLoss ? Number(maxDailyLoss) : null,
           max_drawdown_limit: maxDrawdownLimit ? Number(maxDrawdownLimit) : null,
           profit_target: profitTarget ? Number(profitTarget) : null,
+          consistency_rule_percent: consistencyRulePercent ? Number(consistencyRulePercent) : null,
         });
         setEditingAccount(null);
       } else {
@@ -94,6 +98,7 @@ export const Accounts: React.FC = () => {
           max_daily_loss_limit: maxDailyLoss ? Number(maxDailyLoss) : null,
           max_drawdown_limit: maxDrawdownLimit ? Number(maxDrawdownLimit) : null,
           profit_target: profitTarget ? Number(profitTarget) : null,
+          consistency_rule_percent: consistencyRulePercent ? Number(consistencyRulePercent) : null,
         });
       }
 
@@ -266,14 +271,24 @@ export const Accounts: React.FC = () => {
                     />
                   </div>
 
-                  <Input
-                    label="Daily Drawdown / Perte Quotidienne Max ($)"
-                    placeholder="ex: 5000 (optionnel)"
-                    value={maxDailyLoss}
-                    onChange={(e) => setMaxDailyLoss(e.target.value)}
-                    type="number"
-                    step="0.01"
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Daily Drawdown / Perte Quotidienne Max ($)"
+                      placeholder="ex: 5000 (optionnel)"
+                      value={maxDailyLoss}
+                      onChange={(e) => setMaxDailyLoss(e.target.value)}
+                      type="number"
+                      step="0.01"
+                    />
+                    <Input
+                      label="Règle de Consistance / Régularité (%)"
+                      placeholder="ex: 15 (ex: FTMO 15%, FundedNext 20%)"
+                      value={consistencyRulePercent}
+                      onChange={(e) => setConsistencyRulePercent(e.target.value)}
+                      type="number"
+                      step="1"
+                    />
+                  </div>
                 </div>
               )}
 

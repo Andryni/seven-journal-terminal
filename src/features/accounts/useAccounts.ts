@@ -13,6 +13,7 @@ export interface TradingAccount {
   max_daily_loss_limit: number | null;
   max_drawdown_limit?: number | null;
   profit_target?: number | null;
+  consistency_rule_percent?: number | null;
   created_at: string;
 }
 
@@ -54,6 +55,9 @@ export function useAccounts() {
       if (newAccount.profit_target !== undefined && newAccount.profit_target !== null) {
         payload.profit_target = newAccount.profit_target;
       }
+      if (newAccount.consistency_rule_percent !== undefined && newAccount.consistency_rule_percent !== null) {
+        payload.consistency_rule_percent = newAccount.consistency_rule_percent;
+      }
 
       let { data, error } = await supabase
         .from('trading_accounts')
@@ -65,6 +69,7 @@ export function useAccounts() {
       if (error && error.message?.includes('column')) {
         delete payload.max_drawdown_limit;
         delete payload.profit_target;
+        delete payload.consistency_rule_percent;
         const res = await supabase
           .from('trading_accounts')
           .insert(payload)
@@ -96,6 +101,7 @@ export function useAccounts() {
       if (error && error.message?.includes('column')) {
         delete payload.max_drawdown_limit;
         delete payload.profit_target;
+        delete payload.consistency_rule_percent;
         const res = await supabase
           .from('trading_accounts')
           .update(payload)
