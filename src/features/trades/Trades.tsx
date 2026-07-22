@@ -876,9 +876,26 @@ export const Trades: React.FC = () => {
                         })}
                       </div>
                     ) : (
-                      <div className="p-3 bg-[#181920] border border-dashed border-[#262833] rounded-xl text-center space-y-1">
-                        <p className="text-xs text-slate-400 font-medium">Aucune stratégie enregistrée dans le Playbook.</p>
-                        <p className="text-[10px] text-slate-500">Ajoutez d'abord vos stratégies dans la page Playbook.</p>
+                      <div className="space-y-2">
+                        <p className="text-[10px] text-slate-400">Confirmations SMC / ICT par défaut (Ajoutez vos stratégies dans le Playbook pour les personnaliser) :</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <label className={`flex items-center space-x-2 cursor-pointer p-2.5 rounded-xl border transition-all ${bos ? 'bg-[#6366f1]/15 border-[#6366f1] text-white font-bold' : 'bg-[#181920] border-[#262833] text-slate-300'}`}>
+                            <input type="checkbox" checked={bos} onChange={(e) => setBos(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
+                            <span>BOS (Break of Structure)</span>
+                          </label>
+                          <label className={`flex items-center space-x-2 cursor-pointer p-2.5 rounded-xl border transition-all ${ob ? 'bg-[#6366f1]/15 border-[#6366f1] text-white font-bold' : 'bg-[#181920] border-[#262833] text-slate-300'}`}>
+                            <input type="checkbox" checked={ob} onChange={(e) => setOb(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
+                            <span>Order Block</span>
+                          </label>
+                          <label className={`flex items-center space-x-2 cursor-pointer p-2.5 rounded-xl border transition-all ${fvg ? 'bg-[#6366f1]/15 border-[#6366f1] text-white font-bold' : 'bg-[#181920] border-[#262833] text-slate-300'}`}>
+                            <input type="checkbox" checked={fvg} onChange={(e) => setFvg(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
+                            <span>Fair Value Gap (FVG)</span>
+                          </label>
+                          <label className={`flex items-center space-x-2 cursor-pointer p-2.5 rounded-xl border transition-all ${liquiditySweep ? 'bg-[#6366f1]/15 border-[#6366f1] text-white font-bold' : 'bg-[#181920] border-[#262833] text-slate-300'}`}>
+                            <input type="checkbox" checked={liquiditySweep} onChange={(e) => setLiquiditySweep(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
+                            <span>Liquidity Sweep</span>
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
