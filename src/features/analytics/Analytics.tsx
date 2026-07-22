@@ -86,7 +86,7 @@ const AnalyticsTooltip = ({ active, payload, label }: {
 };
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
-type Tab = 'overview' | 'equity' | 'distribution' | 'breakdown' | 'timing' | 'psychology';
+type Tab = 'overview' | 'equity' | 'distribution' | 'breakdown' | 'timing' | 'psychology' | 'propfirm';
 
 const TABS: { id: Tab; label: string; icon: React.FC<{ className?: string }> }[] = [
   { id: 'overview',      label: 'VUE D\'ENSEMBLE', icon: Activity },
@@ -94,7 +94,8 @@ const TABS: { id: Tab; label: string; icon: React.FC<{ className?: string }> }[]
   { id: 'distribution',  label: 'DISTRIBUTION', icon: BarChart3 },
   { id: 'breakdown',     label: 'PAR SETUP/PAIRE/TF', icon: Target },
   { id: 'timing',        label: 'TIMING (H/J)', icon: Clock },
-  { id: 'psychology',    label: 'PSYCHOLOGIE', icon: Brain },
+  { id: 'psychology',    label: 'PSYCHOLOGIE & ERREURS', icon: Brain },
+  { id: 'propfirm',      label: 'PROP FIRM TRACKER', icon: Award },
 ];
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -926,24 +927,92 @@ export const Analytics: React.FC = () => {
               return (
                 <div className="grid grid-cols-2 gap-6 font-mono text-xs">
                   <div className="space-y-2">
-                    <div className="text-bloomberg-gold font-bold uppercase text-[10px]">Cookie Jar Method</div>
+                    <div className="text-[#818cf8] font-bold uppercase text-[10px]">Cookie Jar Method</div>
                     <div className="text-2xl font-bold text-white tabular-nums">{cookieJarCount}</div>
-                    <div className="text-bloomberg-text-secondary text-[10px]">activations sur {closed.length} trades</div>
-                    <div className={`font-bold ${cookieJarWR >= 50 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
+                    <div className="text-slate-400 text-[10px]">activations sur {closed.length} trades</div>
+                    <div className={`font-bold ${cookieJarWR >= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
                       Win Rate: {cookieJarWR.toFixed(1)}%
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="text-bloomberg-gold font-bold uppercase text-[10px]">40% Rule</div>
+                    <div className="text-[#818cf8] font-bold uppercase text-[10px]">40% Rule</div>
                     <div className="text-2xl font-bold text-white tabular-nums">{rule40Count}</div>
-                    <div className="text-bloomberg-text-secondary text-[10px]">activations sur {closed.length} trades</div>
-                    <div className={`font-bold ${rule40WR >= 50 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
+                    <div className="text-slate-400 text-[10px]">activations sur {closed.length} trades</div>
+                    <div className={`font-bold ${rule40WR >= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
                       Win Rate: {rule40WR.toFixed(1)}%
                     </div>
                   </div>
                 </div>
               );
             })() : <Empty />}
+          </Card>
+        </div>
+      )}
+
+      {/* ── TAB: PROP FIRM TRACKER ────────────────────────────────────────── */}
+      {activeTab === 'propfirm' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-2">
+              <span className="text-xs font-semibold text-slate-400">Objectif de Profit (10%)</span>
+              <div className="text-2xl font-bold text-emerald-400 tabular-nums">
+                {netPnL >= 0 ? '+' : ''}${netPnL.toFixed(2)} / $10,000
+              </div>
+              <div className="w-full bg-[#121318] h-2 rounded-full overflow-hidden border border-[#262833]">
+                <div className="bg-emerald-400 h-full rounded-full transition-all" style={{ width: `${Math.min(Math.max((netPnL / 10000) * 100, 0), 100)}%` }} />
+              </div>
+              <span className="text-[10px] text-slate-500 font-medium block">
+                Progression : {((netPnL / 10000) * 100).toFixed(1)}% de l'objectif
+              </span>
+            </div>
+
+            <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-2">
+              <span className="text-xs font-semibold text-slate-400">Drawdown Max Autorisé (10%)</span>
+              <div className="text-2xl font-bold text-red-400 tabular-nums">
+                {maxDrawdown.toFixed(2)}% / -10.00%
+              </div>
+              <div className="w-full bg-[#121318] h-2 rounded-full overflow-hidden border border-[#262833]">
+                <div className="bg-red-400 h-full rounded-full transition-all" style={{ width: `${Math.min((Math.abs(maxDrawdown) / 10) * 100, 100)}%` }} />
+              </div>
+              <span className="text-[10px] text-slate-500 font-medium block">
+                Marge restante : {(10 - Math.abs(maxDrawdown)).toFixed(1)}%
+              </span>
+            </div>
+
+            <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-2">
+              <span className="text-xs font-semibold text-slate-400">Consistency Score Prop Firm</span>
+              <div className={`text-2xl font-bold tabular-nums ${netPnL > 0 && (winTrades.length > 0 ? (Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100 : 0) > 15 ? 'text-red-400' : 'text-emerald-400'}`}>
+                {netPnL > 0 && winTrades.length > 0 ? ((Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100).toFixed(1) : 0}%
+              </div>
+              <div className="text-[10px] text-slate-500 font-medium">
+                {netPnL > 0 && winTrades.length > 0 && (Math.max(...winTrades.map(t => t.pnl)) / netPnL) * 100 > 15
+                  ? '⚠️ Alerte : Votre meilleur jour représente >15% du profit total (Regle de consistance prop firm)'
+                  : '✓ Respect de la règle de régularité (Pas de jour >15%)'}
+              </div>
+            </div>
+          </div>
+
+          <Card title="STATUT DU COMPTE DE CHALLENGE PROP FIRM">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-sans">
+              <div className="p-3 bg-[#121318] border border-[#262833] rounded-xl">
+                <span className="text-slate-400 block text-[11px]">Trades Minimaux Requis</span>
+                <span className="text-lg font-bold text-white">{closed.length} / 5 jours</span>
+              </div>
+              <div className="p-3 bg-[#121318] border border-[#262833] rounded-xl">
+                <span className="text-slate-400 block text-[11px]">Profit Factor Exigé</span>
+                <span className={`text-lg font-bold ${profitFactor >= 1.5 ? 'text-emerald-400' : 'text-amber-400'}`}>{profitFactor.toFixed(2)} (Min 1.5)</span>
+              </div>
+              <div className="p-3 bg-[#121318] border border-[#262833] rounded-xl">
+                <span className="text-slate-400 block text-[11px]">Statut du Risque Daily</span>
+                <span className="text-lg font-bold text-emerald-400">Sécurisé</span>
+              </div>
+              <div className="p-3 bg-[#121318] border border-[#262833] rounded-xl">
+                <span className="text-slate-400 block text-[11px]">Éligibilité au Payout</span>
+                <span className={`text-lg font-bold ${netPnL > 0 && Math.abs(maxDrawdown) < 10 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {netPnL > 0 && Math.abs(maxDrawdown) < 10 ? 'ÉLIGIBLE ✓' : 'EN COURS'}
+                </span>
+              </div>
+            </div>
           </Card>
         </div>
       )}

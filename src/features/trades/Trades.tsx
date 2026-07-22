@@ -4,6 +4,7 @@ import { useTrades } from './useTrades';
 import type { Trade } from './useTrades';
 import { useAccounts } from '../accounts/useAccounts';
 import { useDailyLock } from '../guard/useDailyLock';
+import { parseMT4MT5Report, parseTradingViewExport } from '../../utils/importParsers';
 
 import { Button } from '../../components/ui/Button';
 import { Input, Select, Textarea } from '../../components/ui/Input';
@@ -358,19 +359,31 @@ export const Trades: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // IMPORT FROM JSON
+  // IMPORT FROM JSON / MT4 / MT5 / TRADINGVIEW
   const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileReader = new FileReader();
-    if (e.target.files && e.target.files[0]) {
-      fileReader.readAsText(e.target.files[0], "UTF-8");
+    const file = e.target.files?.[0];
+    if (file) {
+      fileReader.readAsText(file, "UTF-8");
       fileReader.onload = async (event) => {
         try {
-          const parsedTrades = JSON.parse(event.target?.result as string);
-          if (Array.isArray(parsedTrades)) {
+          const content = event.target?.result as string;
+          let parsedTrades: any[] = [];
+
+          if (file.name.endsWith('.json')) {
+            parsedTrades = JSON.parse(content);
+          } else if (file.name.endsWith('.csv') || file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+            if (content.toLowerCase().includes('symbol') || content.toLowerCase().includes('ticker')) {
+              parsedTrades = parseTradingViewExport(content);
+            } else {
+              parsedTrades = parseMT4MT5Report(content);
+            }
+          }
+
+          if (Array.isArray(parsedTrades) && parsedTrades.length > 0) {
             for (const t of parsedTrades) {
-              // Create trade from parsed schema
               await createTrade({
-                account_id: accountId || accounts[0].id,
+                account_id: accountId || (accounts[0] ? accounts[0].id : ''),
                 pair: t.pair || 'XAUUSD',
                 direction: t.direction || 'BUY',
                 entry_price: Number(t.entry_price),
@@ -380,17 +393,17 @@ export const Trades: React.FC = () => {
                 size: Number(t.size),
                 entry_time: t.entry_time || new Date().toISOString(),
                 exit_time: t.exit_time || null,
-                pnl: t.pnl ? Number(t.pnl) : null,
-                r_multiple: t.r_multiple ? Number(t.r_multiple) : null,
+                pnl: t.pnl !== null && t.pnl !== undefined ? Number(t.pnl) : null,
+                r_multiple: t.r_multiple !== null && t.r_multiple !== undefined ? Number(t.r_multiple) : null,
                 timeframe: t.timeframe || 'M5',
                 setup_structures: t.setup_structures || [],
                 setup_fvg: !!t.setup_fvg,
                 setup_ob: !!t.setup_ob,
                 setup_liquidity_sweep: !!t.setup_liquidity_sweep,
-                bookmap_absorption: t.bookmap_absorption || null,
-                bookmap_passive_orders: t.bookmap_passive_orders || null,
-                bookmap_aggressive_orders: t.bookmap_aggressive_orders || null,
-                bookmap_vwap_position: t.bookmap_vwap_position || null,
+                bookmap_absorption: null,
+                bookmap_passive_orders: null,
+                bookmap_aggressive_orders: null,
+                bookmap_vwap_position: null,
                 mental_state: t.mental_state || 'focused',
                 cookie_jar_ref: !!t.cookie_jar_ref,
                 rule_40_percent: !!t.rule_40_percent,
@@ -401,10 +414,12 @@ export const Trades: React.FC = () => {
                 session: t.session || null,
               });
             }
-            alert('Importation réussie de vos trades.');
+            alert(`Importation réussie ! ${parsedTrades.length} trade(s) enregistré(s).`);
+          } else {
+            alert('Aucun trade détecté dans ce fichier.');
           }
         } catch (err) {
-          alert('Format JSON non valide.');
+          alert('Erreur lors de la lecture du fichier.');
         }
       };
     }
