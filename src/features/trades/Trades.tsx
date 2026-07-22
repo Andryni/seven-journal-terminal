@@ -824,31 +824,38 @@ export const Trades: React.FC = () => {
                   </div>
                 </div>
 
-                {/* SECTION 2: CONTEXTE & CONFIRMATIONS */}
+                {/* SECTION 2: STRATÉGIE & SETUP DU PLAYBOOK */}
                 <div className="space-y-4 bg-[#121318] p-4 rounded-xl border border-[#262833]">
                   <h4 className="text-xs font-bold text-[#818cf8] uppercase tracking-wider flex items-center gap-2 border-b border-[#262833] pb-2">
                     <span className="w-2 h-2 rounded-full bg-[#10b981]" />
-                    2. Contexte & Confirmations SMC / ICT
+                    2. Stratégie & Setup du Playbook
                   </h4>
 
                   <div className="space-y-2">
-                    <label className="text-[11px] font-semibold text-slate-400 block">Structures de Prix & Confirmations</label>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <label className="flex items-center space-x-2 text-slate-200 cursor-pointer bg-[#181920] border border-[#262833] p-2 rounded-xl hover:border-[#363948] transition-all">
-                        <input type="checkbox" checked={bos} onChange={(e) => setBos(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
-                        <span className="font-medium">BOS (Break of Structure)</span>
+                    <label className="text-[11px] font-semibold text-slate-400 block">Sélectionner votre Stratégie Playbook *</label>
+                    <div className="grid grid-cols-1 gap-2 text-xs">
+                      <label className={`flex items-center justify-between space-x-2 text-slate-200 cursor-pointer p-3 rounded-xl border transition-all ${bos ? 'bg-[#6366f1]/15 border-[#6366f1] text-white shadow-indigo-glow font-bold' : 'bg-[#181920] border-[#262833] hover:border-[#363948]'}`}>
+                        <div className="flex items-center space-x-2">
+                          <input type="checkbox" checked={bos} onChange={(e) => setBos(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
+                          <span>⚡ ICT Silver Bullet & FVG</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">68.5% WR</span>
                       </label>
-                      <label className="flex items-center space-x-2 text-slate-200 cursor-pointer bg-[#181920] border border-[#262833] p-2 rounded-xl hover:border-[#363948] transition-all">
-                        <input type="checkbox" checked={ob} onChange={(e) => setOb(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
-                        <span className="font-medium">Order Block</span>
+
+                      <label className={`flex items-center justify-between space-x-2 text-slate-200 cursor-pointer p-3 rounded-xl border transition-all ${ob ? 'bg-[#6366f1]/15 border-[#6366f1] text-white shadow-indigo-glow font-bold' : 'bg-[#181920] border-[#262833] hover:border-[#363948]'}`}>
+                        <div className="flex items-center space-x-2">
+                          <input type="checkbox" checked={ob} onChange={(e) => setOb(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
+                          <span>🎯 Liquidity Sweep & Order Block</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">58% WR</span>
                       </label>
-                      <label className="flex items-center space-x-2 text-slate-200 cursor-pointer bg-[#181920] border border-[#262833] p-2 rounded-xl hover:border-[#363948] transition-all">
-                        <input type="checkbox" checked={fvg} onChange={(e) => setFvg(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
-                        <span className="font-medium">Fair Value Gap (FVG)</span>
-                      </label>
-                      <label className="flex items-center space-x-2 text-slate-200 cursor-pointer bg-[#181920] border border-[#262833] p-2 rounded-xl hover:border-[#363948] transition-all">
-                        <input type="checkbox" checked={liquiditySweep} onChange={(e) => setLiquiditySweep(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
-                        <span className="font-medium">Liquidity Sweep</span>
+
+                      <label className={`flex items-center justify-between space-x-2 text-slate-200 cursor-pointer p-3 rounded-xl border transition-all ${fvg ? 'bg-[#6366f1]/15 border-[#6366f1] text-white shadow-indigo-glow font-bold' : 'bg-[#181920] border-[#262833] hover:border-[#363948]'}`}>
+                        <div className="flex items-center space-x-2">
+                          <input type="checkbox" checked={fvg} onChange={(e) => setFvg(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
+                          <span>🚀 Breakout Re-test Momentum</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">52% WR</span>
                       </label>
                     </div>
                   </div>

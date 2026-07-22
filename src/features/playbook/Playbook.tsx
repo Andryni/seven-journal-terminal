@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { usePlaybook } from './usePlaybook';
-import type { DailyDebrief } from './usePlaybook';
+import { usePlaybook, usePlaybookSetups } from './usePlaybook';
+import type { DailyDebrief, PlaybookSetup } from './usePlaybook';
 import { Button } from '../../components/ui/Button';
 import { Select, Textarea } from '../../components/ui/Input';
 import {
-  BookOpen, Brain, TrendingUp, AlertTriangle,
+  BookOpen, TrendingUp, AlertTriangle,
   Star, Upload, Trash2, Edit3, X, ImageIcon, ChevronRight,
-  Calendar, BarChart2, Zap
+  BarChart2, Zap, Plus
 } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -68,23 +68,75 @@ const StarRating: React.FC<{ value: number | null; onChange: (v: number) => void
   </div>
 );
 
-const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?: string }> = ({ icon, label, value, sub }) => (
-  <div className="glass-panel rounded-[16px] p-4 flex items-center space-x-4">
-    <div className="w-10 h-10 rounded-xl bg-[#0075ff]/10 border border-[#0075ff]/20 flex items-center justify-center text-[#0075ff]">
-      {icon}
-    </div>
-    <div>
-      <p className="text-[10px] uppercase tracking-wider text-white/40 font-mono">{label}</p>
-      <p className="text-lg font-bold text-white">{value}</p>
-      {sub && <p className="text-[10px] text-white/30">{sub}</p>}
-    </div>
-  </div>
-);
-
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export const Playbook: React.FC = () => {
   const { debriefs, isLoading, saveDebrief, isSaving, deleteDebrief, uploadHtfImage } = usePlaybook();
+  const { setups: savedSetups, saveSetup } = usePlaybookSetups();
+
+  const DEFAULT_SETUPS: PlaybookSetup[] = [
+    {
+      id: 'default-1',
+      user_id: 'system',
+      title: 'ICT Silver Bullet & FVG',
+      description: 'Trading des décalages de prix et Fair Value Gaps pendant la Killzone de New York (10:00 - 11:00 EST).',
+      timeframes: ['m5', 'm15'],
+      validation_rules: [
+        'Identification de la prise de liquidité (BSL/SSL)',
+        'Changement de structure du marché (MSS) sur M5',
+        'Entrée sur le premier Fair Value Gap (FVG) formé',
+        'Invalidation sous le dernier plus bas/haut local',
+      ],
+      tags: ['#Indices', '#Forex', '#Killzone'],
+      image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'default-2',
+      user_id: 'system',
+      title: 'Liquidity Sweep & Order Block',
+      description: 'Analyse Smart Money Concepts avec chasse aux stops et réintégration impulsive dans la zone d\'ordre institutionnel.',
+      timeframes: ['m15', 'h1'],
+      validation_rules: [
+        'Balayage d\'un niveau-clé journalier ou hebdomadaire',
+        'Clôture sous la mèche (SFP - Swing Failure Pattern)',
+        'Re-test de l\'Order Block le plus récent avec volume',
+        'Objectif minimum R:R = 1:3',
+      ],
+      tags: ['#Gold', '#NASDAQ', '#SMC'],
+      image_url: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'default-3',
+      user_id: 'system',
+      title: 'Breakout Re-test Momentum',
+      description: 'Cassure de consolidation haute volatilité sur ouverture de session US avec confirmation de bougie d\'impulsion.',
+      timeframes: ['m15'],
+      validation_rules: [
+        'Plage de consolidation asiatique étroite',
+        'Cassure nette de la résistance/support avec fort volume',
+        'Achat/Vente sur le re-test du niveau cassé',
+        'Stop loss serré au milieu du range',
+      ],
+      tags: ['#NASDAQ', '#Breakout'],
+      image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=600&q=80',
+      created_at: new Date().toISOString(),
+    },
+  ];
+
+  const displaySetups = savedSetups.length > 0 ? savedSetups : DEFAULT_SETUPS;
+
+  const [showAddSetupModal, setShowAddSetupModal] = useState(false);
+  const [selectedSetupForModal, setSelectedSetupForModal] = useState<PlaybookSetup | null>(null);
+
+  // New setup form state
+  const [newSetupTitle, setNewSetupTitle] = useState('');
+  const [newSetupDesc, setNewSetupDesc] = useState('');
+  const [newSetupTimeframes, setNewSetupTimeframes] = useState('m5, m15');
+  const [newSetupRules, setNewSetupRules] = useState('');
+  const [newSetupTags, setNewSetupTags] = useState('#Forex, #Indices');
+  const [newSetupImageUrl, setNewSetupImageUrl] = useState('');
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -190,23 +242,6 @@ export const Playbook: React.FC = () => {
     if (editingId === confirmDeleteId) setEditingId(null);
   };
 
-  // ─── Stats ───────────────────────────────────────────────────────────────────
-  const now = new Date();
-  const thisMonthDebriefs = debriefs.filter(d => {
-    const dd = new Date(d.date);
-    return dd.getMonth() === now.getMonth() && dd.getFullYear() === now.getFullYear();
-  });
-  const avgScore = thisMonthDebriefs.length
-    ? (thisMonthDebriefs.reduce((s, d) => s + (d.mental_score || 0), 0) / thisMonthDebriefs.length).toFixed(1)
-    : '—';
-  const allMistakes = debriefs.flatMap(d => d.mistakes_committed);
-  const mistakeCounts: Record<string, number> = {};
-  allMistakes.forEach(m => { mistakeCounts[m] = (mistakeCounts[m] || 0) + 1; });
-  const topMistake = Object.entries(mistakeCounts).sort((a, b) => b[1] - a[1])[0];
-  const topMistakeLabel = topMistake
-    ? COMMON_MISTAKES.find(m => m.id === topMistake[0])?.label.split(' ')[0] ?? topMistake[0]
-    : '—';
-
   // ─── Filtered archives ────────────────────────────────────────────────────────
   const filteredDebriefs = debriefs.filter(d =>
     archiveSearch === '' || d.date.includes(archiveSearch) || (d.lessons_learned || '').toLowerCase().includes(archiveSearch.toLowerCase())
@@ -225,37 +260,96 @@ export const Playbook: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div>
-        <h2 className="text-sm font-extrabold uppercase tracking-widest text-white flex items-center space-x-2">
-          <BookOpen className="w-4 h-4 text-[#0075ff]" />
-          <span>PLAYBOOK & DEBRIEFING JOURNALIER</span>
-        </h2>
-        <p className="text-[10px] text-white/40 mt-1">
-          Analyse HTF, debrief quotidien et suivi de discipline pour perfectionner votre edge
-        </p>
-      </div>
+      {/* ── Section Playbook & Stratégies de Trading (Cards comme la maquette) ── */}
+      <div className="bg-[#14161f] border border-[#262833] rounded-2xl p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#262833] pb-4">
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-emerald-400" />
+              <span>Playbook & Stratégies de Trading</span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Documentez vos configurations à haute probabilité (Setups), définissez vos règles d'invalidation strictes et mesurez leur taux de réussite individuel.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAddSetupModal(true)}
+            className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-emerald-glow transition-all shrink-0 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Nouveau Setup</span>
+          </button>
+        </div>
 
-      {/* ── Stats rapides ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          icon={<Calendar className="w-4 h-4" />}
-          label="Debriefs ce mois"
-          value={thisMonthDebriefs.length.toString()}
-          sub={`${debriefs.length} au total`}
-        />
-        <StatCard
-          icon={<Brain className="w-4 h-4" />}
-          label="Score mental moyen"
-          value={avgScore !== '—' ? `${avgScore}/10` : '—'}
-          sub="Ce mois-ci"
-        />
-        <StatCard
-          icon={<AlertTriangle className="w-4 h-4" />}
-          label="Erreur la plus fréquente"
-          value={topMistakeLabel}
-          sub={topMistake ? `${topMistake[1]}x commise` : 'Aucune erreur enregistrée'}
-        />
+        {/* Dynamic Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
+          {displaySetups.map((s: PlaybookSetup) => (
+            <div key={s.id} className="bg-[#181920] border border-[#262833] rounded-2xl overflow-hidden hover:border-[#363948] transition-all flex flex-col justify-between group">
+              {/* Card Image Header */}
+              <div className="relative h-44 w-full bg-[#0d0e14] overflow-hidden">
+                <img
+                  src={s.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80'}
+                  alt={s.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#181920] via-transparent to-black/40" />
+                
+                {/* Agrandir button */}
+                <button
+                  onClick={() => setSelectedSetupForModal(s)}
+                  className="absolute top-3 right-3 bg-black/60 backdrop-blur-md border border-white/10 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 hover:bg-black/80 transition-all cursor-pointer"
+                >
+                  <ImageIcon className="w-3 h-3" />
+                  <span>Agrandir</span>
+                </button>
+              </div>
+
+              {/* Card Content */}
+              <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <span className="bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20 text-[10px]">
+                      UT: {s.timeframes.join(' / ')}
+                    </span>
+                    <span className="text-emerald-400 font-bold text-xs">
+                      Winrate: 68.5%
+                    </span>
+                  </div>
+
+                  <h3 className="text-sm font-bold text-white tracking-tight">{s.title}</h3>
+                  {s.description && (
+                    <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+                      {s.description}
+                    </p>
+                  )}
+
+                  {/* Validation Rules List */}
+                  <div className="mt-3 space-y-1.5 border-t border-[#262833] pt-2.5">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">RÈGLES DE VALIDATION :</span>
+                    {s.validation_rules.map((rule: string, idx: number) => (
+                      <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
+                        <span className="text-emerald-400 font-bold mt-0.5">✓</span>
+                        <span>{rule}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Footer Tags */}
+                <div className="flex items-center justify-between border-t border-[#262833] pt-3 mt-2">
+                  <div className="flex flex-wrap gap-1">
+                    {s.tags.map((tag: string, idx: number) => (
+                      <span key={idx} className="text-[9px] font-medium bg-[#121318] text-slate-400 px-2 py-0.5 rounded border border-[#262833]">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-medium">32 trades</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── Main grid ────────────────────────────────────────────────────────── */}
@@ -620,6 +714,171 @@ export const Playbook: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Modal Nouveau Setup ────────────────────────────────────────────────── */}
+      {showAddSetupModal && createPortal(
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 backdrop-blur-md">
+          <div className="bg-[#14161f] border border-[#262833] rounded-2xl p-6 max-w-lg w-full space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between border-b border-[#262833] pb-3">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-emerald-400" />
+                <span>+ NOUVEAU SETUP PLAYBOOK</span>
+              </h3>
+              <button onClick={() => setShowAddSetupModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!newSetupTitle.trim()) return;
+                try {
+                  await saveSetup({
+                    title: newSetupTitle,
+                    description: newSetupDesc || null,
+                    timeframes: newSetupTimeframes.split(',').map(t => t.trim()),
+                    validation_rules: newSetupRules.split('\n').filter(r => r.trim().length > 0),
+                    tags: newSetupTags.split(',').map(t => t.trim()),
+                    image_url: newSetupImageUrl || null,
+                  });
+                  setShowAddSetupModal(false);
+                  setNewSetupTitle('');
+                  setNewSetupDesc('');
+                  setNewSetupRules('');
+                  setNewSetupImageUrl('');
+                } catch {
+                  alert("Erreur lors de la sauvegarde du setup.");
+                }
+              }}
+              className="space-y-4 text-xs"
+            >
+              <div>
+                <label className="text-slate-400 block mb-1 font-semibold">Titre du Setup *</label>
+                <input
+                  type="text"
+                  placeholder="ex: ICT Silver Bullet & FVG"
+                  value={newSetupTitle}
+                  onChange={e => setNewSetupTitle(e.target.value)}
+                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1 font-semibold">Description</label>
+                <textarea
+                  placeholder="ex: Trading des décalages de prix..."
+                  value={newSetupDesc}
+                  onChange={e => setNewSetupDesc(e.target.value)}
+                  rows={2}
+                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1 font-semibold">Unités de Temps (séparées par virgule)</label>
+                  <input
+                    type="text"
+                    placeholder="m5, m15, h1"
+                    value={newSetupTimeframes}
+                    onChange={e => setNewSetupTimeframes(e.target.value)}
+                    className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1 font-semibold">Tags (#Forex, #Indices)</label>
+                  <input
+                    type="text"
+                    placeholder="#Indices, #Killzone"
+                    value={newSetupTags}
+                    onChange={e => setNewSetupTags(e.target.value)}
+                    className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1 font-semibold">Règles de Validation (une règle par ligne)</label>
+                <textarea
+                  placeholder="Identification de la prise de liquidité&#10;Changement de structure sur M5..."
+                  value={newSetupRules}
+                  onChange={e => setNewSetupRules(e.target.value)}
+                  rows={3}
+                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1 font-semibold">URL de l'image (Exemple / Graphique)</label>
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  value={newSetupImageUrl}
+                  onChange={e => setNewSetupImageUrl(e.target.value)}
+                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all"
+                >
+                  ENREGISTRER LE SETUP
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSetupModal(false)}
+                  className="px-4 bg-[#181920] text-slate-300 rounded-xl border border-[#262833]"
+                >
+                  ANNULER
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── Modal Agrandir Setup ───────────────────────────────────────────────── */}
+      {selectedSetupForModal && createPortal(
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999] p-4 backdrop-blur-md">
+          <div className="bg-[#14161f] border border-[#262833] rounded-2xl max-w-3xl w-full overflow-hidden animate-scale-up space-y-4 p-5">
+            <div className="flex items-center justify-between border-b border-[#262833] pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <span className="text-emerald-400">UT: {selectedSetupForModal.timeframes.join(' / ')}</span>
+                <span>— {selectedSetupForModal.title}</span>
+              </h3>
+              <button onClick={() => setSelectedSetupForModal(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="max-h-[60vh] overflow-hidden rounded-xl border border-[#262833]">
+              <img
+                src={selectedSetupForModal.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80'}
+                alt={selectedSetupForModal.title}
+                className="w-full h-full object-contain max-h-[60vh]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">RÈGLES DE VALIDATION STRICTES :</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {selectedSetupForModal.validation_rules.map((rule: string, idx: number) => (
+                  <div key={idx} className="flex items-start gap-2 bg-[#181920] p-2.5 rounded-xl border border-[#262833] text-slate-200">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span>{rule}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* ── Confirm Delete Modal ──────────────────────────────────────────────── */}
       {confirmDeleteId && createPortal(

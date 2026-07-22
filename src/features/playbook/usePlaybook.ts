@@ -20,7 +20,82 @@ export interface DailyDebrief {
   updated_at: string;
 }
 
+export interface PlaybookSetup {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  timeframes: string[]; // ex: ['m5', 'm15']
+  validation_rules: string[]; // ex: ['Identification prise de liquidité (BSL/SSL)']
+  tags: string[]; // ex: ['#Indices', '#Forex']
+  image_url: string | null;
+  created_at: string;
+}
+
 export type DebriefPayload = Omit<DailyDebrief, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { id?: string };
+export type SetupPayload = Omit<PlaybookSetup, 'id' | 'user_id' | 'created_at'> & { id?: string };
+
+export function usePlaybookSetups() {
+  const queryClient = useQueryClient();
+
+  const { data: setups = [], isLoading } = useQuery<PlaybookSetup[]>({
+    queryKey: ['playbook_setups'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('playbook_setups')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        // En cas d'absence de la table sur Supabase, on retourne les setups par défaut
+        return [];
+      }
+      return data || [];
+    },
+  });
+
+  const saveSetupMutation = useMutation({
+    mutationFn: async (setup: SetupPayload) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Utilisateur non authentifié');
+
+      const payload = { ...setup, user_id: user.id };
+
+      let { data, error } = await supabase
+        .from('playbook_setups')
+        .upsert(payload)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playbook_setups'] });
+    },
+  });
+
+  const deleteSetupMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('playbook_setups')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playbook_setups'] });
+    },
+  });
+
+  return {
+    setups,
+    isLoading,
+    saveSetup: saveSetupMutation.mutateAsync,
+    isSaving: saveSetupMutation.isPending,
+    deleteSetup: deleteSetupMutation.mutateAsync,
+  };
+}
 
 export function usePlaybook() {
   const queryClient = useQueryClient();
