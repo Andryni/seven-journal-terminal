@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useTrades } from '../trades/useTrades';
 import type { Trade } from '../trades/useTrades';
 import { useAccounts } from '../accounts/useAccounts';
+import { usePlaybookSetups } from '../playbook/usePlaybook';
 import { useUIStore } from '../../store/uiStore';
 import { Card } from '../../components/ui/Card';
 import {
@@ -101,6 +102,7 @@ export const Analytics: React.FC = () => {
   const { trades, isLoading } = useTrades();
   const { accounts } = useAccounts();
   const { activeAccountId } = useUIStore();
+  const { setups: playbookSetups } = usePlaybookSetups();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
   const selectedAccount = useMemo(() => {
@@ -326,6 +328,21 @@ export const Analytics: React.FC = () => {
 
   // ── Setup performance ──────────────────────────────────────────────────────
   const setupData = useMemo(() => {
+    if (playbookSetups.length > 0) {
+      return playbookSetups.map(s => {
+        const sub = closed.filter(t => (t.notes || '').includes(s.title) || t.setup_structures.includes('BOS') || t.setup_ob || t.setup_fvg);
+        const wins = sub.filter(t => t.pnl > 0).length;
+        const pnl = sub.reduce((acc, t) => acc + t.pnl, 0);
+        return {
+          name: s.title,
+          total: sub.length,
+          wins,
+          winRate: sub.length > 0 ? Number(((wins / sub.length) * 100).toFixed(1)) : 0,
+          pnl: Number(pnl.toFixed(2)),
+        };
+      });
+    }
+
     const defs = [
       { name: 'BOS', check: (t: Trade) => t.setup_structures.includes('BOS') },
       { name: 'CHoCH', check: (t: Trade) => t.setup_structures.includes('CHoCH') },
@@ -343,7 +360,7 @@ export const Analytics: React.FC = () => {
         pnl: Number(pnl.toFixed(2)),
       };
     });
-  }, [closed]);
+  }, [closed, playbookSetups]);
 
   // ── By Hour of Day ────────────────────────────────────────────────────────
   const hourData = useMemo(() => {
