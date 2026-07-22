@@ -19,6 +19,8 @@ export const Accounts: React.FC = () => {
   const [initialBalance, setInitialBalance] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [maxDailyLoss, setMaxDailyLoss] = useState('');
+  const [maxDrawdownLimit, setMaxDrawdownLimit] = useState('');
+  const [profitTarget, setProfitTarget] = useState('');
   const [error, setError] = useState('');
 
   const handleEditClick = (acc: TradingAccount) => {
@@ -28,7 +30,9 @@ export const Accounts: React.FC = () => {
     setBalance(acc.balance.toString());
     setInitialBalance(acc.initial_balance.toString());
     setCurrency(acc.currency);
-    setMaxDailyLoss(acc.max_daily_loss_limit !== null ? acc.max_daily_loss_limit.toString() : '');
+    setMaxDailyLoss(acc.max_daily_loss_limit !== null && acc.max_daily_loss_limit !== undefined ? acc.max_daily_loss_limit.toString() : '');
+    setMaxDrawdownLimit(acc.max_drawdown_limit !== null && acc.max_drawdown_limit !== undefined ? acc.max_drawdown_limit.toString() : '');
+    setProfitTarget(acc.profit_target !== null && acc.profit_target !== undefined ? acc.profit_target.toString() : '');
     setShowAddForm(true);
   };
 
@@ -43,6 +47,8 @@ export const Accounts: React.FC = () => {
     setBalance('');
     setInitialBalance('');
     setMaxDailyLoss('');
+    setMaxDrawdownLimit('');
+    setProfitTarget('');
     setError('');
   };
 
@@ -73,6 +79,8 @@ export const Accounts: React.FC = () => {
           initial_balance: initialBalanceNum,
           currency,
           max_daily_loss_limit: maxDailyLoss ? Number(maxDailyLoss) : null,
+          max_drawdown_limit: maxDrawdownLimit ? Number(maxDrawdownLimit) : null,
+          profit_target: profitTarget ? Number(profitTarget) : null,
         });
         setEditingAccount(null);
       } else {
@@ -84,6 +92,8 @@ export const Accounts: React.FC = () => {
           currency,
           is_active: true,
           max_daily_loss_limit: maxDailyLoss ? Number(maxDailyLoss) : null,
+          max_drawdown_limit: maxDrawdownLimit ? Number(maxDrawdownLimit) : null,
+          profit_target: profitTarget ? Number(profitTarget) : null,
         });
       }
 
@@ -134,9 +144,9 @@ export const Accounts: React.FC = () => {
         </button>
       </div>
 
-      {/* MODAL FORMULAIRE COMPTE — STYLE BLOOMBERG */}
+      {/* MODAL FORMULAIRE COMPTE — STYLE TRADEZELLA / SEVEN TRACKING */}
       {showAddForm && createPortal(
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[9999] overflow-y-auto backdrop-blur-sm animate-scale-up">
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-[9999] overflow-y-auto backdrop-blur-sm animate-scale-up">
           <div className="bg-[#181920] border border-[#262833] w-full max-w-xl p-6 relative rounded-2xl shadow-2xl my-8">
             {/* Header */}
             <button
@@ -163,15 +173,15 @@ export const Accounts: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="p-2.5 bg-bloomberg-red/10 border border-bloomberg-red text-bloomberg-red-light text-xs flex items-center space-x-2">
+                <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl flex items-center space-x-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
 
               {/* Section 1 — Identité */}
-              <div className="border border-bloomberg-border/50 p-4 space-y-4">
-                <p className="text-[9px] text-bloomberg-gold tracking-widest uppercase font-bold border-b border-bloomberg-border/40 pb-2">1. Identité du Compte</p>
+              <div className="bg-[#121318] border border-[#262833] p-4 rounded-xl space-y-4">
+                <p className="text-xs font-bold text-[#818cf8] uppercase tracking-wider border-b border-[#262833] pb-2">1. Identité du Compte</p>
                 <Input
                   label="Nom du compte *"
                   placeholder="ex: Challenge FTMO 100K"
@@ -205,12 +215,12 @@ export const Accounts: React.FC = () => {
               </div>
 
               {/* Section 2 — Capital */}
-              <div className="border border-bloomberg-border/50 p-4 space-y-4">
-                <p className="text-[9px] text-bloomberg-gold tracking-widest uppercase font-bold border-b border-bloomberg-border/40 pb-2">2. Capital</p>
+              <div className="bg-[#121318] border border-[#262833] p-4 rounded-xl space-y-4">
+                <p className="text-xs font-bold text-[#818cf8] uppercase tracking-wider border-b border-[#262833] pb-2">2. Capital</p>
                 <div className="grid grid-cols-2 gap-4">
                   <Input
                     label="Capital Initial *"
-                    placeholder="ex: 25000"
+                    placeholder="ex: 100000"
                     value={initialBalance}
                     onChange={(e) => setInitialBalance(e.target.value)}
                     type="number"
@@ -219,7 +229,7 @@ export const Accounts: React.FC = () => {
                   />
                   <Input
                     label="Solde Actuel *"
-                    placeholder="ex: 25000"
+                    placeholder="ex: 100000"
                     value={balance}
                     onChange={(e) => setBalance(e.target.value)}
                     type="number"
@@ -229,31 +239,56 @@ export const Accounts: React.FC = () => {
                 </div>
               </div>
 
-              {/* Section 3 — Règles Prop Firm */}
-              <div className="border border-bloomberg-border/50 p-4 space-y-4">
-                <p className="text-[9px] text-bloomberg-gold tracking-widest uppercase font-bold border-b border-bloomberg-border/40 pb-2">3. Règles Prop Firm (Optionnel)</p>
-                <Input
-                  label="Limite de Perte Quotidienne Max ($)"
-                  placeholder="ex: 500 (laisser vide pour désactiver)"
-                  value={maxDailyLoss}
-                  onChange={(e) => setMaxDailyLoss(e.target.value)}
-                  type="number"
-                  step="0.01"
-                />
-              </div>
+              {/* Section 3 — Règles Prop Firm (Affiché uniquement pour Challenge Prop & Funded Prop) */}
+              {(type === 'challenge' || type === 'funded') && (
+                <div className="bg-[#121318] border border-[#262833] p-4 rounded-xl space-y-4 animate-scale-up">
+                  <p className="text-xs font-bold text-amber-400 uppercase tracking-wider border-b border-[#262833] pb-2 flex items-center justify-between">
+                    <span>3. Paramètres Prop Firm Tracker</span>
+                    <span className="text-[10px] text-slate-500 font-normal">Requis pour l'analyse Prop Firm</span>
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Profit Target / Objectif ($) *"
+                      placeholder="ex: 10000"
+                      value={profitTarget}
+                      onChange={(e) => setProfitTarget(e.target.value)}
+                      type="number"
+                      step="0.01"
+                    />
+                    <Input
+                      label="Max Drawdown Limite ($) *"
+                      placeholder="ex: 10000"
+                      value={maxDrawdownLimit}
+                      onChange={(e) => setMaxDrawdownLimit(e.target.value)}
+                      type="number"
+                      step="0.01"
+                    />
+                  </div>
+
+                  <Input
+                    label="Daily Drawdown / Perte Quotidienne Max ($)"
+                    placeholder="ex: 5000 (optionnel)"
+                    value={maxDailyLoss}
+                    onChange={(e) => setMaxDailyLoss(e.target.value)}
+                    type="number"
+                    step="0.01"
+                  />
+                </div>
+              )}
 
               {/* Actions */}
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-3 pt-2 border-t border-[#262833]">
                 <button
                   type="submit"
-                  className="flex-1 bg-bloomberg-gold text-black text-[11px] font-extrabold tracking-widest uppercase py-2.5 hover:bg-bloomberg-gold/90 transition-colors"
+                  className="flex-1 bg-[#6366f1] hover:bg-[#4f46e5] text-white text-xs font-bold py-3 px-6 rounded-xl shadow-indigo-glow transition-all active:scale-[0.99]"
                 >
                   {editingAccount ? 'SAUVEGARDER LES MODIFICATIONS' : 'CRÉER LE COMPTE'}
                 </button>
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="border border-bloomberg-border text-bloomberg-text-secondary hover:text-white text-[11px] font-bold tracking-widest uppercase px-5 py-2.5 transition-colors hover:border-bloomberg-border-bright"
+                  className="bg-[#181920] hover:bg-[#20222c] text-slate-300 font-semibold text-xs py-3 px-6 rounded-xl border border-[#262833] transition-all"
                 >
                   ANNULER
                 </button>

@@ -11,6 +11,8 @@ export interface TradingAccount {
   currency: string;
   is_active: boolean;
   max_daily_loss_limit: number | null;
+  max_drawdown_limit?: number | null;
+  profit_target?: number | null;
   created_at: string;
 }
 

@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useTrades } from '../trades/useTrades';
 import type { Trade } from '../trades/useTrades';
+import { useAccounts } from '../accounts/useAccounts';
+import { useUIStore } from '../../store/uiStore';
 import { Card } from '../../components/ui/Card';
 import {
   Line,
@@ -19,8 +21,6 @@ import {
   Zap, Award, AlertCircle
 } from 'lucide-react';
 import { ShareButton } from '../../components/share/ShareCard';
-
-
 
 // ─── KPI tile ─────────────────────────────────────────────────────────────────
 const KpiTile = ({ label, value, sub, positive }: { label: string; value: string; sub?: string; positive?: boolean }) => (
@@ -101,18 +101,34 @@ const TABS: { id: Tab; label: string; icon: React.FC<{ className?: string }> }[]
 // ─── Main component ───────────────────────────────────────────────────────────
 export const Analytics: React.FC = () => {
   const { trades, isLoading } = useTrades();
+  const { accounts } = useAccounts();
+  const { activeAccountId } = useUIStore();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+
+  const selectedAccount = useMemo(() => {
+    if (activeAccountId) return accounts.find(a => a.id === activeAccountId);
+    return accounts[0];
+  }, [accounts, activeAccountId]);
+
+  const initialBalance = useMemo(() => {
+    return selectedAccount ? selectedAccount.initial_balance : 10000;
+  }, [selectedAccount]);
+
+  const targetProfitAmount = useMemo(() => {
+    return selectedAccount?.profit_target || 10000;
+  }, [selectedAccount]);
+
+  const maxDrawdownLimitAmount = useMemo(() => {
+    return selectedAccount?.max_drawdown_limit || 10000;
+  }, [selectedAccount]);
 
   const closed = useMemo(
     () => trades.filter((t): t is Trade & { exit_time: string; pnl: number } =>
-      t.exit_time !== null && t.pnl !== null),
-    [trades]
+      t.exit_time !== null && t.pnl !== null && (!activeAccountId || t.account_id === activeAccountId)),
+    [trades, activeAccountId]
   );
 
   // ── Equity curve + Drawdown ────────────────────────────────────────────────
-  const initialBalance = useMemo(() => {
-    return 10000; // Capital de départ standard Prop Firm ($10,000)
-  }, []);
 
   const equityCurve = useMemo(() => {
     const sorted = [...closed].sort(
@@ -959,28 +975,28 @@ export const Analytics: React.FC = () => {
         <div className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-2">
-              <span className="text-xs font-semibold text-slate-400">Objectif de Profit (10%)</span>
+              <span className="text-xs font-semibold text-slate-400">Objectif de Profit (${targetProfitAmount.toLocaleString()})</span>
               <div className="text-2xl font-bold text-emerald-400 tabular-nums">
-                {netPnL >= 0 ? '+' : ''}${netPnL.toFixed(2)} / $10,000
+                {netPnL >= 0 ? '+' : ''}${netPnL.toFixed(2)} / ${targetProfitAmount.toLocaleString()}
               </div>
               <div className="w-full bg-[#121318] h-2 rounded-full overflow-hidden border border-[#262833]">
-                <div className="bg-emerald-400 h-full rounded-full transition-all" style={{ width: `${Math.min(Math.max((netPnL / 10000) * 100, 0), 100)}%` }} />
+                <div className="bg-emerald-400 h-full rounded-full transition-all" style={{ width: `${Math.min(Math.max((netPnL / Math.max(targetProfitAmount, 1)) * 100, 0), 100)}%` }} />
               </div>
               <span className="text-[10px] text-slate-500 font-medium block">
-                Progression : {((netPnL / 10000) * 100).toFixed(1)}% de l'objectif
+                Progression : {((netPnL / Math.max(targetProfitAmount, 1)) * 100).toFixed(1)}% de l'objectif
               </span>
             </div>
 
             <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-2">
-              <span className="text-xs font-semibold text-slate-400">Drawdown Max Autorisé (10%)</span>
+              <span className="text-xs font-semibold text-slate-400">Drawdown Max Autorisé (${maxDrawdownLimitAmount.toLocaleString()})</span>
               <div className="text-2xl font-bold text-red-400 tabular-nums">
-                {maxDrawdown.toFixed(2)}% / -10.00%
+                {maxDrawdown.toFixed(2)}% / -{((maxDrawdownLimitAmount / Math.max(initialBalance, 1)) * 100).toFixed(1)}%
               </div>
               <div className="w-full bg-[#121318] h-2 rounded-full overflow-hidden border border-[#262833]">
-                <div className="bg-red-400 h-full rounded-full transition-all" style={{ width: `${Math.min((Math.abs(maxDrawdown) / 10) * 100, 100)}%` }} />
+                <div className="bg-red-400 h-full rounded-full transition-all" style={{ width: `${Math.min((Math.abs(maxDrawdown) / Math.max(((maxDrawdownLimitAmount / Math.max(initialBalance, 1)) * 100), 1)) * 100, 100)}%` }} />
               </div>
               <span className="text-[10px] text-slate-500 font-medium block">
-                Marge restante : {(10 - Math.abs(maxDrawdown)).toFixed(1)}%
+                Marge restante : {(Math.max(((maxDrawdownLimitAmount / Math.max(initialBalance, 1)) * 100) - Math.abs(maxDrawdown), 0)).toFixed(1)}%
               </span>
             </div>
 
