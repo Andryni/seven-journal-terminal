@@ -193,59 +193,68 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
     <div
       ref={ref}
       style={{
-        width: '600px',
-        background: 'linear-gradient(145deg, #070913 0%, #0e1224 50%, #070913 100%)',
-        fontFamily: '"Inter", "Plus Jakarta Sans", system-ui, sans-serif',
-        padding: '36px',
+        width: '640px',
+        background: 'linear-gradient(135deg, #0b0c10 0%, #14161f 50%, #0d0e14 100%)',
+        fontFamily: '"Plus Jakarta Sans", "Inter", system-ui, sans-serif',
+        padding: '40px',
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: '24px',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
+        borderRadius: '28px',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.9)',
       }}
     >
       {/* Background glow radial overlays */}
       <div style={{
-        position: 'absolute', top: '-100px', left: '50%', transform: 'translateX(-50%)',
-        width: '380px', height: '380px', borderRadius: '50%',
+        position: 'absolute', top: '-120px', left: '50%', transform: 'translateX(-50%)',
+        width: '420px', height: '420px', borderRadius: '50%',
         background: isPositive 
-          ? 'radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%)'
-          : 'radial-gradient(circle, rgba(239, 68, 68, 0.12) 0%, transparent 70%)',
+          ? 'radial-gradient(circle, rgba(16, 185, 129, 0.18) 0%, transparent 70%)'
+          : 'radial-gradient(circle, rgba(239, 68, 68, 0.18) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
       <div style={{
-        position: 'absolute', bottom: '-80px', right: '-80px',
-        width: '260px', height: '260px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%)',
+        position: 'absolute', bottom: '-100px', right: '-100px',
+        width: '300px', height: '300px', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+      {/* Modern Top Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span style={{ fontSize: '18px', fontWeight: 900, color: '#ffffff', letterSpacing: '2px' }}>SEVEN</span>
-            <span style={{ fontSize: '18px', fontWeight: 900, color: '#818cf8', letterSpacing: '2px' }}>TRACKING</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+            <div style={{
+              width: '28px', height: '28px', borderRadius: '8px',
+              background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
+              color: '#ffffff', fontWeight: 900, fontSize: '14px', lineHeight: 1
+            }}>⚡</div>
+            <span style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', letterSpacing: '2.5px' }}>SEVEN</span>
+            <span style={{ fontSize: '20px', fontWeight: 900, color: '#818cf8', letterSpacing: '2.5px' }}>TRACKING</span>
           </div>
-          <div style={{ fontSize: '11px', color: '#64748b', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>📅</span>
+          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>⚡ RAPPORT FINANCIER CERTIFIÉ</span>
+            <span>·</span>
             <span>{stats.periodLabel}</span>
           </div>
         </div>
 
         {/* Account Badge Top Right */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '14px', padding: '10px 16px',
+          background: 'rgba(255, 255, 255, 0.04)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderRadius: '16px', padding: '10px 18px',
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
         }}>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: '#ffffff', letterSpacing: '1px', lineHeight: 1.2 }}>
+          <div style={{ fontSize: '12px', fontWeight: 800, color: '#ffffff', letterSpacing: '1px', lineHeight: 1.2 }}>
             {account ? account.name.toUpperCase() : 'TOUS LES COMPTES'}
           </div>
           {account && (
-            <div style={{ fontSize: '9px', fontWeight: 700, color: '#818cf8', letterSpacing: '1px', marginTop: '2px', lineHeight: 1 }}>
+            <div style={{ fontSize: '9.5px', fontWeight: 700, color: '#818cf8', letterSpacing: '1px', marginTop: '3px', lineHeight: 1 }}>
               {account.type.toUpperCase()}
             </div>
           )}
