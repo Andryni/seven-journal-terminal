@@ -330,7 +330,17 @@ export const Analytics: React.FC = () => {
   const setupData = useMemo(() => {
     if (playbookSetups.length > 0) {
       return playbookSetups.map(s => {
-        const sub = closed.filter(t => (t.notes || '').includes(s.title) || t.setup_structures.includes('BOS') || t.setup_ob || t.setup_fvg);
+        const titleLower = s.title.toLowerCase();
+        const sub = closed.filter(t => {
+          const notesLower = (t.notes || '').toLowerCase();
+          if (notesLower.includes(titleLower)) return true;
+          if (titleLower.includes('bos') && t.setup_structures.includes('BOS')) return true;
+          if ((titleLower.includes('ob') || titleLower.includes('order block')) && t.setup_ob) return true;
+          if ((titleLower.includes('fvg') || titleLower.includes('gap')) && t.setup_fvg) return true;
+          if ((titleLower.includes('sweep') || titleLower.includes('liquidity')) && t.setup_liquidity_sweep) return true;
+          if (playbookSetups.length === 1) return true;
+          return false;
+        });
         const wins = sub.filter(t => t.pnl > 0).length;
         const pnl = sub.reduce((acc, t) => acc + t.pnl, 0);
         return {

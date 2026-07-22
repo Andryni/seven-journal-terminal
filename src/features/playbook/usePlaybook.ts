@@ -41,19 +41,32 @@ export function usePlaybookSetups() {
   const { data: setups = [], isLoading } = useQuery<PlaybookSetup[]>({
     queryKey: ['playbook_setups'],
     queryFn: async () => {
+      let dbSetups: PlaybookSetup[] = [];
       try {
         const { data, error } = await supabase
           .from('playbook_setups')
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        return data || [];
+        if (!error && data) {
+          dbSetups = data;
+        }
       } catch {
-        // Fallback localstorage si la table Postgres n'existe pas encore
-        const local = localStorage.getItem('seven_playbook_setups');
-        return local ? JSON.parse(local) : [];
+        // Table non créée ou erreur réseau
       }
+
+      const localStr = localStorage.getItem('seven_playbook_setups');
+      const localSetups: PlaybookSetup[] = localStr ? JSON.parse(localStr) : [];
+
+      // Combiner et dédupliquer par id/title
+      const combined = [...dbSetups];
+      localSetups.forEach(l => {
+        if (!combined.some(c => c.id === l.id || c.title === l.title)) {
+          combined.push(l);
+        }
+      });
+
+      return combined;
     },
   });
 
