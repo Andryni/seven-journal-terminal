@@ -41,34 +41,62 @@ export function usePlaybookSetups() {
   const { data: setups = [], isLoading } = useQuery<PlaybookSetup[]>({
     queryKey: ['playbook_setups'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('playbook_setups')
-        .select('*')
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('playbook_setups')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (error) {
-        // En cas d'absence de la table sur Supabase, on retourne les setups par défaut
-        return [];
+        if (error) throw error;
+        return data || [];
+      } catch {
+        // Fallback localstorage si la table Postgres n'existe pas encore
+        const local = localStorage.getItem('seven_playbook_setups');
+        return local ? JSON.parse(local) : [];
       }
-      return data || [];
     },
   });
 
   const saveSetupMutation = useMutation({
     mutationFn: async (setup: SetupPayload) => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Utilisateur non authentifié');
+      
+      const payload: any = { ...setup, user_id: user?.id || 'local-user' };
 
-      const payload = { ...setup, user_id: user.id };
+      try {
+        let { data, error } = await supabase
+          .from('playbook_setups')
+          .upsert(payload)
+          .select()
+          .single();
 
-      let { data, error } = await supabase
-        .from('playbook_setups')
-        .upsert(payload)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        return data;
+      } catch (err: any) {
+        // Sauvegarde locale si la table Supabase n'est pas encore créée
+        const localStr = localStorage.getItem('seven_playbook_setups');
+        let current: PlaybookSetup[] = localStr ? JSON.parse(localStr) : [];
+        
+        if (setup.id) {
+          current = current.map(s => s.id === setup.id ? { ...s, ...setup } as PlaybookSetup : s);
+        } else {
+          const newItem: PlaybookSetup = {
+            id: 'local-' + Date.now(),
+            user_id: user?.id || 'local-user',
+            title: setup.title,
+            description: setup.description || null,
+            timeframes: setup.timeframes,
+            validation_rules: setup.validation_rules,
+            tags: setup.tags,
+            image_url: setup.image_url || null,
+            created_at: new Date().toISOString(),
+          };
+          current.unshift(newItem);
+        }
+        
+        localStorage.setItem('seven_playbook_setups', JSON.stringify(current));
+        return current[0];
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['playbook_setups'] });
@@ -77,11 +105,20 @@ export function usePlaybookSetups() {
 
   const deleteSetupMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('playbook_setups')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+      try {
+        const { error } = await supabase
+          .from('playbook_setups')
+          .delete()
+          .eq('id', id);
+        if (error) throw error;
+      } catch {
+        const localStr = localStorage.getItem('seven_playbook_setups');
+        if (localStr) {
+          const current: PlaybookSetup[] = JSON.parse(localStr);
+          const filtered = current.filter(s => s.id !== id);
+          localStorage.setItem('seven_playbook_setups', JSON.stringify(filtered));
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['playbook_setups'] });
