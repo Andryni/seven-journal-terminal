@@ -193,49 +193,50 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
     <div
       ref={ref}
       style={{
-        width: '640px',
-        background: 'linear-gradient(135deg, #0b0c10 0%, #14161f 50%, #0d0e14 100%)',
+        width: '600px',
+        boxSizing: 'border-box',
+        background: 'linear-gradient(145deg, #0b0c10 0%, #14161f 50%, #0d0e14 100%)',
         fontFamily: '"Plus Jakarta Sans", "Inter", system-ui, sans-serif',
-        padding: '40px',
+        padding: '36px',
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: '28px',
+        borderRadius: '24px',
         border: '1px solid rgba(255, 255, 255, 0.1)',
-        boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.9)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.9)',
       }}
     >
       {/* Background glow radial overlays */}
       <div style={{
-        position: 'absolute', top: '-120px', left: '50%', transform: 'translateX(-50%)',
-        width: '420px', height: '420px', borderRadius: '50%',
+        position: 'absolute', top: '-100px', left: '50%', transform: 'translateX(-50%)',
+        width: '400px', height: '400px', borderRadius: '50%',
         background: isPositive 
           ? 'radial-gradient(circle, rgba(16, 185, 129, 0.18) 0%, transparent 70%)'
           : 'radial-gradient(circle, rgba(239, 68, 68, 0.18) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
       <div style={{
-        position: 'absolute', bottom: '-100px', right: '-100px',
-        width: '300px', height: '300px', borderRadius: '50%',
+        position: 'absolute', bottom: '-80px', right: '-80px',
+        width: '280px', height: '280px', borderRadius: '50%',
         background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 
       {/* Modern Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <div style={{
-              width: '28px', height: '28px', borderRadius: '8px',
+              width: '26px', height: '26px', borderRadius: '8px',
               background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
-              color: '#ffffff', fontWeight: 900, fontSize: '14px', lineHeight: 1
+              color: '#ffffff', fontWeight: 900, fontSize: '13px', lineHeight: '26px', textAlign: 'center'
             }}>⚡</div>
-            <span style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', letterSpacing: '2.5px' }}>SEVEN</span>
-            <span style={{ fontSize: '20px', fontWeight: 900, color: '#818cf8', letterSpacing: '2.5px' }}>TRACKING</span>
+            <span style={{ fontSize: '19px', fontWeight: 900, color: '#ffffff', letterSpacing: '2px' }}>SEVEN</span>
+            <span style={{ fontSize: '19px', fontWeight: 900, color: '#818cf8', letterSpacing: '2px' }}>TRACKING</span>
           </div>
-          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>⚡ RAPPORT FINANCIER CERTIFIÉ</span>
+          <div style={{ fontSize: '10px', color: '#94a3b8', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>RAPPORT FINANCIER</span>
             <span>·</span>
             <span>{stats.periodLabel}</span>
           </div>
@@ -244,60 +245,70 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
         {/* Account Badge Top Right */}
         <div style={{
           background: 'rgba(255, 255, 255, 0.04)',
-          backdropFilter: 'blur(10px)',
           border: '1px solid rgba(255, 255, 255, 0.12)',
-          borderRadius: '16px', padding: '10px 18px',
+          borderRadius: '14px', padding: '8px 16px',
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
           boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
         }}>
-          <div style={{ fontSize: '12px', fontWeight: 800, color: '#ffffff', letterSpacing: '1px', lineHeight: 1.2 }}>
+          <div style={{ fontSize: '11px', fontWeight: 800, color: '#ffffff', letterSpacing: '1px', lineHeight: 1.2 }}>
             {account ? account.name.toUpperCase() : 'TOUS LES COMPTES'}
           </div>
           {account && (
-            <div style={{ fontSize: '9.5px', fontWeight: 700, color: '#818cf8', letterSpacing: '1px', marginTop: '3px', lineHeight: 1 }}>
+            <div style={{ fontSize: '9px', fontWeight: 700, color: '#818cf8', letterSpacing: '1px', marginTop: '2px', lineHeight: 1 }}>
               {account.type.toUpperCase()}
             </div>
           )}
         </div>
       </div>
 
-      {/* Main Net P&L Display */}
-      <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', letterSpacing: '2.5px', textTransform: 'uppercase', marginBottom: '8px' }}>
-          P&L NET
+      {/* Main Net P&L Display — Perfectly Centered Card */}
+      <div style={{
+        background: 'rgba(18, 19, 24, 0.7)',
+        borderRadius: '20px',
+        padding: '24px 20px',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        textAlign: 'center',
+        marginBottom: '24px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{ fontSize: '10px', fontWeight: 800, color: '#94a3b8', letterSpacing: '2.5px', textTransform: 'uppercase', marginBottom: '6px' }}>
+          P&L NET CUMULÉ
         </div>
         <div style={{
-          fontSize: '56px',
+          fontSize: '52px',
           fontWeight: 900,
           color: profitColor,
-          lineHeight: 1,
+          lineHeight: 1.1,
           letterSpacing: '-1px',
-          filter: `drop-shadow(0 0 25px ${isPositive ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'})`,
+          textAlign: 'center',
+          width: '100%',
         }}>
-          {stats.totalPnl >= 0 ? '+' : ''}{stats.totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}$
+          {stats.totalPnl >= 0 ? '+' : ''}${Math.abs(stats.totalPnl).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
-        <div style={{ fontSize: '12.5px', color: '#94a3b8', marginTop: '8px', fontWeight: 500 }}>
-          {stats.avgR >= 0 ? '+' : ''}{stats.avgR.toFixed(2)} R moyen · {stats.tradeCount} trade{stats.tradeCount > 1 ? 's' : ''}
+        <div style={{ fontSize: '12px', color: '#818cf8', marginTop: '6px', fontWeight: 700, textAlign: 'center' }}>
+          {stats.avgR >= 0 ? '+' : ''}{stats.avgR.toFixed(2)} R Moyen · {stats.tradeCount} Trade{stats.tradeCount > 1 ? 's' : ''} Exécuté{stats.tradeCount > 1 ? 's' : ''}
         </div>
       </div>
 
       {/* Equity Curve Container */}
       {stats.equityCurve.length >= 2 && (
         <div style={{
-          background: 'rgba(18, 19, 24, 0.6)', borderRadius: '16px',
-          padding: '18px', marginBottom: '22px',
+          background: 'rgba(18, 19, 24, 0.5)', borderRadius: '16px',
+          padding: '16px', marginBottom: '20px',
           border: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.4)',
         }}>
-          <div style={{ fontSize: '9.5px', fontWeight: 800, color: '#64748b', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '12px' }}>
-            EQUITY CURVE
+          <div style={{ fontSize: '9px', fontWeight: 800, color: '#64748b', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '10px' }}>
+            COURBE DE PERFORMANCE (EQUITY)
           </div>
           <EquityCurveSVG data={stats.equityCurve} positive={isPositive} trades={trades} />
         </div>
       )}
 
       {/* Stats Cards Grid (2 rows x 3 cols) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
         {[
           {
             label: 'TAUX DE RÉUSSITE',
@@ -305,11 +316,6 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
             color: '#10b981',
             bgColor: 'rgba(16, 185, 129, 0.06)',
             borderColor: 'rgba(16, 185, 129, 0.25)',
-            icon: (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
-              </svg>
-            )
           },
           {
             label: 'GAGNANTS',
@@ -317,11 +323,6 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
             color: '#10b981',
             bgColor: 'rgba(16, 185, 129, 0.06)',
             borderColor: 'rgba(16, 185, 129, 0.25)',
-            icon: (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" /><path d="M12 2a6 6 0 0 1 6 6v1H6V8a6 6 0 0 1 6-6z" />
-              </svg>
-            )
           },
           {
             label: 'PERDANTS',
@@ -329,35 +330,20 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
             color: '#ef4444',
             bgColor: 'rgba(239, 68, 68, 0.06)',
             borderColor: 'rgba(239, 68, 68, 0.25)',
-            icon: (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" /><polyline points="16 17 22 17 22 11" />
-              </svg>
-            )
           },
           {
             label: 'MEILLEUR TRADE',
-            value: `+${stats.bestTrade.toFixed(2)}$`,
+            value: `+$${stats.bestTrade.toFixed(2)}`,
             color: '#10b981',
             bgColor: 'rgba(16, 185, 129, 0.06)',
             borderColor: 'rgba(16, 185, 129, 0.25)',
-            icon: (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" />
-              </svg>
-            )
           },
           {
             label: 'PIRE TRADE',
-            value: `${stats.worstTrade.toFixed(2)}$`,
+            value: `-$${Math.abs(stats.worstTrade).toFixed(2)}`,
             color: '#ef4444',
             bgColor: 'rgba(239, 68, 68, 0.06)',
             borderColor: 'rgba(239, 68, 68, 0.25)',
-            icon: (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="7" y1="7" x2="17" y2="17" /><polyline points="17 7 17 17 7 17" />
-              </svg>
-            )
           },
           {
             label: 'ACTIFS',
@@ -365,33 +351,22 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
             color: '#ffffff',
             bgColor: 'rgba(255, 255, 255, 0.03)',
             borderColor: 'rgba(255, 255, 255, 0.12)',
-            icon: (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
-              </svg>
-            )
           },
-        ].map(({ label, value, color, bgColor, borderColor, icon }) => (
+        ].map(({ label, value, color, bgColor, borderColor }) => (
           <div key={label} style={{
             background: bgColor,
-            borderRadius: '14px',
-            padding: '14px',
+            borderRadius: '12px',
+            padding: '12px 14px',
             border: `1px solid ${borderColor}`,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between',
-            position: 'relative',
-            height: '72px',
+            justifyContent: 'center',
+            height: '64px',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: '8.5px', color: '#94a3b8', letterSpacing: '1px', fontWeight: 800, textTransform: 'uppercase' }}>
-                {label}
-              </div>
-              <div style={{ opacity: 0.9 }}>
-                {icon}
-              </div>
+            <div style={{ fontSize: '8.5px', color: '#94a3b8', letterSpacing: '1px', fontWeight: 800, textTransform: 'uppercase', marginBottom: '4px' }}>
+              {label}
             </div>
-            <div style={{ fontSize: '16px', fontWeight: 800, color, fontFamily: 'monospace' }}>
+            <div style={{ fontSize: '15px', fontWeight: 800, color, fontFamily: 'monospace' }}>
               {value}
             </div>
           </div>
@@ -399,13 +374,13 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
       </div>
 
       {/* Trading Sessions Badges */}
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
         {['NEW YORK', 'LONDON', 'ASIA', 'OVER SESSION'].map(s => {
           const isActive = stats.sessions.map(x => x.toUpperCase()).includes(s);
           return (
             <span key={s} style={{
-              fontSize: '10px', fontWeight: 800, height: '26px', padding: '0 12px',
-              borderRadius: '12px',
+              fontSize: '9.5px', fontWeight: 800, height: '24px', padding: '0 10px',
+              borderRadius: '10px',
               border: isActive ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
               background: isActive ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.03)',
               color: isActive ? '#818cf8' : '#64748b',
@@ -419,29 +394,12 @@ const ShareCardVisual = React.forwardRef<HTMLDivElement, {
         })}
       </div>
 
-      {/* Separator line and Sparkle */}
-      <div style={{
-        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-        position: 'relative',
-        margin: '20px 0 16px 0',
-      }}>
-        {/* Star Sparkle icon on the separator line bottom right */}
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="#94a3b8" style={{
-          position: 'absolute',
-          right: '24px',
-          top: '-13px',
-          opacity: 0.6,
-        }}>
-          <path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z" />
-        </svg>
-      </div>
-
       {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: '9.5px', color: '#64748b', letterSpacing: '1px', fontWeight: 500 }}>
-          Generated by Seven Journal
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '14px' }}>
+        <div style={{ fontSize: '9.5px', color: '#64748b', letterSpacing: '1px', fontWeight: 600 }}>
+          Généré par SEVEN TRACKING
         </div>
-        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', letterSpacing: '1px' }}>
+        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)', letterSpacing: '1px' }}>
           {new Date().toLocaleDateString('fr-FR')}
         </div>
       </div>
