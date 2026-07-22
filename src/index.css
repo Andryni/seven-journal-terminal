@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -10,31 +10,36 @@
   }
 
   body {
-    background-color: #0e0f12;
+    background-color: #07080a;
     color: #f8fafc;
-    font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
     color-scheme: dark;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(6, 182, 212, 0.06) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
   }
 
   ::selection {
-    background: rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.35);
     color: #fff;
   }
 }
 
-/* ─── TradeZella Custom Scrollbar ─── */
+/* ─── Cyber Fintech Custom Scrollbar ─── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #0e0f12;
+  background: #07080a;
 }
 ::-webkit-scrollbar-thumb {
-  background: #262833;
-  border-radius: 4px;
+  background: #1e202c;
+  border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #6366f1;
@@ -46,17 +51,20 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ─── TradeZella Glass & Card Panels ─── */
-.glass-panel, .tradezella-card {
-  background-color: #181920;
-  border: 1px solid #262833;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
-  transition: border-color 0.2s ease, transform 0.15s ease;
+/* ─── Cyber-Fintech Neon Cards ─── */
+.glass-panel, .tradezella-card, .fintech-card {
+  background: linear-gradient(145deg, rgba(20, 22, 31, 0.85) 0%, rgba(13, 14, 20, 0.95) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.6);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.tradezella-card-hover:hover {
-  border-color: #363948;
+.glass-panel:hover, .tradezella-card:hover, .fintech-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 18px 40px -10px rgba(99, 102, 241, 0.18);
+  transform: translateY(-2px);
 }
 
 /* ─── Navigation Active Indicator ─── */
@@ -71,9 +79,9 @@
   transform: translateY(-50%);
   width: 3px;
   height: 60%;
-  background: #6366f1;
+  background: linear-gradient(180deg, #6366f1 0%, #06b6d4 100%);
   border-radius: 0 4px 4px 0;
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.9);
 }
 
 /* ─── Input focus ring ─── */
@@ -81,7 +89,7 @@
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .input-focus-ring:focus {
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
   border-color: #6366f1 !important;
 }
 
@@ -93,22 +101,47 @@
   color: #ef4444;
 }
 .text-indigo-accent {
-  color: #6366f1;
+  color: #818cf8;
 }
 
 .text-glow-green {
-  text-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+  text-shadow: 0 0 14px rgba(16, 185, 129, 0.45);
 }
 .text-glow-red {
-  text-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+  text-shadow: 0 0 14px rgba(239, 68, 68, 0.45);
 }
 .text-glow-indigo {
-  text-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+  text-shadow: 0 0 14px rgba(99, 102, 241, 0.45);
+}
+
+.gradient-text-indigo {
+  background: linear-gradient(135deg, #ffffff 0%, #818cf8 60%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-emerald {
+  background: linear-gradient(135deg, #ffffff 0%, #34d399 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.shadow-indigo-glow {
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.35);
+}
+
+.shadow-emerald-glow {
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.35);
 }
 
 /* ─── Page transitions ─── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .page-enter {
-  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* ─── Button press effect ─── */
@@ -119,42 +152,15 @@
 
 /* ─── Recharts Tooltip Customization ─── */
 .recharts-tooltip-wrapper {
-  border-radius: 8px !important;
+  border-radius: 12px !important;
   overflow: hidden;
 }
 
 .recharts-default-tooltip {
-  background-color: #181920 !important;
-  border: 1px solid #262833 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
-}
-
-/* ─── TradeZella Calendar Cell Styling ─── */
-.calendar-cell-profit {
-  background-color: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-.calendar-cell-profit:hover {
-  background-color: rgba(16, 185, 129, 0.2);
-  border-color: rgba(16, 185, 129, 0.5);
-}
-
-.calendar-cell-loss {
-  background-color: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-.calendar-cell-loss:hover {
-  background-color: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.5);
-}
-
-.calendar-cell-empty {
-  background-color: #181920;
-  border: 1px solid #262833;
-}
-.calendar-cell-empty:hover {
-  background-color: #20222c;
+  background-color: #14161f !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.6) !important;
 }
 
 /* ─── Keyframe Animations & Fintech Glows ─── */
@@ -170,7 +176,7 @@
 
 @keyframes pulseGlow {
   0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.05); }
+  50% { opacity: 0.8; transform: scale(1.04); }
 }
 
 .animate-pulse-glow {
@@ -184,41 +190,5 @@
 
 .animate-scale-up {
   animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* ─── Ultra Pro Fintech Glassmorphism & Card Overlays ─── */
-.fintech-card {
-  background: linear-gradient(135deg, rgba(24, 25, 32, 0.9) 0%, rgba(18, 19, 24, 0.95) 100%);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.fintech-card:hover {
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: 0 15px 35px -10px rgba(99, 102, 241, 0.15);
-  transform: translateY(-2px);
-}
-
-.gradient-text-indigo {
-  background: linear-gradient(135deg, #ffffff 0%, #818cf8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.gradient-text-emerald {
-  background: linear-gradient(135deg, #ffffff 0%, #34d399 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.shadow-indigo-glow {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
-}
-
-.shadow-emerald-glow {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
 }
 
