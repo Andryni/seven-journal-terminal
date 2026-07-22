@@ -37,8 +37,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
   const { accounts } = useAccounts();
   const { isLocked } = useDailyLock();
 
-  const activeAccount = accounts.find(acc => acc.id === activeAccountId);
-
   return (
     <div className="min-h-screen bg-[#0e0f12] text-slate-100 flex font-sans selection:bg-[#6366f1]/30 selection:text-white">
       
@@ -133,25 +131,47 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
       <div className="flex-1 flex flex-col min-w-0">
         
         {/* ── HEADER BAR ──────────────────────────────────────────────── */}
-        <header className="h-16 bg-[#121318] border-b border-[#262833] px-6 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-4">
-            <h1 className="text-base font-bold text-white tracking-tight capitalize">
+        <header className="h-16 bg-[#121318] border-b border-[#262833] px-4 md:px-6 flex items-center justify-between shrink-0 gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <h1 className="text-sm md:text-base font-bold text-white tracking-tight capitalize truncate">
               {NAV_ITEMS.find(n => n.id === currentTab)?.name}
             </h1>
-            {activeAccount && (
-              <span className="text-xs font-medium px-2.5 py-1 rounded-lg bg-[#181920] border border-[#262833] text-slate-300">
-                {activeAccount.name} · ${activeAccount.balance.toLocaleString()}
-              </span>
-            )}
+            
+            {/* Account Selector dropdown in Mobile & Desktop Header */}
+            <div className="flex items-center gap-2">
+              <select
+                value={activeAccountId || ''}
+                onChange={(e) => setActiveAccountId(e.target.value || null)}
+                className="bg-[#181920] border border-[#262833] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-white focus:outline-none focus:border-[#6366f1] transition-colors cursor-pointer max-w-[150px] md:max-w-[200px] truncate"
+              >
+                <option value="">Tous les comptes</option>
+                {accounts.map(acc => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.name} ({acc.currency})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* Locked status banner indicator */}
-          {isLocked && (
-            <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400">
-              <Lock className="w-3.5 h-3.5" />
-              <span>Session Verrouillée</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Locked status banner indicator */}
+            {isLocked && (
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400">
+                <Lock className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Session Verrouillée</span>
+              </div>
+            )}
+
+            {/* Logout button mobile */}
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="md:hidden p-2 text-slate-400 hover:text-red-400 hover:bg-[#181920] rounded-xl transition-colors"
+              title="Déconnexion"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </header>
 
         {/* ── PAGE CONTENT ────────────────────────────────────────────── */}

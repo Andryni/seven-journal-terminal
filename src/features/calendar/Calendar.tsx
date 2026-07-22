@@ -84,7 +84,7 @@ export const Calendar: React.FC = () => {
 
   // Blank slots
   for (let i = 0; i < adjustedStartDay; i++) {
-    cells.push(<div key={`blank-${i}`} className="bg-[#121318] border border-[#262833] rounded-lg min-h-[95px] opacity-40" />);
+    cells.push(<div key={`blank-${i}`} className="bg-[#121318] border border-[#262833] rounded-lg min-h-[55px] sm:min-h-[95px] opacity-40" />);
   }
 
   // Days slots TradeZella Style
@@ -109,23 +109,26 @@ export const Calendar: React.FC = () => {
       <div 
         key={`day-${day}`}
         onClick={() => dayStats && setSelectedDateStr(dateStr)}
-        className={`border rounded-lg p-2.5 flex flex-col justify-between min-h-[95px] transition-all ${
+        className={`border rounded-lg p-1 sm:p-2.5 flex flex-col justify-between min-h-[55px] sm:min-h-[95px] transition-all ${
           isSelected ? 'ring-2 ring-[#6366f1] border-transparent' : ''
         } ${dayStats ? 'cursor-pointer' : ''} ${cellClass}`}
       >
-        <span className="text-slate-400 font-semibold text-xs">{day}</span>
+        <span className="text-slate-400 font-semibold text-[10px] sm:text-xs">{day}</span>
         
         {dayStats ? (
-          <div className="flex flex-col space-y-1 items-end w-full">
-            <span className={`font-bold tabular-nums text-sm ${dayStats.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <div className="flex flex-col space-y-0.5 sm:space-y-1 items-end w-full">
+            <span className={`font-bold tabular-nums text-[10px] sm:text-sm ${dayStats.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {dayStats.pnl >= 0 ? '+' : ''}${Math.abs(dayStats.pnl) >= 1000 ? `${(dayStats.pnl / 1000).toFixed(1)}k` : dayStats.pnl.toFixed(0)}
             </span>
-            <div className="text-[10px] text-slate-400 font-medium">
+            <div className="hidden sm:block text-[10px] text-slate-400 font-medium">
               {dayStats.count} trade{dayStats.count > 1 ? 's' : ''} · {((dayStats.wins / dayStats.count) * 100).toFixed(0)}%
+            </div>
+            <div className="sm:hidden text-[9px] text-slate-400 font-medium">
+              {dayStats.count}t
             </div>
           </div>
         ) : (
-          <span className="text-[10px] text-slate-600 self-end">—</span>
+          <span className="text-[9px] sm:text-[10px] text-slate-600 self-end">—</span>
         )}
       </div>
     );
