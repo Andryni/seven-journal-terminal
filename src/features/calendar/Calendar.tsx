@@ -27,20 +27,28 @@ export const Calendar: React.FC = () => {
   const totalDays = new Date(year, month + 1, 0).getDate();
   const adjustedStartDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1; // Mon-Sun
 
-  // Aggregate trades by date (YYYY-MM-DD)
+  // Aggregate trades by date (YYYY-MM-DD local format)
   const tradesByDate = useMemo(() => {
     const map: Record<string, { pnl: number; count: number; wins: number; losses: number; trades: Trade[] }> = {};
     trades.forEach(t => {
-      if (t.exit_time) {
-        const dateStr = t.exit_time.split('T')[0];
-        if (!map[dateStr]) {
-          map[dateStr] = { pnl: 0, count: 0, wins: 0, losses: 0, trades: [] };
+      const timeStr = t.exit_time || t.entry_time;
+      if (timeStr) {
+        const d = new Date(timeStr);
+        if (!isNaN(d.getTime())) {
+          const yearNum = d.getFullYear();
+          const monthNum = String(d.getMonth() + 1).padStart(2, '0');
+          const dayNum = String(d.getDate()).padStart(2, '0');
+          const dateStr = `${yearNum}-${monthNum}-${dayNum}`;
+
+          if (!map[dateStr]) {
+            map[dateStr] = { pnl: 0, count: 0, wins: 0, losses: 0, trades: [] };
+          }
+          map[dateStr].pnl += t.pnl || 0;
+          map[dateStr].count += 1;
+          if ((t.pnl || 0) > 0) map[dateStr].wins += 1;
+          else map[dateStr].losses += 1;
+          map[dateStr].trades.push(t);
         }
-        map[dateStr].pnl += t.pnl || 0;
-        map[dateStr].count += 1;
-        if ((t.pnl || 0) > 0) map[dateStr].wins += 1;
-        else map[dateStr].losses += 1;
-        map[dateStr].trades.push(t);
       }
     });
     return map;

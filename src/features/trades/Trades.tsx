@@ -277,7 +277,7 @@ export const Trades: React.FC = () => {
       take_profit: tp,
       size: lotSize,
       entry_time: formattedEntryTime,
-      exit_time: exit ? (editingTrade?.exit_time || new Date().toISOString()) : null,
+      exit_time: exit ? (editingTrade?.exit_time || formattedEntryTime) : null,
       pnl: finalPnl,
       r_multiple: finalRMultiple,
       timeframe,
