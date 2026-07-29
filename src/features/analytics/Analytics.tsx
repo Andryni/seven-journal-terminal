@@ -11,7 +11,7 @@ import {
   Cell,
   ComposedChart,
   XAxis, YAxis,
-  Tooltip,
+  Tooltip, Legend,
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
