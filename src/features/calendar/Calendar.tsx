@@ -88,6 +88,20 @@ export const Calendar: React.FC = () => {
 
   const daysOfWeek = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
+  // Helper: intensité heatmap selon P&L absolu
+  const getHeatClass = (pnl: number): string => {
+    const abs = Math.abs(pnl);
+    if (pnl > 0) {
+      if (abs >= 200) return 'cal-day-hot-3';
+      if (abs >= 100) return 'cal-day-hot-2';
+      return 'cal-day-hot-1';
+    } else {
+      if (abs >= 200) return 'cal-day-cold-3';
+      if (abs >= 100) return 'cal-day-cold-2';
+      return 'cal-day-cold-1';
+    }
+  };
+
   const cells: React.ReactNode[] = [];
 
   // Blank slots
@@ -102,14 +116,8 @@ export const Calendar: React.FC = () => {
     const dateStr = `${year}-${formattedMonth}-${formattedDay}`;
     const dayStats = tradesByDate[dateStr];
 
-    let cellClass = 'bg-[#181920] border-[#262833] hover:border-[#363948]';
-    if (dayStats) {
-      if (dayStats.pnl > 0) {
-        cellClass = 'bg-[#10b981]/15 border-[#10b981]/40 hover:border-[#10b981]';
-      } else if (dayStats.pnl < 0) {
-        cellClass = 'bg-[#ef4444]/15 border-[#ef4444]/40 hover:border-[#ef4444]';
-      }
-    }
+    let cellClass = 'bg-[#181920] border-[#262833] hover:border-white/20';
+    if (dayStats) cellClass = getHeatClass(dayStats.pnl);
 
     const isSelected = selectedDateStr === dateStr;
 
@@ -117,8 +125,9 @@ export const Calendar: React.FC = () => {
       <div 
         key={`day-${day}`}
         onClick={() => dayStats && setSelectedDateStr(dateStr)}
-        className={`border rounded-lg p-1 sm:p-2.5 flex flex-col justify-between min-h-[55px] sm:min-h-[95px] transition-all ${
-          isSelected ? 'ring-2 ring-[#6366f1] border-transparent' : ''
+        title={dayStats ? `${day} — P&L: ${dayStats.pnl >= 0 ? '+' : ''}$${dayStats.pnl.toFixed(2)} | ${dayStats.count} trade${dayStats.count > 1 ? 's' : ''} | Win: ${((dayStats.wins / dayStats.count) * 100).toFixed(0)}%` : undefined}
+        className={`border rounded-lg p-1 sm:p-2.5 flex flex-col justify-between min-h-[55px] sm:min-h-[95px] transition-all duration-200 ${
+          isSelected ? 'ring-2 ring-[#6366f1] border-transparent shadow-indigo-glow' : ''
         } ${dayStats ? 'cursor-pointer' : ''} ${cellClass}`}
       >
         <span className="text-slate-400 font-semibold text-[10px] sm:text-xs">{day}</span>

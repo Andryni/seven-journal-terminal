@@ -59,19 +59,37 @@ function AppContent() {
   // If not logged in, show Auth form (TradeZella Pro Style)
   if (!session) {
     return (
-      <div className="min-h-screen bg-[#0e0f12] text-slate-100 font-sans flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="min-h-screen bg-[#07080a] text-slate-100 font-sans flex items-center justify-center p-4 relative overflow-hidden">
         {/* Background Trading Graphic Image */}
         <div 
-          className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-luminosity scale-105 animate-pulse-subtle" 
+          className="absolute inset-0 bg-cover bg-center opacity-20 mix-blend-luminosity scale-105" 
           style={{ backgroundImage: `url('/assets/trading_auth_bg.png')` }}
         />
 
-        {/* Dynamic Glowing Gradients */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#6366f1]/15 rounded-full blur-3xl pointer-events-none animate-pulse-glow" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#10b981]/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Animated SVG Particles */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+          {[
+            { cx: '10%',  cy: '20%', r: 2,   dur: '7s',  color: '#6366f1', delay: '0s'   },
+            { cx: '85%',  cy: '15%', r: 1.5, dur: '9s',  color: '#8b5cf6', delay: '1s'   },
+            { cx: '20%',  cy: '75%', r: 3,   dur: '6s',  color: '#06b6d4', delay: '2s'   },
+            { cx: '70%',  cy: '60%', r: 2,   dur: '8s',  color: '#10b981', delay: '0.5s' },
+            { cx: '50%',  cy: '30%', r: 1,   dur: '10s', color: '#818cf8', delay: '3s'   },
+            { cx: '30%',  cy: '50%', r: 2.5, dur: '7s',  color: '#6366f1', delay: '1.5s' },
+            { cx: '90%',  cy: '80%', r: 1.5, dur: '9s',  color: '#34d399', delay: '4s'   },
+            { cx: '60%',  cy: '90%', r: 2,   dur: '6s',  color: '#8b5cf6', delay: '2.5s' },
+          ].map((p, i) => (
+            <circle key={i} cx={p.cx} cy={p.cy} r={p.r} fill={p.color} opacity="0.5"
+              style={{ animation: `particleFloat ${p.dur} ease-in-out ${p.delay} infinite`, '--dur': p.dur } as React.CSSProperties} />
+          ))}
+        </svg>
+
+        {/* Dynamic Glowing Orbs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#6366f1]/12 rounded-full blur-3xl pointer-events-none animate-pulse-glow" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#8b5cf6]/08 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-3/4 left-3/4 w-64 h-64 bg-[#06b6d4]/06 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative w-full max-w-md animate-scale-up z-10">
-          <div className="bg-[#181920]/90 border border-[#262833] backdrop-blur-xl rounded-2xl p-8 space-y-6 shadow-2xl shadow-black/80">
+          <div className="bg-[#181920]/85 border border-white/[0.08] backdrop-blur-2xl rounded-2xl p-8 space-y-6 shadow-card-premium">
             
             {/* Logo & Branding */}
             <div className="text-center space-y-3">
@@ -125,7 +143,7 @@ function AppContent() {
                 required
               />
 
-              <Button type="submit" className="w-full py-3 mt-2 text-xs font-bold tracking-wider uppercase bg-[#6366f1] hover:bg-[#4f46e5] shadow-indigo-glow transition-all rounded-xl">
+              <Button type="submit" className="w-full py-3 mt-2 text-xs font-heading font-bold tracking-wider uppercase bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] hover:from-[#4f46e5] hover:to-[#7c3aed] shadow-indigo-glow transition-all rounded-xl shimmer-btn">
                 {isSignUp ? "Créer mon compte" : "Se connecter →"}
               </Button>
             </form>

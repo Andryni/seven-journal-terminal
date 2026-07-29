@@ -1064,9 +1064,9 @@ export const Trades: React.FC = () => {
       {/* TABLEAU DES TRADES */}
       <Table headers={['DATE', 'INSTRUMENT', 'SESSION', 'TYPE', 'LOTS', 'RESULTAT', 'P&L ($)', 'R-MULTIPLE', 'LIENS IMAGES', 'ACTIONS']}>
         {filteredTrades.map((t: Trade) => (
-          <TableRow key={t.id}>
-            <TableCell>{new Date(t.entry_time).toLocaleDateString('fr-FR')} {new Date(t.entry_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</TableCell>
-            <TableCell className="font-bold text-white">{t.pair}</TableCell>
+          <TableRow key={t.id} className="trade-row">
+            <TableCell className="font-mono text-xs text-slate-400">{new Date(t.entry_time).toLocaleDateString('fr-FR')} {new Date(t.entry_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</TableCell>
+            <TableCell className="font-heading font-bold text-white">{t.pair}</TableCell>
             <TableCell>
               {t.session ? (
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase ${
@@ -1096,10 +1096,14 @@ export const Trades: React.FC = () => {
                 {t.result}
               </span>
             </TableCell>
-            <TableCell className={`font-bold ${t.pnl === null ? 'text-bloomberg-text-secondary' : t.pnl >= 0 ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>
-              {t.pnl !== null ? `${t.pnl >= 0 ? '+' : ''}${t.pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'OPEN'}
+            <TableCell>
+              {t.pnl !== null ? (
+                <span className={t.pnl >= 0 ? 'pnl-badge-positive' : 'pnl-badge-negative'}>
+                  {t.pnl >= 0 ? '+' : ''}{t.pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </span>
+              ) : <span className="text-slate-500 font-mono text-xs">OPEN</span>}
             </TableCell>
-            <TableCell className="font-semibold text-white">
+            <TableCell className={`font-mono font-bold ${t.r_multiple !== null ? (t.r_multiple > 0 ? 'text-emerald-400' : 'text-red-400') : 'text-slate-500'}`}>
               {t.r_multiple !== null ? `${t.r_multiple > 0 ? '+' : ''}${t.r_multiple} R` : '—'}
             </TableCell>
             <TableCell>

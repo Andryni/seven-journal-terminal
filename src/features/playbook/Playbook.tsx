@@ -232,8 +232,8 @@ export const Playbook: React.FC = () => {
         {/* Dynamic Cards Grid */}
         {savedSetups.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
-            {savedSetups.map((s: PlaybookSetup) => (
-              <div key={s.id} className="bg-[#181920] border border-[#262833] rounded-2xl overflow-hidden hover:border-[#363948] transition-all flex flex-col justify-between group">
+            {savedSetups.map((s: PlaybookSetup, cardIdx: number) => (
+              <div key={s.id} className="setup-card overflow-hidden flex flex-col justify-between group animate-fade-in-up" style={{animationDelay: `${cardIdx * 0.07}s`}}>
                 {/* Card Image Header */}
                 <div className="relative h-44 w-full bg-[#0d0e14] overflow-hidden">
                   <img
@@ -291,7 +291,7 @@ export const Playbook: React.FC = () => {
                       </span>
                     </div>
 
-                    <h3 className="text-sm font-bold text-white tracking-tight">{s.title}</h3>
+                    <h3 className="text-sm font-heading font-bold text-white tracking-tight">{s.title}</h3>
                     {s.description && (
                       <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed">
                         {s.description}
@@ -299,8 +299,8 @@ export const Playbook: React.FC = () => {
                     )}
 
                     {/* Validation Rules List */}
-                    <div className="mt-3 space-y-1.5 border-t border-[#262833] pt-2.5">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">RÈGLES DE VALIDATION :</span>
+                    <div className="mt-3 space-y-1.5 border-t border-white/[0.05] pt-2.5">
+                      <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">RÈGLES DE VALIDATION :</span>
                       {s.validation_rules.map((rule: string, idx: number) => (
                         <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
                           <span className="text-emerald-400 font-bold mt-0.5">✓</span>
@@ -310,11 +310,11 @@ export const Playbook: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Footer Tags */}
-                  <div className="flex items-center justify-between border-t border-[#262833] pt-3 mt-2">
+                  {/* Footer Tags + mini win bar */}
+                  <div className="border-t border-white/[0.05] pt-3 mt-2 space-y-2">
                     <div className="flex flex-wrap gap-1">
                       {s.tags.map((tag: string, idx: number) => (
-                        <span key={idx} className="text-[9px] font-medium bg-[#121318] text-slate-400 px-2 py-0.5 rounded border border-[#262833]">
+                        <span key={idx} className="text-[9px] font-mono font-medium bg-[#6366f1]/10 text-[#818cf8] px-2 py-0.5 rounded-md border border-[#6366f1]/20">
                           {tag}
                         </span>
                       ))}
@@ -325,10 +325,12 @@ export const Playbook: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-10 bg-[#121318] border border-dashed border-[#262833] rounded-2xl space-y-2">
-            <BookOpen className="w-8 h-8 text-slate-500 mx-auto opacity-50" />
-            <p className="text-xs text-slate-400 font-medium">Aucun setup créé pour le moment.</p>
-            <p className="text-[11px] text-slate-500">Cliquez sur "+ Nouveau Setup" ci-dessus pour documenter votre première stratégie.</p>
+          <div className="text-center py-14 bg-[#181920]/50 border border-dashed border-white/[0.08] rounded-2xl space-y-3 backdrop-blur">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-[#6366f1]/10 border border-[#6366f1]/20 flex items-center justify-center animate-float">
+              <BookOpen className="w-6 h-6 text-[#818cf8]" />
+            </div>
+            <p className="text-sm font-heading font-bold text-slate-300">Aucune stratégie créée</p>
+            <p className="text-[11px] text-slate-500 max-w-xs mx-auto">Cliquez sur "+ Nouveau Setup" pour documenter votre première stratégie et construire votre Playbook.</p>
           </div>
         )}
       </div>

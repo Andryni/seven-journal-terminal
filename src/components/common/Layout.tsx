@@ -79,23 +79,25 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
         </div>
 
         {/* Navigation items */}
-        <nav className="flex-1 px-3 space-y-1.5 py-2">
+        <nav className="flex-1 px-3 space-y-1 py-2">
           {NAV_ITEMS.map(({ id, name, icon: Icon }) => {
             const active = currentTab === id;
             return (
               <button
                 key={id}
                 onClick={() => setCurrentTab(id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all relative ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 relative group ${
                   active
                     ? 'bg-[#6366f1]/15 text-[#818cf8] border border-[#6366f1]/30 shadow-indigo-glow font-bold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] border border-transparent'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${active ? 'text-[#818cf8]' : 'text-slate-400'}`} />
-                <span>{name}</span>
+                <Icon className={`w-4 h-4 transition-all duration-200 ${active ? 'text-[#818cf8] scale-110' : 'text-slate-400 group-hover:text-slate-200 group-hover:scale-110'}`} />
+                <span className="font-sans">{name}</span>
                 {active && (
-                  <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-[#818cf8] shadow-[0_0_8px_#818cf8]" />
+                  <div className="absolute right-2 flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#818cf8] shadow-[0_0_8px_#818cf8] animate-live-pulse" />
+                  </div>
                 )}
               </button>
             );

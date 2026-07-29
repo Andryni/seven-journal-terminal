@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTrades } from '../trades/useTrades';
 import { usePerformanceMetrics } from './usePerformanceMetrics';
 import {
   TrendingUp, Target,
-  TrendingDown, Activity, Zap, Brain, Calendar, History
+  TrendingDown, Activity, Zap, Brain, Calendar, History, Clock
 } from 'lucide-react';
 import {
   AreaChart, Area,
@@ -38,38 +38,59 @@ const SemiCircleGauge = ({ percent, color = '#10b981' }: { percent: number; colo
     <div className="relative w-16 h-10 flex items-center justify-center shrink-0">
       <svg className="w-16 h-10 transform -rotate-180" viewBox="0 0 64 36">
         {/* Background Arc */}
-        <path
-          d="M 6 32 A 26 26 0 0 1 58 32"
-          fill="none"
-          stroke="#262833"
-          strokeWidth="6"
-          strokeLinecap="round"
-        />
+        <path d="M 6 32 A 26 26 0 0 1 58 32" fill="none" stroke="#262833" strokeWidth="6" strokeLinecap="round" />
+        {/* Glow filter */}
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+            <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
         {/* Value Arc */}
         <path
           d="M 6 32 A 26 26 0 0 1 58 32"
-          fill="none"
-          stroke={color}
-          strokeWidth="6"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+          fill="none" stroke={color} strokeWidth="6" strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+          filter="url(#glow)"
+          style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.16,1,0.3,1)' }}
         />
       </svg>
     </div>
   );
 };
 
+// ── Custom Animated Dot ────────────────────────────────────────────────────────
+const CustomDot = (props: { cx?: number; cy?: number; index?: number; data?: {pnl:number}[] }) => {
+  const { cx, cy, index, data } = props;
+  if (!data || index === undefined || index !== data.length - 1) return null;
+  const isPositive = (data[index]?.pnl ?? 0) >= 0;
+  const color = isPositive ? '#10b981' : '#ef4444';
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={5} fill={color} stroke="#07080a" strokeWidth={2} />
+      <circle cx={cx} cy={cy} r={9} fill={color} opacity={0.2}>
+        <animate attributeName="r" from="5" to="14" dur="1.5s" repeatCount="indefinite" />
+        <animate attributeName="opacity" from="0.3" to="0" dur="1.5s" repeatCount="indefinite" />
+      </circle>
+    </g>
+  );
+};
+
 export const Dashboard: React.FC = () => {
   const { trades, isLoading } = useTrades();
   const m = usePerformanceMetrics(trades);
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
         <div className="w-8 h-8 border-2 border-[#6366f1]/30 border-t-[#6366f1] rounded-full animate-spin" />
-        <span className="text-xs text-slate-400 font-medium">Chargement du Dashboard Seven Tracking...</span>
+        <span className="text-xs text-slate-400 font-mono">Chargement du Dashboard Seven Tracking...</span>
       </div>
     );
   }
@@ -79,6 +100,26 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 page-enter">
+
+      {/* ── MARKET OVERVIEW HEADER ─── */}
+      <div className="flex items-center justify-between px-1">
+        <div>
+          <h2 className="text-xl font-heading font-bold text-white tracking-tight">Market Overview</h2>
+          <p className="text-xs text-slate-400 font-mono mt-0.5">Tableau de bord personnel · Seven Tracking</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-[#181920]/80 backdrop-blur border border-white/[0.06] rounded-xl px-3 py-2">
+            <div className="live-dot" />
+            <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">LIVE</span>
+          </div>
+          <div className="flex items-center gap-2 bg-[#181920]/80 backdrop-blur border border-white/[0.06] rounded-xl px-3 py-2">
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-[11px] font-mono text-slate-300 tabular-nums">
+              {now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* ── TOP KPI SUMMARY CARDS (TradeZella Style with Gauges & Max Drawdown) ──────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -100,78 +141,66 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Win Rate % */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+        <div className="stat-card p-5 flex items-center justify-between group">
           <div>
-            <span className="text-xs font-semibold text-slate-400 block mb-1">Trade win %</span>
-            <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
-              {m.winRate.toFixed(1)}%
-            </div>
-            <div className="text-[11px] text-slate-500 font-medium mt-1">
-              <span className="text-emerald-400 font-semibold">{m.winCount} G</span> · <span className="text-red-400 font-semibold">{m.lossCount} P</span>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 block mb-1">Win Rate</span>
+            <div className="kpi-value text-2xl text-white">{m.winRate.toFixed(1)}%</div>
+            <div className="text-[11px] text-slate-400 font-mono mt-1">
+              <span className="text-emerald-400 font-bold">{m.winCount}W</span> · <span className="text-red-400 font-bold">{m.lossCount}L</span>
             </div>
           </div>
           <SemiCircleGauge percent={m.winRate} color={m.winRate >= 50 ? '#10b981' : '#ef4444'} />
         </div>
 
         {/* Profit Factor */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+        <div className="stat-card p-5 flex items-center justify-between group">
           <div>
-            <span className="text-xs font-semibold text-slate-400 block mb-1">Profit factor</span>
-            <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
-              {m.profitFactor === Infinity ? '∞' : m.profitFactor.toFixed(2)}
-            </div>
-            <div className="text-[11px] text-slate-500 font-medium mt-1">
-              Gains: ${m.grossProfit.toFixed(0)} · Pertes: ${m.grossLoss.toFixed(0)}
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 block mb-1">Profit Factor</span>
+            <div className="kpi-value text-2xl text-[#818cf8]">{m.profitFactor === Infinity ? '∞' : m.profitFactor.toFixed(2)}</div>
+            <div className="text-[11px] text-slate-400 font-mono mt-1">
+              G: ${m.grossProfit.toFixed(0)} · P: ${m.grossLoss.toFixed(0)}
             </div>
           </div>
-          <div className="p-2.5 rounded-xl bg-[#20222c] text-[#818cf8]">
+          <div className="p-2.5 rounded-xl bg-[#6366f1]/10 border border-[#6366f1]/20 group-hover:scale-110 transition-transform">
             <Target className="w-5 h-5 text-[#818cf8]" />
           </div>
         </div>
 
         {/* Day Win Rate % */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+        <div className="stat-card p-5 flex items-center justify-between group">
           <div>
-            <span className="text-xs font-semibold text-slate-400 block mb-1">Day win %</span>
-            <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
-              {m.dayWinRate.toFixed(1)}%
-            </div>
-            <div className="text-[11px] text-slate-500 font-medium mt-1">
-              Jours gagnants / total
-            </div>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 block mb-1">Day Win %</span>
+            <div className="kpi-value text-2xl text-white">{m.dayWinRate.toFixed(1)}%</div>
+            <div className="text-[11px] text-slate-400 font-mono mt-1">Jours gagnants</div>
           </div>
           <SemiCircleGauge percent={m.dayWinRate} color={m.dayWinRate >= 50 ? '#10b981' : '#ef4444'} />
         </div>
 
         {/* Max Drawdown */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+        <div className="stat-card p-5 flex items-center justify-between group">
           <div>
-            <span className="text-xs font-semibold text-slate-400 block mb-1">Max Drawdown</span>
-            <div className="text-2xl font-bold text-red-400 tabular-nums tracking-tight">
-              -${m.maxDrawdown.toFixed(2)}
-            </div>
-            <div className="text-[11px] text-slate-500 font-medium mt-1">
-              Perte max enregistrée
-            </div>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 block mb-1">Max Drawdown</span>
+            <div className="kpi-value text-2xl text-red-400 text-glow-red">-${m.maxDrawdown.toFixed(2)}</div>
+            <div className="text-[11px] text-slate-400 font-mono mt-1">Perte max enregistrée</div>
           </div>
-          <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
-            <TrendingDown className="w-5 h-5" />
+          <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 group-hover:scale-110 transition-transform">
+            <TrendingDown className="w-5 h-5 text-red-400" />
           </div>
         </div>
 
       </div>
 
-      {/* ── CHARTS SECTION (TradeZella Area + Bar Charts) ───────────────── */}
+      {/* ── CHARTS SECTION ───────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Cumulative P&L Area Chart */}
-        <div className="lg:col-span-2 bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
+        <div className="chart-container lg:col-span-2 p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-              <span className="w-1 h-3.5 bg-[#6366f1] rounded-full" />
-              Daily Net Cumulative P&L ($)
+            <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <span className="w-1 h-3.5 rounded-full" style={{background: 'linear-gradient(180deg,#6366f1,#8b5cf6)'}} />
+              Courbe d'Équité Cumulative
             </h3>
-            <span className={`text-xs font-bold font-mono ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+            <span className={`text-xs font-mono font-bold ${isPositive ? 'text-emerald-400 text-glow-green' : 'text-red-400 text-glow-red'}`}>
               {m.netPnL >= 0 ? '+' : ''}${m.netPnL.toFixed(2)}
             </span>
           </div>
@@ -181,24 +210,24 @@ export const Dashboard: React.FC = () => {
               <AreaChart data={equityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="pnlGradGreen" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="pnlGradRed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.35} />
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
                     <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+                <XAxis dataKey="date" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
                 <Tooltip content={<ChartTooltip />} />
-                <ReferenceLine y={0} stroke="#262833" strokeDasharray="3 3" />
+                <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" />
                 <Area
-                  type="monotone"
-                  dataKey="pnl"
+                  type="monotone" dataKey="pnl"
                   stroke={isPositive ? '#10b981' : '#ef4444'}
                   strokeWidth={2.5}
                   fill={`url(#${isPositive ? 'pnlGradGreen' : 'pnlGradRed'})`}
+                  dot={<CustomDot data={equityData} />}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -206,24 +235,24 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Daily P&L Bar Chart */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
+        <div className="chart-container p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-              <span className="w-1 h-3.5 bg-[#6366f1] rounded-full" />
-              Net Daily P&L ($)
+            <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <span className="w-1 h-3.5 rounded-full" style={{background: 'linear-gradient(180deg,#8b5cf6,#06b6d4)'}} />
+              P&L Quotidien
             </h3>
           </div>
 
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={m.dailyPnL} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                <XAxis dataKey="date" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
+                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <ReferenceLine y={0} stroke="#262833" />
+                <ReferenceLine y={0} stroke="#334155" />
                 <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
                   {m.dailyPnL.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} />
+                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.85} />
                   ))}
                 </Bar>
               </BarChart>
@@ -234,10 +263,10 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* ── METRICS BREAKDOWN ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 stagger-children">
 
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+        <div className="stat-card p-5 space-y-3 animate-slide-up">
+          <h4 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <Activity className="w-4 h-4 text-[#6366f1]" />
             Détail des Métriques
           </h4>
@@ -261,73 +290,76 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-            <Zap className="w-4 h-4 text-[#6366f1]" />
+        <div className="stat-card p-5 space-y-3 animate-slide-up">
+          <h4 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <Zap className="w-4 h-4 text-[#8b5cf6]" />
             Vue d'Ensemble
           </h4>
-          <div className="space-y-2 text-xs divide-y divide-[#262833]">
+          <div className="space-y-2 text-xs divide-y divide-white/[0.05]">
             <div className="flex justify-between py-2">
               <span className="text-slate-400">Positions Clôturées</span>
-              <span className="font-bold text-slate-200">{m.closedTrades}</span>
+              <span className="font-mono font-bold text-slate-200">{m.closedTrades}</span>
             </div>
             <div className="flex justify-between py-2">
               <span className="text-slate-400">Positions En Cours</span>
-              <span className="font-bold text-[#818cf8]">{m.openTrades}</span>
+              <span className="font-mono font-bold text-[#818cf8]">{m.openTrades}</span>
             </div>
             <div className="flex justify-between py-2">
               <span className="text-slate-400">Consistency Score</span>
-              <span className={`font-bold ${m.consistency.alert ? 'text-red-400' : 'text-emerald-400'}`}>
-                {m.consistency.score.toFixed(1)}% {m.consistency.alert ? '(Alerte >15%)' : '(Normal)'}
+              <span className={`font-mono font-bold ${m.consistency.alert ? 'text-red-400' : 'text-emerald-400'}`}>
+                {m.consistency.score.toFixed(1)}% {m.consistency.alert ? '⚠ >15%' : '✓ OK'}
               </span>
             </div>
             <div className="flex justify-between py-2">
               <span className="text-slate-400">Gain Brut</span>
-              <span className="font-bold text-emerald-400">+${m.grossProfit.toFixed(2)}</span>
+              <span className="font-mono font-bold text-emerald-400">+${m.grossProfit.toFixed(2)}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-            <Brain className="w-4 h-4 text-[#6366f1]" />
+        <div className="stat-card p-5 space-y-3 animate-slide-up">
+          <h4 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <Brain className="w-4 h-4 text-[#06b6d4]" />
             Psychologie & R-Multiple
           </h4>
-          <div className="space-y-2 text-xs divide-y divide-[#262833]">
+          <div className="space-y-2 text-xs divide-y divide-white/[0.05]">
             <div className="flex justify-between py-2">
               <span className="text-slate-400">R-Multiple Moyen</span>
-              <span className={`font-bold ${m.avgRMultiple >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <span className={`font-mono font-bold ${m.avgRMultiple >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {m.avgRMultiple >= 0 ? '+' : ''}{m.avgRMultiple.toFixed(2)} R
               </span>
             </div>
             <div className="flex justify-between py-2">
               <span className="text-slate-400">Total Positions</span>
-              <span className="font-bold text-slate-200">{m.totalTrades}</span>
+              <span className="font-mono font-bold text-slate-200">{m.totalTrades}</span>
             </div>
             <div className="flex justify-between py-2">
               <span className="text-slate-400">Payoff Ratio</span>
-              <span className="font-bold text-[#818cf8]">
+              <span className="font-mono font-bold text-[#818cf8]">
                 {m.avgLoss !== 0 ? Math.abs(m.avgWin / m.avgLoss).toFixed(2) : '—'}
               </span>
             </div>
             <div className="flex justify-between py-2">
               <span className="text-slate-400">Statut Session</span>
-              <span className="font-bold text-emerald-400">Actif / Régulier</span>
+              <div className="flex items-center gap-1.5">
+                <div className="live-dot" />
+                <span className="font-mono font-bold text-emerald-400">Actif</span>
+              </div>
             </div>
           </div>
         </div>
 
       </div>
 
-      {/* ── NEW SECTION: MONTHLY PERFORMANCE CHART & 3 RECENT TRADES ── */}
+      {/* ── MONTHLY PERFORMANCE & RECENT TRADES ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Performance par Mois (Graphique) */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4 flex flex-col justify-between">
+        {/* Performance par Mois */}
+        <div className="chart-container p-5 space-y-4 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+            <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
               <Calendar className="w-4 h-4 text-[#6366f1]" />
-              Performance par Mois ($)
+              Performance Mensuelle
             </h3>
           </div>
 
@@ -355,10 +387,10 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* 3 Trades Récents */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-            <History className="w-4 h-4 text-[#6366f1]" />
-            3 Trades Récents
+        <div className="chart-container p-5 space-y-4">
+          <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+            <History className="w-4 h-4 text-[#8b5cf6]" />
+            Derniers Trades
           </h3>
 
           <Table headers={['PAIRE', 'DIRECTION', 'LOTS', 'RESULT', 'P&L']}>
