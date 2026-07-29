@@ -6,12 +6,17 @@ import {
   TrendingDown, Activity, Zap, Brain, Calendar, History, Clock
 } from 'lucide-react';
 import {
-  AreaChart, Area,
-  BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, ReferenceLine, Cell
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell, ReferenceLine, Tooltip
 } from 'recharts';
 import { Table, TableRow, TableCell } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
+import {
+  GlowingEquityChart,
+  GradientBarChart,
+  DonutRingChart,
+  Sparkline,
+  GlowDefs,
+} from '../../components/ui/PremiumCharts';
 
 const ChartTooltip = ({ active, payload, label }: {
   active?: boolean; payload?: { value: number }[]; label?: string;
@@ -37,44 +42,22 @@ const SemiCircleGauge = ({ percent, color = '#10b981' }: { percent: number; colo
   return (
     <div className="relative w-16 h-10 flex items-center justify-center shrink-0">
       <svg className="w-16 h-10 transform -rotate-180" viewBox="0 0 64 36">
+        <GlowDefs />
         {/* Background Arc */}
-        <path d="M 6 32 A 26 26 0 0 1 58 32" fill="none" stroke="#262833" strokeWidth="6" strokeLinecap="round" />
-        {/* Glow filter */}
-        <defs>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-            <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
+        <path d="M 6 32 A 26 26 0 0 1 58 32" fill="none" stroke="#1e293b" strokeWidth="6" strokeLinecap="round" />
         {/* Value Arc */}
         <path
           d="M 6 32 A 26 26 0 0 1 58 32"
           fill="none" stroke={color} strokeWidth="6" strokeLinecap="round"
           strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
-          filter="url(#glow)"
-          style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.16,1,0.3,1)' }}
+          style={{ filter: `drop-shadow(0 0 6px ${color})`, transition: 'stroke-dashoffset 0.8s cubic-bezier(0.16,1,0.3,1)' }}
         />
       </svg>
     </div>
   );
 };
 
-// ── Custom Animated Dot ────────────────────────────────────────────────────────
-const CustomDot = (props: { cx?: number; cy?: number; index?: number; data?: {pnl:number}[] }) => {
-  const { cx, cy, index, data } = props;
-  if (!data || index === undefined || index !== data.length - 1) return null;
-  const isPositive = (data[index]?.pnl ?? 0) >= 0;
-  const color = isPositive ? '#10b981' : '#ef4444';
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={5} fill={color} stroke="#07080a" strokeWidth={2} />
-      <circle cx={cx} cy={cy} r={9} fill={color} opacity={0.2}>
-        <animate attributeName="r" from="5" to="14" dur="1.5s" repeatCount="indefinite" />
-        <animate attributeName="opacity" from="0.3" to="0" dur="1.5s" repeatCount="indefinite" />
-      </circle>
-    </g>
-  );
-};
+
 
 export const Dashboard: React.FC = () => {
   const { trades, isLoading } = useTrades();
@@ -121,26 +104,31 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* ── TOP KPI SUMMARY CARDS (TradeZella Style with Gauges & Max Drawdown) ──────── */}
+      {/* ── TOP KPI SUMMARY CARDS ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         
-        {/* Net P&L */}
-        <div className="bg-[#181920]/90 backdrop-blur-xl border border-white/[0.08] rounded-xl p-5 hover:border-[#6366f1]/40 hover:shadow-indigo-glow transition-all flex items-center justify-between group">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Net P&L</span>
-            <div className={`text-2xl font-heading font-black tabular-nums tracking-tight ${isPositive ? 'text-emerald-400 text-glow-green' : 'text-red-400 text-glow-red'}`}>
-              {m.netPnL >= 0 ? '+' : ''}${m.netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-            </div>
-            <div className="text-[11px] text-slate-400 font-medium mt-1">
-              {m.totalTrades} trade{m.totalTrades > 1 ? 's' : ''} au total
-            </div>
+        {/* Net P&L + Sparkline */}
+        <div className="bg-[#0e0f14]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5 hover:border-[#6366f1]/40 hover:shadow-[0_0_30px_rgba(99,102,241,0.15)] transition-all flex flex-col gap-2 group">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">Net P&L</span>
+          <div className={`text-2xl font-heading font-black tabular-nums tracking-tight ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}
+            style={{ filter: `drop-shadow(0 0 12px ${isPositive ? '#10b981' : '#ef4444'})` }}>
+            {m.netPnL >= 0 ? '+' : ''}${m.netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </div>
-          <div className="p-2.5 rounded-xl bg-[#20222c] text-[#6366f1] group-hover:scale-110 transition-transform">
-            {isPositive ? <TrendingUp className="w-5 h-5 text-emerald-400" /> : <TrendingDown className="w-5 h-5 text-red-400" />}
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] text-slate-400 font-mono">{m.totalTrades} trades</div>
+            <div className="opacity-80">
+              {m.equityCurve.length > 1 && (
+                <Sparkline
+                  data={m.equityCurve.map(e => ({ value: e.pnl }))}
+                  color={isPositive ? '#10b981' : '#ef4444'}
+                  width={60} height={32}
+                />
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Win Rate % */}
+        {/* Win Rate % avec gauge */}
         <div className="stat-card p-5 flex items-center justify-between group">
           <div>
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 block mb-1">Win Rate</span>
@@ -180,8 +168,8 @@ export const Dashboard: React.FC = () => {
         <div className="stat-card p-5 flex items-center justify-between group">
           <div>
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 block mb-1">Max Drawdown</span>
-            <div className="kpi-value text-2xl text-red-400 text-glow-red">-${m.maxDrawdown.toFixed(2)}</div>
-            <div className="text-[11px] text-slate-400 font-mono mt-1">Perte max enregistrée</div>
+            <div className="kpi-value text-2xl text-red-400" style={{ filter: 'drop-shadow(0 0 8px #ef4444)' }}>-${m.maxDrawdown.toFixed(2)}</div>
+            <div className="text-[11px] text-slate-400 font-mono mt-1">Perte max</div>
           </div>
           <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 group-hover:scale-110 transition-transform">
             <TrendingDown className="w-5 h-5 text-red-400" />
@@ -190,76 +178,54 @@ export const Dashboard: React.FC = () => {
 
       </div>
 
-      {/* ── CHARTS SECTION ───────────────── */}
+      {/* ── CHARTS SECTION ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Cumulative P&L Area Chart */}
-        <div className="chart-container lg:col-span-2 p-5 space-y-4">
+        {/* Glowing Equity Curve */}
+        <div className="chart-container lg:col-span-2 p-5 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
               <span className="w-1 h-3.5 rounded-full" style={{background: 'linear-gradient(180deg,#6366f1,#8b5cf6)'}} />
-              Courbe d'Équité Cumulative
+              Courbe d'Équité — Glowing
             </h3>
-            <span className={`text-xs font-mono font-bold ${isPositive ? 'text-emerald-400 text-glow-green' : 'text-red-400 text-glow-red'}`}>
+            <span className={`text-xs font-mono font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}
+              style={{ filter: `drop-shadow(0 0 6px ${isPositive ? '#10b981' : '#ef4444'})` }}>
               {m.netPnL >= 0 ? '+' : ''}${m.netPnL.toFixed(2)}
             </span>
           </div>
+          <GlowingEquityChart data={equityData} dataKey="pnl" height={256} isPositive={isPositive} />
+        </div>
 
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={equityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="pnlGradGreen" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="pnlGradRed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="date" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip content={<ChartTooltip />} />
-                <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" />
-                <Area
-                  type="monotone" dataKey="pnl"
-                  stroke={isPositive ? '#10b981' : '#ef4444'}
-                  strokeWidth={2.5}
-                  fill={`url(#${isPositive ? 'pnlGradGreen' : 'pnlGradRed'})`}
-                  dot={<CustomDot data={equityData} />}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+        {/* Donut Win/Loss + P&L Quotidien */}
+        <div className="chart-container p-5 space-y-3 flex flex-col">
+          <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+            <span className="w-1 h-3.5 rounded-full" style={{background: 'linear-gradient(180deg,#8b5cf6,#06b6d4)'}} />
+            Win / Loss Ratio
+          </h3>
+          <DonutRingChart wins={m.winCount} losses={m.lossCount} height={180} />
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <div className="text-center p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <div className="text-lg font-heading font-black text-emerald-400" style={{ filter: 'drop-shadow(0 0 8px #10b981)' }}>{m.winCount}</div>
+              <div className="text-[10px] font-mono text-slate-400">WINS</div>
+            </div>
+            <div className="text-center p-2 rounded-xl bg-red-500/10 border border-red-500/20">
+              <div className="text-lg font-heading font-black text-red-400" style={{ filter: 'drop-shadow(0 0 8px #ef4444)' }}>{m.lossCount}</div>
+              <div className="text-[10px] font-mono text-slate-400">LOSSES</div>
+            </div>
           </div>
         </div>
 
-        {/* Daily P&L Bar Chart */}
-        <div className="chart-container p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-              <span className="w-1 h-3.5 rounded-full" style={{background: 'linear-gradient(180deg,#8b5cf6,#06b6d4)'}} />
-              P&L Quotidien
-            </h3>
-          </div>
+      </div>
 
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={m.dailyPnL} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <XAxis dataKey="date" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
-                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <ReferenceLine y={0} stroke="#334155" />
-                <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
-                  {m.dailyPnL.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.85} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* P&L Quotidien — Gradient Bar Chart */}
+      <div className="chart-container p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+            <span className="w-1 h-3.5 rounded-full" style={{background: 'linear-gradient(180deg,#06b6d4,#6366f1)'}} />
+            P&L Quotidien — Gradient Bars
+          </h3>
         </div>
-
+        <GradientBarChart data={m.dailyPnL} dataKey="pnl" height={180} />
       </div>
 
       {/* ── METRICS BREAKDOWN ────────────────────────────────────────── */}
@@ -354,8 +320,8 @@ export const Dashboard: React.FC = () => {
       {/* ── MONTHLY PERFORMANCE & RECENT TRADES ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Performance par Mois */}
-        <div className="chart-container p-5 space-y-4 flex flex-col justify-between">
+        {/* Performance par Mois — Gradient Bars */}
+        <div className="chart-container p-5 space-y-3 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
               <Calendar className="w-4 h-4 text-[#6366f1]" />
@@ -363,21 +329,11 @@ export const Dashboard: React.FC = () => {
             </h3>
           </div>
 
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={m.monthlyPerformance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip content={<ChartTooltip />} />
-                <ReferenceLine y={0} stroke="#262833" />
-                <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
-                  {m.monthlyPerformance.map((entry, index) => (
-                    <Cell key={`cell-mon-${index}`} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <GradientBarChart
+            data={m.monthlyPerformance.map(e => ({ ...e, date: e.month }))}
+            dataKey="pnl"
+            height={192}
+          />
 
           {m.monthlyPerformance.length === 0 && (
             <div className="text-center py-6 text-slate-500 text-xs font-medium">

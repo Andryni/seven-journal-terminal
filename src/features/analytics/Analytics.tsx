@@ -6,9 +6,7 @@ import { usePlaybookSetups } from '../playbook/usePlaybook';
 import { useUIStore } from '../../store/uiStore';
 import { Card } from '../../components/ui/Card';
 import {
-  Line,
   BarChart, Bar,
-  AreaChart, Area,
   PieChart, Pie, Cell,
   ComposedChart,
   XAxis, YAxis,
@@ -22,6 +20,13 @@ import {
   Zap, Award, AlertCircle
 } from 'lucide-react';
 import { ShareButton } from '../../components/share/ShareCard';
+import {
+  GlowingEquityChart,
+  GradientBarChart,
+  NeonRadarChart,
+  DonutRingChart,
+  FirmProgressBar,
+} from '../../components/ui/PremiumCharts';
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 const Empty = () => (
@@ -441,40 +446,43 @@ export const Analytics: React.FC = () => {
     <div className="space-y-5">
 
       {/* PAGE HEADER */}
-      <div className="flex items-center justify-between border-b border-[#262833] pb-4">
+      <div className="flex items-center justify-between bg-[#0e0f14]/90 border border-white/[0.08] rounded-2xl p-5 backdrop-blur-xl shadow-card-premium">
         <div>
-          <h2 className="text-sm font-bold uppercase tracking-wider text-white">ANALYTICS AVANCÉS</h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {closed.length} trades clôturés analysés · Toutes métriques calculées en temps réel
+          <h2 className="text-xl font-heading font-black uppercase tracking-tight text-white">ANALYTICS AVANCÉS</h2>
+          <p className="text-xs text-slate-400 font-mono mt-1">
+            {closed.length} trades clôturés analysés · Métriques calculées en temps réel
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-4">
           <ShareButton />
           <div className="text-right">
-            <div className={`text-xl font-bold tabular-nums ${netPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <div
+              className={`text-2xl font-heading font-black tabular-nums ${netPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}
+              style={{ filter: `drop-shadow(0 0 12px ${netPnL >= 0 ? '#10b981' : '#ef4444'})` }}
+            >
               {netPnL >= 0 ? '+' : ''}${netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </div>
-            <div className="text-[10px] font-semibold text-slate-500 uppercase">P&L CUMULÉ</div>
+            <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest">P&L CUMULÉ</div>
           </div>
         </div>
       </div>
 
       {/* TABS */}
-      <div className="flex flex-wrap gap-2 border-b border-[#262833] pb-3">
+      <div className="flex flex-wrap gap-1.5 bg-[#0a0b0f]/80 border border-white/[0.06] p-2 rounded-2xl backdrop-blur">
         {TABS.map(({ id, label, icon: Icon }) => {
           const active = activeTab === id;
           return (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-[11px] font-mono font-bold transition-all ${
                 active
-                  ? 'bg-[#6366f1]/15 text-[#818cf8] border border-[#6366f1]/30 shadow-indigo-glow'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-[#181920] border border-transparent'
+                  ? 'bg-[#6366f1]/20 text-[#818cf8] border border-[#6366f1]/40 shadow-indigo-glow'
+                  : 'text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] border border-transparent'
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 ${active ? 'text-[#818cf8]' : 'text-slate-400'}`} />
-              <span>{label}</span>
+              <Icon className={`w-3.5 h-3.5 ${active ? 'text-[#818cf8]' : ''}`} />
+              <span className="hidden sm:inline">{label}</span>
             </button>
           );
         })}
@@ -487,52 +495,32 @@ export const Analytics: React.FC = () => {
           {/* TOP 3 FINTECH CHART CARDS (Win Rate Gauge, Profit Factor & Expectancy Bar, Win/Loss Comparison) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             
-            {/* 1. RADIAL WIN RATE GAUGE CHART */}
-            <div className="bg-[#181920] border border-[#262833] rounded-2xl p-5 hover:border-[#363948] transition-all flex flex-col justify-between">
-              <div className="flex items-center justify-between border-b border-[#262833] pb-3 mb-2">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <PieChart className="w-4 h-4 text-[#818cf8]" />
-                  <span>RÉPARTITION WIN / LOSS</span>
+            {/* 1. DONUT WIN/LOSS (21st.dev style) */}
+            <div className="chart-container p-5 flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-heading font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-1 h-4 rounded-full bg-gradient-to-b from-emerald-400 to-red-400" />
+                  RÉPARTITION WIN / LOSS
                 </span>
-                <span className={`text-xs font-extrabold px-2 py-0.5 rounded-lg ${winRate >= 50 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-xl ${
+                  winRate >= 50
+                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-red-500/15 text-red-400 border border-red-500/30'
+                }`}>
                   {winRate.toFixed(1)}% WR
                 </span>
               </div>
 
-              <div className="h-[150px] relative flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={42}
-                      outerRadius={58}
-                      startAngle={180}
-                      endAngle={0}
-                      dataKey="value"
-                      paddingAngle={4}
-                    >
-                      <Cell fill="#10b981" />
-                      <Cell fill="#ef4444" />
-                    </Pie>
-                    <Tooltip content={<AnalyticsTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute top-[55%] text-center transform -translate-y-1/2">
-                  <div className="text-xl font-extrabold text-white tabular-nums">{winTrades.length}W - {lossTrades.length}L</div>
-                  <div className="text-[10px] text-slate-400 font-medium">Ratio Gagnants/Perdants</div>
-                </div>
-              </div>
+              <DonutRingChart wins={winTrades.length} losses={lossTrades.length} height={170} />
 
-              <div className="grid grid-cols-2 gap-2 text-center text-xs pt-2 border-t border-[#262833]">
-                <div className="bg-[#121318] p-2 rounded-xl">
-                  <span className="text-slate-400 block text-[10px]">Gain Moyen</span>
-                  <span className="font-bold text-emerald-400 tabular-nums">+${avgWin.toFixed(0)}</span>
+              <div className="grid grid-cols-2 gap-2 text-center text-xs pt-3 border-t border-white/[0.06]">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl">
+                  <span className="text-slate-400 block text-[10px] font-mono">Gain Moyen</span>
+                  <span className="font-heading font-black text-emerald-400 tabular-nums">+${avgWin.toFixed(0)}</span>
                 </div>
-                <div className="bg-[#121318] p-2 rounded-xl">
-                  <span className="text-slate-400 block text-[10px]">Perte Moyenne</span>
-                  <span className="font-bold text-red-400 tabular-nums">-${avgLoss.toFixed(0)}</span>
+                <div className="bg-red-500/10 border border-red-500/20 p-2.5 rounded-xl">
+                  <span className="text-slate-400 block text-[10px] font-mono">Perte Moyenne</span>
+                  <span className="font-heading font-black text-red-400 tabular-nums">-${avgLoss.toFixed(0)}</span>
                 </div>
               </div>
             </div>
@@ -693,80 +681,65 @@ export const Analytics: React.FC = () => {
       {/* ── TAB: EQUITY & DRAWDOWN ────────────────────────────────────────── */}
       {activeTab === 'equity' && (
         <div className="space-y-5">
-          <Card title="COURBE D'EQUITY CUMULATIVE" headerAction={<TrendingUp className="w-3.5 h-3.5 text-bloomberg-gold" />}>
+          {/* Glowing Equity Curve (21st.dev style) */}
+          <div className="chart-container p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" style={{ color: netPnL >= 0 ? '#10b981' : '#ef4444', filter: `drop-shadow(0 0 6px ${netPnL >= 0 ? '#10b981' : '#ef4444'})` }} />
+                COURBE D'EQUITY CUMULATIVE
+              </h3>
+              <span
+                className={`text-sm font-heading font-black tabular-nums ${netPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}
+                style={{ filter: `drop-shadow(0 0 8px ${netPnL >= 0 ? '#10b981' : '#ef4444'})` }}
+              >
+                {netPnL >= 0 ? '+' : ''}${netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
             {equityCurve.length > 0 ? (
-              <div className="h-[240px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={equityCurve} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
-                        <stop offset="50%" stopColor="#f59e0b" stopOpacity={0.1} />
-                        <stop offset="95%" stopColor="#059669" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="date" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
-                    <YAxis stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
-                    <Tooltip content={<AnalyticsTooltip />} />
-                    <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1} />
-                    <Area type="monotone" dataKey="pnl" name="Equity ($)" stroke="#10b981" strokeWidth={2.5} fill="url(#equityGrad)" dot={false} activeDot={{ r: 5, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <GlowingEquityChart
+                data={equityCurve}
+                dataKey="pnl"
+                height={280}
+                isPositive={netPnL >= 0}
+              />
             ) : <Empty />}
-          </Card>
+          </div>
 
-          <Card title="DRAWDOWN (% DEPUIS LE PEAK)" headerAction={<TrendingDown className="w-3.5 h-3.5 text-bloomberg-red-light" />}>
+          {/* Drawdown glowing red */}
+          <div className="chart-container p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                <TrendingDown className="w-4 h-4 text-red-400" style={{ filter: 'drop-shadow(0 0 6px #ef4444)' }} />
+                DRAWDOWN (% DEPUIS LE PEAK)
+              </h3>
+              <span className="text-sm font-heading font-black text-red-400 tabular-nums" style={{ filter: 'drop-shadow(0 0 8px #ef4444)' }}>
+                {maxDrawdown.toFixed(2)}%
+              </span>
+            </div>
             {equityCurve.length > 0 ? (
-              <div className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={equityCurve} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="ddGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#b91c1c" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="date" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
-                    <YAxis stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} tickFormatter={(v) => `${v}%`} />
-                    <Tooltip content={<AnalyticsTooltip />} />
-                    <ReferenceLine y={0} stroke="#3f3f46" />
-                    <Area type="monotone" dataKey="drawdown" name="Drawdown %" stroke="#ef4444" strokeWidth={2} fill="url(#ddGrad)" dot={false} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <GlowingEquityChart
+                data={equityCurve}
+                dataKey="drawdown"
+                height={200}
+                isPositive={false}
+              />
             ) : <Empty />}
-          </Card>
+          </div>
 
-          <Card title="P&L PAR TRADE (CHRONOLOGIQUE)">
+          {/* P&L par trade — Gradient Bars */}
+          <div className="chart-container p-5 space-y-3">
+            <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-gradient-to-b from-indigo-400 to-cyan-400" />
+              P&L PAR TRADE (CHRONOLOGIQUE)
+            </h3>
             {equityCurve.length > 0 ? (
-              <div className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={equityCurve} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="barWin" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="#059669" stopOpacity={0.3} />
-                      </linearGradient>
-                      <linearGradient id="barLoss" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ef4444" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="#b91c1c" stopOpacity={0.3} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="i" stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} label={{ value: 'Trade #', position: 'insideBottomRight', fontSize: 9, fill: '#71717a' }} />
-                    <YAxis stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
-                    <Tooltip content={<AnalyticsTooltip />} />
-                    <ReferenceLine y={0} stroke="#3f3f46" />
-                    <Bar dataKey="trade_pnl" name="P&L Trade">
-                      {equityCurve.map((d, i) => (
-                        <Cell key={i} fill={d.trade_pnl >= 0 ? 'url(#barWin)' : 'url(#barLoss)'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <GradientBarChart
+                data={equityCurve.map(e => ({ ...e, date: `#${e.i}` }))}
+                dataKey="trade_pnl"
+                height={200}
+              />
             ) : <Empty />}
-          </Card>
+          </div>
         </div>
       )}
 
@@ -775,114 +748,81 @@ export const Analytics: React.FC = () => {
         <div className="space-y-5">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-            {/* Win / Loss Pie */}
-            <Card title="RÉPARTITION WINS vs LOSSES" headerAction={<Percent className="w-3.5 h-3.5 text-bloomberg-gold" />}>
-              {closed.length > 0 ? (
-                <div className="flex items-center space-x-6">
-                  <div className="h-[200px] w-[200px] shrink-0">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={80} innerRadius={45} paddingAngle={3} stroke="none">
-                          {pieData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                        </Pie>
-                        <Tooltip content={<AnalyticsTooltip />} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="space-y-3 font-mono text-xs">
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="w-3 h-3 rounded-full bg-bloomberg-green inline-block shrink-0" />
-                        <span className="text-bloomberg-text-secondary">WINS</span>
-                      </div>
-                      <div className="text-bloomberg-green-light font-bold text-lg tabular-nums">{winTrades.length}</div>
-                      <div className="text-[10px] text-bloomberg-text-muted">{winRate.toFixed(1)}% du total</div>
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="w-3 h-3 rounded-full bg-bloomberg-red inline-block shrink-0" />
-                        <span className="text-bloomberg-text-secondary">LOSSES</span>
-                      </div>
-                      <div className="text-bloomberg-red-light font-bold text-lg tabular-nums">{lossTrades.length}</div>
-                      <div className="text-[10px] text-bloomberg-text-muted">{(100 - winRate).toFixed(1)}% du total</div>
-                    </div>
-                  </div>
-                </div>
-              ) : <Empty />}
-            </Card>
-
-            {/* R-Multiple distribution */}
-            <Card title="DISTRIBUTION DES R-MULTIPLES" headerAction={<Target className="w-3.5 h-3.5 text-bloomberg-gold" />}>
-              {rDistribution.some(d => d.count > 0) ? (
-                <div className="h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={rDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="distWin" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#10b981" stopOpacity={0.85} />
-                          <stop offset="100%" stopColor="#059669" stopOpacity={0.25} />
-                        </linearGradient>
-                        <linearGradient id="distLoss" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#ef4444" stopOpacity={0.85} />
-                          <stop offset="100%" stopColor="#b91c1c" stopOpacity={0.25} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="bucket" stroke="#3f3f46" tick={{ fontSize: 8, fontFamily: 'monospace' }} />
-                      <YAxis stroke="#3f3f46" tick={{ fontSize: 9, fontFamily: 'monospace' }} allowDecimals={false} />
-                      <Tooltip content={<AnalyticsTooltip />} />
-                      <Bar dataKey="count" name="Trades">
-                        {rDistribution.map((d, i) => (
-                          <Cell key={i} fill={d.positive ? 'url(#distWin)' : 'url(#distLoss)'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : <Empty />}
-            </Card>
-
-            {/* BUY vs SELL */}
-            <Card title="PERFORMANCE PAR DIRECTION (BUY vs SELL)" headerAction={<Zap className="w-3.5 h-3.5 text-bloomberg-gold" />}>
-              {directionData.some(d => d.total > 0) ? (
-                <div className="h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={directionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <XAxis dataKey="name" stroke="#52525b" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
-                      <YAxis stroke="#52525b" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
-                      <Tooltip content={<AnalyticsTooltip />} />
-                      <Bar dataKey="pnl" name="P&L ($)">
-                        {directionData.map((d, i) => (
-                          <Cell key={i} fill={d.pnl >= 0 ? '#059669' : '#dc2626'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : <Empty />}
-            </Card>
-
-            {/* BUY/SELL Win Rate */}
-            <Card title="WIN RATE PAR DIRECTION">
-              <div className="space-y-4 pt-2">
-                {directionData.map(d => (
-                  <div key={d.name} className="space-y-1">
-                    <div className="flex justify-between text-xs font-mono">
-                      <span className={`font-bold ${d.name === 'BUY' ? 'text-bloomberg-green-light' : 'text-bloomberg-red-light'}`}>{d.name}</span>
-                      <span className="text-white">{d.winRate}% — {d.total} trades</span>
-                    </div>
-                    <div className="w-full bg-bloomberg-border rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all ${d.name === 'BUY' ? 'bg-bloomberg-green' : 'bg-bloomberg-red'}`}
-                        style={{ width: `${Math.min(d.winRate, 100)}%` }}
-                      />
-                    </div>
-                    <div className="text-[9px] text-bloomberg-text-muted">
-                      P&L: {d.pnl >= 0 ? '+' : ''}{d.pnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                ))}
+            {/* Win / Loss Donut (21st.dev premium) */}
+            <div className="chart-container p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                  <Percent className="w-4 h-4 text-indigo-400" />
+                  RÉPARTITION WINS vs LOSSES
+                </h3>
               </div>
-            </Card>
+              {closed.length > 0 ? (
+                <div>
+                  <DonutRingChart wins={winTrades.length} losses={lossTrades.length} height={200} />
+                  <div className="grid grid-cols-2 gap-3 mt-3 text-xs text-center">
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                      <div className="text-lg font-heading font-black text-emerald-400" style={{ filter: 'drop-shadow(0 0 8px #10b981)' }}>{winTrades.length}</div>
+                      <div className="text-[10px] font-mono text-slate-400">{winRate.toFixed(1)}% WINS</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20">
+                      <div className="text-lg font-heading font-black text-red-400" style={{ filter: 'drop-shadow(0 0 8px #ef4444)' }}>{lossTrades.length}</div>
+                      <div className="text-[10px] font-mono text-slate-400">{(100-winRate).toFixed(1)}% LOSSES</div>
+                    </div>
+                  </div>
+                </div>
+              ) : <Empty />}
+            </div>
+
+            {/* R-Multiple distribution — Gradient Bars */}
+            <div className="chart-container p-5">
+              <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 mb-3">
+                <Target className="w-4 h-4 text-indigo-400" />
+                DISTRIBUTION DES R-MULTIPLES
+              </h3>
+              {rDistribution.some(d => d.count > 0) ? (
+                <GradientBarChart
+                  data={rDistribution.map(d => ({ ...d, date: d.bucket }))}
+                  dataKey="count"
+                  height={200}
+                  useSignColor={true}
+                  colorPositive="url(#grad-bar-green)"
+                  colorNegative="url(#grad-bar-red)"
+                />
+              ) : <Empty />}
+            </div>
+
+            {/* BUY vs SELL — Gradient Bars */}
+            <div className="chart-container p-5">
+              <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 mb-3">
+                <Zap className="w-4 h-4 text-cyan-400" />
+                PERFORMANCE PAR DIRECTION (BUY vs SELL)
+              </h3>
+              {directionData.some(d => d.total > 0) ? (
+                <GradientBarChart
+                  data={directionData.map(d => ({ ...d, date: d.name }))}
+                  dataKey="pnl"
+                  height={200}
+                />
+              ) : <Empty />}
+            </div>
+
+            {/* BUY/SELL Win Rate — FirmProgressBar premium */}
+            <div className="chart-container p-5 space-y-5">
+              <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-indigo-400" />
+                WIN RATE PAR DIRECTION
+              </h3>
+              {directionData.map(d => (
+                <FirmProgressBar
+                  key={d.name}
+                  label={`${d.name} — ${d.total} trades`}
+                  current={d.winRate}
+                  target={100}
+                  color={d.name === 'BUY' ? '#10b981' : '#ef4444'}
+                  prefix=""
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
