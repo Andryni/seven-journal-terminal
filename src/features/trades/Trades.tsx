@@ -455,15 +455,16 @@ export const Trades: React.FC = () => {
   return (
     <div className="space-y-6">
       
-      {/* HEADER ACTIONS */}
-      <div className="flex items-center justify-between">
+      {/* HEADER ACTIONS PRO FINTECH */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#14161f]/90 border border-white/[0.08] p-5 rounded-2xl backdrop-blur-xl shadow-card-premium">
         <div>
-          <h2 className="text-sm font-extrabold uppercase tracking-widest text-white">
-            JOURNAL DE BORD GÉNÉRAL
-          </h2>
-          <p className="text-[10px] text-bloomberg-text-secondary">
-            {filteredTrades.length} trade{filteredTrades.length !== 1 ? 's' : ''} affichés{hasActiveFilters ? ' (filtrés)' : ''} · {trades.length} total
-          </p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-heading font-black tracking-tight text-white">JOURNAL DES TRADES</h2>
+            <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold bg-[#6366f1]/20 text-[#818cf8] border border-[#6366f1]/30 rounded-md">
+              {filteredTrades.length} POSITIONS
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 font-mono mt-1">Historique et exécution en temps réel · Seven Tracking</p>
         </div>
         
         <div className="flex items-center space-x-2">
