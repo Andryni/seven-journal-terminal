@@ -6,11 +6,12 @@ import { usePlaybookSetups } from '../playbook/usePlaybook';
 import { useUIStore } from '../../store/uiStore';
 import { Card } from '../../components/ui/Card';
 import {
+  Line,
   BarChart, Bar,
-  PieChart, Pie, Cell,
+  Cell,
   ComposedChart,
   XAxis, YAxis,
-  Tooltip, Legend,
+  Tooltip,
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
@@ -23,7 +24,6 @@ import { ShareButton } from '../../components/share/ShareCard';
 import {
   GlowingEquityChart,
   GradientBarChart,
-  NeonRadarChart,
   DonutRingChart,
   FirmProgressBar,
 } from '../../components/ui/PremiumCharts';
@@ -242,11 +242,7 @@ export const Analytics: React.FC = () => {
     }));
   }, [closed]);
 
-  // ── Win / Loss pie ────────────────────────────────────────────────────────
-  const pieData = [
-    { name: 'WINS', value: winTrades.length, color: '#059669' },
-    { name: 'LOSSES', value: lossTrades.length, color: '#dc2626' },
-  ];
+  // pieData supprimé (DonutRingChart utilisé à la place)
 
   // ── Direction (BUY vs SELL) ───────────────────────────────────────────────
   const directionData = useMemo(() => {
@@ -781,7 +777,7 @@ export const Analytics: React.FC = () => {
               </h3>
               {rDistribution.some(d => d.count > 0) ? (
                 <GradientBarChart
-                  data={rDistribution.map(d => ({ ...d, date: d.bucket }))}
+                  data={rDistribution.map(d => ({ date: d.bucket, count: d.count, positive: d.positive ? 1 : 0 }))}
                   dataKey="count"
                   height={200}
                   useSignColor={true}

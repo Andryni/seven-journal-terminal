@@ -3,7 +3,7 @@
  * Composants de data-visualisation premium inspirés de 21st.dev (LegionWebDev / Evil Charts style)
  * Utilise recharts avec SVG filters personnalisés pour des effets glow, gradient et néon.
  */
-import React from 'react';
+
 import {
   AreaChart, Area,
   BarChart, Bar,

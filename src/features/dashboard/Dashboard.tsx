@@ -2,12 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useTrades } from '../trades/useTrades';
 import { usePerformanceMetrics } from './usePerformanceMetrics';
 import {
-  TrendingUp, Target,
+  Target,
   TrendingDown, Activity, Zap, Brain, Calendar, History, Clock
 } from 'lucide-react';
-import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell, ReferenceLine, Tooltip
-} from 'recharts';
 import { Table, TableRow, TableCell } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import {
@@ -18,20 +15,7 @@ import {
   GlowDefs,
 } from '../../components/ui/PremiumCharts';
 
-const ChartTooltip = ({ active, payload, label }: {
-  active?: boolean; payload?: { value: number }[]; label?: string;
-}) => {
-  if (!active || !payload?.length) return null;
-  const val = payload[0].value;
-  return (
-    <div className="bg-[#181920] border border-[#262833] px-3.5 py-2 rounded-xl text-xs shadow-xl">
-      <div className="text-slate-400 text-[11px] mb-1">{label}</div>
-      <div className={`font-bold tabular-nums text-sm ${val >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-        {val >= 0 ? '+' : ''}${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-      </div>
-    </div>
-  );
-};
+
 
 // ── Gauge SVG Component ────────────────────────────────────────────────────────
 const SemiCircleGauge = ({ percent, color = '#10b981' }: { percent: number; color?: string }) => {
