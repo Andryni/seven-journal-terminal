@@ -81,10 +81,10 @@ function AppContent() {
                 </div>
               </div>
               <div>
-                <h1 className="text-2xl font-black tracking-tight text-white flex items-center justify-center gap-1.5">
+                <h1 className="text-2xl font-heading font-black tracking-tight text-white flex items-center justify-center gap-1.5">
                   SEVEN<span className="text-[#6366f1] bg-clip-text text-transparent bg-gradient-to-r from-[#6366f1] to-[#818cf8]">TRACKING</span>
                 </h1>
-                <p className="text-xs font-medium text-slate-400 mt-1">
+                <p className="text-xs font-sans font-medium text-slate-400 mt-1">
                   Terminal de Trading & Analytics Professionnel
                 </p>
               </div>

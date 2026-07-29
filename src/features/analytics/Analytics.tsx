@@ -39,9 +39,9 @@ const AnalyticsTooltip = ({ active, payload, label }: {
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#181920] border border-[#262833] px-3.5 py-2.5 rounded-xl text-xs shadow-2xl">
-      <div className="text-slate-400 mb-1 font-semibold uppercase tracking-wider text-[10px]">{label}</div>
-      <div className="space-y-1">
+    <div className="bg-[#181920]/95 backdrop-blur-md border border-white/10 px-3.5 py-2.5 rounded-xl text-xs shadow-2xl">
+      <div className="text-slate-400 mb-1 font-mono font-bold uppercase tracking-wider text-[10px]">{label}</div>
+      <div className="space-y-1 font-mono">
         {payload.map((item, idx) => {
           const val = Number(item.value);
           const nameLower = (item.name || '').toLowerCase();
@@ -72,7 +72,7 @@ const AnalyticsTooltip = ({ active, payload, label }: {
 
           return (
             <div key={idx} className="flex items-center justify-between gap-4">
-              <span className="text-slate-400">{item.name} :</span>
+              <span className="text-slate-400 font-sans">{item.name} :</span>
               <span className={textClass}>
                 {prefix}{Math.abs(val).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}{suffix}
               </span>

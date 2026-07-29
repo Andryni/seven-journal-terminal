@@ -100,6 +100,8 @@ export default {
         'indigo-glow': '0 0 16px rgba(99, 102, 241, 0.3)',
         'green-glow': '0 0 16px rgba(16, 185, 129, 0.3)',
         'red-glow': '0 0 16px rgba(239, 68, 68, 0.3)',
+        'violet-glow': '0 0 20px rgba(139, 92, 246, 0.35)',
+        'card-premium': '0 10px 30px -5px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.05)',
       },
     },
   },

@@ -45,8 +45,8 @@ const EMOTION_COLORS: Record<string, string> = {
 
 const SectionTitle: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, label }) => (
   <div className="flex items-center space-x-2 pb-2 border-b border-white/5 mb-4">
-    <span className="text-[#0075ff]">{icon}</span>
-    <span className="text-[10px] font-bold uppercase tracking-widest text-white/80">{label}</span>
+    <span className="text-[#6366f1]">{icon}</span>
+    <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-slate-200">{label}</span>
   </div>
 );
 

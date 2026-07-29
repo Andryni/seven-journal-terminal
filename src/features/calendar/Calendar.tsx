@@ -125,13 +125,13 @@ export const Calendar: React.FC = () => {
         
         {dayStats ? (
           <div className="flex flex-col space-y-0.5 sm:space-y-1 items-end w-full">
-            <span className={`font-bold tabular-nums text-[10px] sm:text-sm ${dayStats.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <span className={`font-mono font-bold tabular-nums text-[10px] sm:text-sm ${dayStats.pnl >= 0 ? 'text-emerald-400 text-glow-green' : 'text-red-400 text-glow-red'}`}>
               {dayStats.pnl >= 0 ? '+' : ''}${Math.abs(dayStats.pnl) >= 1000 ? `${(dayStats.pnl / 1000).toFixed(1)}k` : dayStats.pnl.toFixed(0)}
             </span>
-            <div className="hidden sm:block text-[10px] text-slate-400 font-medium">
+            <div className="hidden sm:block text-[10px] font-mono text-slate-400 font-medium">
               {dayStats.count} trade{dayStats.count > 1 ? 's' : ''} · {((dayStats.wins / dayStats.count) * 100).toFixed(0)}%
             </div>
-            <div className="sm:hidden text-[9px] text-slate-400 font-medium">
+            <div className="sm:hidden text-[9px] font-mono text-slate-400 font-medium">
               {dayStats.count}t
             </div>
           </div>

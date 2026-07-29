@@ -84,17 +84,17 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         
         {/* Net P&L */}
-        <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 hover:border-[#363948] transition-all flex items-center justify-between">
+        <div className="bg-[#181920]/90 backdrop-blur-xl border border-white/[0.08] rounded-xl p-5 hover:border-[#6366f1]/40 hover:shadow-indigo-glow transition-all flex items-center justify-between group">
           <div>
-            <span className="text-xs font-semibold text-slate-400 block mb-1">Net P&L</span>
-            <div className={`text-2xl font-black tabular-nums tracking-tight ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Net P&L</span>
+            <div className={`text-2xl font-heading font-black tabular-nums tracking-tight ${isPositive ? 'text-emerald-400 text-glow-green' : 'text-red-400 text-glow-red'}`}>
               {m.netPnL >= 0 ? '+' : ''}${m.netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </div>
-            <div className="text-[11px] text-slate-500 font-medium mt-1">
+            <div className="text-[11px] text-slate-400 font-medium mt-1">
               {m.totalTrades} trade{m.totalTrades > 1 ? 's' : ''} au total
             </div>
           </div>
-          <div className="p-2.5 rounded-xl bg-[#20222c] text-[#6366f1]">
+          <div className="p-2.5 rounded-xl bg-[#20222c] text-[#6366f1] group-hover:scale-110 transition-transform">
             {isPositive ? <TrendingUp className="w-5 h-5 text-emerald-400" /> : <TrendingDown className="w-5 h-5 text-red-400" />}
           </div>
         </div>

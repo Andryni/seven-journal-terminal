@@ -54,13 +54,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
             />
           </div>
           <div className="cursor-pointer" onClick={() => setCurrentTab('dashboard')}>
-            <div className="text-sm font-black tracking-tight text-white flex items-center gap-1">
+            <div className="text-sm font-heading font-black tracking-tight text-white flex items-center gap-1">
               <span className="tracking-wider">SEVEN</span>
               <span className="bg-gradient-to-r from-[#818cf8] via-[#06b6d4] to-[#34d399] bg-clip-text text-transparent font-black tracking-widest animate-shimmer">
                 TRACKING
               </span>
             </div>
-            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
+            <div className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
               FINTECH TERMINAL 2026
             </div>
