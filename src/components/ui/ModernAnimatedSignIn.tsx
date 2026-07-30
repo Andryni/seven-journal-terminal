@@ -1,9 +1,9 @@
 import React, {
   memo,
-  ReactNode,
+  type ReactNode,
   useState,
-  ChangeEvent,
-  FormEvent,
+  type ChangeEvent,
+  type FormEvent,
   useEffect,
   useRef,
   forwardRef,
@@ -18,8 +18,16 @@ import {
 import { Eye, EyeOff } from 'lucide-react';
 
 // Utilitaire simple pour combiner des classes Tailwind
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(' ');
+function cn(...classes: (string | undefined | null | false | Record<string, boolean>)[]) {
+  return classes
+    .flatMap((c) => {
+      if (!c) return [];
+      if (typeof c === 'string') return [c];
+      return Object.entries(c)
+        .filter(([, value]) => Boolean(value))
+        .map(([key]) => key);
+    })
+    .join(' ');
 }
 
 // ==================== Input Component ====================

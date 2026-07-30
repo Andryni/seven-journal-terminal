@@ -9,9 +9,6 @@ import { Accounts } from './features/accounts/Accounts';
 import { Analytics } from './features/analytics/Analytics';
 import { Calendar } from './features/calendar/Calendar';
 import { Playbook } from './features/playbook/Playbook';
-import { Button } from './components/ui/Button';
-import { Input } from './components/ui/Input';
-import { TrendingUp, AlertTriangle } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 
 import { ErrorBoundary } from './components/common/ErrorBoundary';
