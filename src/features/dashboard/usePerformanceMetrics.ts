@@ -2,6 +2,12 @@ import { useMemo } from 'react';
 import { calculateConsistencyScore, calculateRMultiple } from '../../utils/financials';
 import type { Trade } from '../trades/useTrades';
 
+export interface StreakInfo {
+  current: number;
+  best: number;
+  type: 'win' | 'loss' | 'none';
+}
+
 export interface PerformanceMetrics {
   totalTrades: number;
   closedTrades: number;
@@ -25,6 +31,7 @@ export interface PerformanceMetrics {
   consistency: { score: number; alert: boolean };
   equityCurve: { tradeIndex: number; pnl: number; date: string }[];
   dailyPnL: { date: string; pnl: number }[];
+  streak: StreakInfo;
 }
 
 export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
@@ -144,6 +151,49 @@ export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
       .sort((a, b) => new Date(b.entry_time).getTime() - new Date(a.entry_time).getTime())
       .slice(0, 3);
 
+    // ── Streak calculation (by trading day) ─────────────────────────────
+    const sortedDailyPnL = [...dailyPnL].sort((a, b) => a.date.localeCompare(b.date));
+
+    let currentStreak = 0;
+    let bestStreak = 0;
+    let tempWinStreak = 0;
+    let tempLossStreak = 0;
+    let streakType: 'win' | 'loss' | 'none' = 'none';
+
+    if (sortedDailyPnL.length > 0) {
+      const lastPnl = sortedDailyPnL[sortedDailyPnL.length - 1].pnl;
+      streakType = lastPnl > 0 ? 'win' : 'loss';
+
+      // Walk backwards to find current streak
+      for (let i = sortedDailyPnL.length - 1; i >= 0; i--) {
+        const p = sortedDailyPnL[i].pnl;
+        if (streakType === 'win' && p > 0) currentStreak++;
+        else if (streakType === 'loss' && p <= 0) currentStreak++;
+        else break;
+      }
+
+      // Walk forward to find best win streak
+      for (const day of sortedDailyPnL) {
+        if (day.pnl > 0) {
+          tempWinStreak++;
+          if (tempWinStreak > bestStreak) bestStreak = tempWinStreak;
+        } else {
+          tempWinStreak = 0;
+        }
+        if (day.pnl <= 0) {
+          tempLossStreak++;
+        } else {
+          tempLossStreak = 0;
+        }
+      }
+    }
+
+    const streak: StreakInfo = {
+      current: currentStreak,
+      best: bestStreak,
+      type: streakType,
+    };
+
     return {
       totalTrades: trades.length,
       closedTrades: closedTrades.length,
@@ -167,6 +217,7 @@ export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
       consistency,
       equityCurve,
       dailyPnL,
+      streak,
     };
   }, [trades]);
 }

@@ -27,6 +27,7 @@ import {
   DonutRingChart,
   FirmProgressBar,
 } from '../../components/ui/PremiumCharts';
+import { SessionHeatmap } from './SessionHeatmap';
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 const Empty = () => (
@@ -1018,6 +1019,9 @@ export const Analytics: React.FC = () => {
                 </ResponsiveContainer>
               </div>
             ) : <Empty />}
+          </Card>
+          <Card title="SESSION HEATMAP — HEURE × JOUR" headerAction={<Clock className="w-3.5 h-3.5 text-bloomberg-gold" />}>
+            <SessionHeatmap trades={trades} />
           </Card>
         </div>
       )}

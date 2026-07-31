@@ -9,6 +9,7 @@ import { Accounts } from './features/accounts/Accounts';
 import { Analytics } from './features/analytics/Analytics';
 import { Calendar } from './features/calendar/Calendar';
 import { Playbook } from './features/playbook/Playbook';
+import { Goals } from './features/goals/Goals';
 import type { Session } from '@supabase/supabase-js';
 
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -80,6 +81,7 @@ function AppContent() {
         {currentTab === 'analytics' && <Analytics />}
         {currentTab === 'calendar' && <Calendar />}
         {currentTab === 'playbook' && <Playbook />}
+        {currentTab === 'goals' && <Goals />}
       </ErrorBoundary>
     </Layout>
   );

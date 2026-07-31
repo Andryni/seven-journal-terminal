@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTrades } from '../trades/useTrades';
 import { usePerformanceMetrics } from './usePerformanceMetrics';
 import {
-  Target,
-  TrendingDown, Activity, Zap, Brain, Calendar, History, Clock
+  Target, Flame,
+  TrendingDown, Activity, Zap, Brain, Calendar, History, Clock, ArrowRight
 } from 'lucide-react';
 import { Table, TableRow, TableCell } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
@@ -14,6 +15,7 @@ import {
   Sparkline,
   GlowDefs,
 } from '../../components/ui/PremiumCharts';
+import { Achievements } from '../achievements/Achievements';
 
 
 
@@ -161,6 +163,74 @@ export const Dashboard: React.FC = () => {
         </div>
 
       </div>
+
+      {/* ── STREAK TRACKER BANNER ─── */}
+      <AnimatePresence>
+        {m.streak.current > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.5, ease: [0.22, 0.61, 0.36, 1] }}
+            className={`relative overflow-hidden rounded-2xl border px-5 py-4 flex items-center justify-between gap-4 ${
+              m.streak.type === 'win'
+                ? 'bg-gradient-to-r from-amber-950/60 to-emerald-950/40 border-amber-500/30'
+                : 'bg-gradient-to-r from-red-950/60 to-[#0e0f14] border-red-500/30'
+            }`}
+          >
+            {/* Glow */}
+            <div className={`absolute inset-0 opacity-10 ${m.streak.type === 'win' ? 'bg-amber-400' : 'bg-red-500'}`} />
+
+            <div className="flex items-center gap-3 relative z-10">
+              {/* Animated fire */}
+              <motion.div
+                animate={{ scale: [1, 1.18, 1], rotate: [-3, 3, -3] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                className="text-2xl"
+              >
+                {m.streak.type === 'win' ? '🔥' : '❄️'}
+              </motion.div>
+              <div>
+                <div className="text-xs font-mono font-bold text-white/60 uppercase tracking-wider">
+                  {m.streak.type === 'win' ? 'Win Streak' : 'Loss Streak'}
+                </div>
+                <div className={`text-2xl font-black font-mono tabular-nums ${m.streak.type === 'win' ? 'text-amber-400' : 'text-red-400'}`}
+                  style={{ filter: `drop-shadow(0 0 10px ${m.streak.type === 'win' ? '#f59e0b' : '#ef4444'})` }}
+                >
+                  {m.streak.current} <span className="text-sm font-bold text-white/40">jours</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress toward best streak */}
+            {m.streak.type === 'win' && m.streak.best > 0 && (
+              <div className="flex-1 max-w-xs relative z-10 hidden sm:block">
+                <div className="flex justify-between text-[10px] font-mono text-white/40 mb-1.5">
+                  <span>Streak actuel</span>
+                  <span>Record: {m.streak.best}j</span>
+                </div>
+                <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-amber-500 to-emerald-400 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min((m.streak.current / m.streak.best) * 100, 100)}%` }}
+                    transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
+                  />
+                </div>
+                <div className="text-[10px] font-mono text-amber-400/60 mt-1">
+                  {m.streak.current >= m.streak.best ? '🏆 Nouveau record !' : `${m.streak.best - m.streak.current}j du record`}
+                </div>
+              </div>
+            )}
+
+            <div className="relative z-10 shrink-0 hidden sm:flex items-center gap-1 text-xs font-mono text-white/30">
+              <Flame className="w-3.5 h-3.5" />
+              <span>Continue !</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── CHARTS SECTION ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -366,6 +436,11 @@ export const Dashboard: React.FC = () => {
           )}
         </div>
 
+      </div>
+
+      {/* ── ACHIEVEMENTS ─── */}
+      <div className="bg-[#0e0f14]/80 border border-white/[0.07] rounded-2xl p-5">
+        <Achievements trades={trades} />
       </div>
 
     </div>

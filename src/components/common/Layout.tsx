@@ -1,21 +1,23 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useUIStore } from '../../store/uiStore';
 import { useAccounts } from '../../features/accounts/useAccounts';
 import { useDailyLock } from '../../features/guard/useDailyLock';
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  Wallet, 
-  Lock, 
+import {
+  LayoutDashboard,
+  BookOpen,
+  Wallet,
+  Lock,
   BarChart3,
   CalendarRange,
   BookMarked,
   LogOut,
-  Plus
+  Plus,
+  Target,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
-export type TabType = 'dashboard' | 'trades' | 'accounts' | 'analytics' | 'calendar' | 'playbook';
+export type TabType = 'dashboard' | 'trades' | 'accounts' | 'analytics' | 'calendar' | 'playbook' | 'goals';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,12 +26,13 @@ interface LayoutProps {
 }
 
 const NAV_ITEMS = [
-  { id: 'dashboard' as const, name: 'Dashboard', icon: LayoutDashboard },
+  { id: 'dashboard' as const, name: 'Dashboard',       icon: LayoutDashboard },
   { id: 'trades'    as const, name: 'Journal / Trades', icon: BookOpen },
-  { id: 'analytics' as const, name: 'Analytics', icon: BarChart3 },
-  { id: 'calendar'  as const, name: 'Calendrier', icon: CalendarRange },
-  { id: 'playbook'  as const, name: 'Playbook', icon: BookMarked },
-  { id: 'accounts'  as const, name: 'Comptes', icon: Wallet },
+  { id: 'analytics' as const, name: 'Analytics',        icon: BarChart3 },
+  { id: 'calendar'  as const, name: 'Calendrier',       icon: CalendarRange },
+  { id: 'playbook'  as const, name: 'Playbook',         icon: BookMarked },
+  { id: 'goals'     as const, name: 'Objectifs',        icon: Target },
+  { id: 'accounts'  as const, name: 'Comptes',          icon: Wallet },
 ] as const;
 
 export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrentTab }) => {
@@ -39,17 +42,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
 
   return (
     <div className="min-h-screen bg-[#07080a] text-slate-100 flex font-sans selection:bg-[#6366f1]/30 selection:text-white">
-      
+
       {/* ── DESKTOP SIDEBAR ────────────────────────────────────────────── */}
       <aside className="w-64 bg-[#0d0e14]/90 border-r border-white/[0.07] hidden md:flex flex-col shrink-0 z-20 backdrop-blur-xl">
-        
-        {/* Logo Seven Tracking */}
+
+        {/* Logo */}
         <div className="h-16 px-5 flex items-center gap-3 border-b border-white/[0.07] bg-[#07080a]/60 backdrop-blur-md">
           <div className="relative group cursor-pointer" onClick={() => setCurrentTab('dashboard')}>
             <div className="absolute -inset-0.5 bg-gradient-to-r from-[#6366f1] via-[#06b6d4] to-[#10b981] rounded-xl blur opacity-60 group-hover:opacity-100 transition duration-300 animate-pulse-glow" />
-            <img 
-              src="/assets/seven_tracking_logo.png" 
-              alt="Seven Tracking Logo" 
+            <img
+              src="/assets/seven_tracking_logo.png"
+              alt="Seven Tracking Logo"
               className="relative w-9 h-9 rounded-xl object-cover border border-white/10 shadow-lg group-hover:scale-105 transition-transform duration-300"
             />
           </div>
@@ -67,7 +70,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
           </div>
         </div>
 
-        {/* Action Button "+ Ajouter Trade" */}
+        {/* Add Trade button */}
         <div className="p-4">
           <button
             onClick={() => setCurrentTab('trades')}
@@ -78,14 +81,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
           </button>
         </div>
 
-        {/* Navigation items */}
-        <nav className="flex-1 px-3 space-y-1 py-2">
+        {/* Nav items */}
+        <nav className="flex-1 px-3 space-y-0.5 py-2 overflow-y-auto">
           {NAV_ITEMS.map(({ id, name, icon: Icon }) => {
             const active = currentTab === id;
             return (
-              <button
+              <motion.button
                 key={id}
                 onClick={() => setCurrentTab(id)}
+                whileHover={{ x: 2 }}
+                whileTap={{ scale: 0.97 }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 relative group ${
                   active
                     ? 'bg-[#6366f1]/15 text-[#818cf8] border border-[#6366f1]/30 shadow-indigo-glow font-bold'
@@ -99,12 +104,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
                     <div className="w-1.5 h-1.5 rounded-full bg-[#818cf8] shadow-[0_0_8px_#818cf8] animate-live-pulse" />
                   </div>
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </nav>
 
-        {/* Account Selector in Sidebar Bottom */}
+        {/* Account selector + logout */}
         <div className="p-4 border-t border-white/[0.07] space-y-3">
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Compte Actif</label>
@@ -115,13 +120,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
             >
               <option value="">Tous les comptes</option>
               {accounts.map(acc => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.name} ({acc.currency})
-                </option>
+                <option key={acc.id} value={acc.id}>{acc.name} ({acc.currency})</option>
               ))}
             </select>
           </div>
-
           <button
             onClick={() => supabase.auth.signOut()}
             className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-slate-400 hover:text-red-400 py-1.5 transition-colors"
@@ -134,15 +136,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
 
       {/* ── MAIN CONTENT AREA ────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
-        
-        {/* ── HEADER BAR ──────────────────────────────────────────────── */}
+
+        {/* Header */}
         <header className="h-16 bg-[#0d0e14]/80 border-b border-white/[0.07] px-4 md:px-6 flex items-center justify-between shrink-0 gap-2 backdrop-blur-xl">
           <div className="flex items-center gap-3 min-w-0">
             <h1 className="text-sm md:text-base font-bold text-white tracking-tight capitalize truncate">
               {NAV_ITEMS.find(n => n.id === currentTab)?.name}
             </h1>
-            
-            {/* Account Selector dropdown in Mobile & Desktop Header */}
             <div className="flex items-center gap-2">
               <select
                 value={activeAccountId || ''}
@@ -151,24 +151,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
               >
                 <option value="">Tous les comptes</option>
                 {accounts.map(acc => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name} ({acc.currency})
-                  </option>
+                  <option key={acc.id} value={acc.id}>{acc.name} ({acc.currency})</option>
                 ))}
               </select>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Locked status banner indicator */}
             {isLocked && (
               <div className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 shadow-red-500/10">
                 <Lock className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Session Verrouillée</span>
               </div>
             )}
-
-            {/* Logout button mobile */}
             <button
               onClick={() => supabase.auth.signOut()}
               className="md:hidden p-2 text-slate-400 hover:text-red-400 hover:bg-white/5 rounded-xl transition-colors"
@@ -179,31 +174,41 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
           </div>
         </header>
 
-        {/* ── PAGE CONTENT ────────────────────────────────────────────── */}
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto pb-20 md:pb-6">
+        {/* Page content */}
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto pb-24 md:pb-6">
           {children}
         </main>
       </div>
 
       {/* ── MOBILE BOTTOM NAVIGATION ─────────────────────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#121318] border-t border-[#262833] z-50 flex justify-around p-2">
-        {NAV_ITEMS.map(({ id, name, icon: Icon }) => {
-          const active = currentTab === id;
-          return (
-            <button
-              key={id}
-              onClick={() => setCurrentTab(id)}
-              className={`flex flex-col items-center gap-1 p-2 rounded-xl text-[10px] font-semibold transition-colors ${
-                active ? 'text-[#818cf8]' : 'text-slate-400'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{name.split(' ')[0]}</span>
-            </button>
-          );
-        })}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0d0e14]/95 border-t border-white/[0.07] z-50 backdrop-blur-xl">
+        <div className="flex justify-around px-2 py-1.5">
+          {NAV_ITEMS.slice(0, 6).map(({ id, name, icon: Icon }) => {
+            const active = currentTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setCurrentTab(id)}
+                className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl relative min-w-0"
+              >
+                <div className="relative">
+                  <Icon className={`w-5 h-5 transition-colors ${active ? 'text-[#818cf8]' : 'text-slate-500'}`} />
+                  {active && (
+                    <motion.div
+                      layoutId="mobile-nav-dot"
+                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#818cf8]"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                </div>
+                <span className={`text-[9px] font-semibold transition-colors leading-none ${active ? 'text-[#818cf8]' : 'text-slate-600'}`}>
+                  {name.split(' ')[0]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </nav>
-
     </div>
   );
 };
