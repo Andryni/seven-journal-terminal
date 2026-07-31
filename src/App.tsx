@@ -54,63 +54,6 @@ function AppContent() {
     }
   };
 
-  // If not logged in, show Modern Animated Auth Page (21st.dev Style)
-  if (!session) {
-    const tradingIcons: IconConfig[] = [
-      {
-        component: () => (
-          <div className="w-9 h-9 rounded-xl bg-[#6366f1]/20 border border-[#6366f1]/40 flex items-center justify-center text-emerald-400 font-bold font-mono text-xs shadow-indigo-glow">
-            +R
-          </div>
-        ),
-        className: 'size-[36px] border-none bg-transparent',
-        duration: 25,
-        delay: 0,
-        radius: 110,
-        path: true,
-        reverse: false,
-      },
-      {
-        component: () => (
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold font-mono text-xs shadow-green-glow">
-            TP
-          </div>
-        ),
-        className: 'size-[36px] border-none bg-transparent',
-        duration: 20,
-        delay: 5,
-        radius: 170,
-        path: true,
-        reverse: true,
-      },
-      {
-        component: () => (
-          <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 font-bold font-mono text-xs">
-            BOS
-          </div>
-        ),
-        className: 'size-[36px] border-none bg-transparent',
-        duration: 30,
-        delay: 10,
-        radius: 230,
-        path: true,
-        reverse: false,
-      },
-      {
-        component: () => (
-          <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 font-bold font-mono text-xs">
-            FVG
-          </div>
-        ),
-        className: 'size-[36px] border-none bg-transparent',
-        duration: 22,
-        delay: 15,
-        radius: 290,
-        path: true,
-        reverse: true,
-      },
-    ];
-
   // If not logged in, show Nova / LoginCardSection Auth Page (21st.dev Style)
   if (!session) {
     return (
