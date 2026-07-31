@@ -476,40 +476,38 @@ export default function LoginCardSection({
       <div className="flex-1 flex flex-col items-center justify-center z-10 px-6 pb-10 pt-4">
         <div className="w-full max-w-md mx-auto">
 
-          {/* ── Animated balance counter ── */}
-          <motion.div
-            className="mb-6"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3, duration: 0.7 }}
-          >
-            <div className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-              <Activity className="w-3 h-3 text-emerald-400" />
-              Portfolio Balance
-            </div>
-            <div className="text-4xl font-black font-mono text-white tracking-tight">
-              $<AnimatedCounter target={142680} />
-            </div>
-            <div className="text-xs font-mono text-emerald-400 mt-1 flex items-center gap-1">
-              <motion.span
-                animate={{ opacity: [1, 0, 1] }}
-                transition={{ duration: 1.2, repeat: Infinity }}
-              >▲</motion.span>
-              +$3,240.00 today (+2.32%)
-            </div>
-          </motion.div>
-
           {/* ── Login Card ── */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.8, ease: [0.22, 0.61, 0.36, 1] }}
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.4, duration: 0.8, ease: [0.22, 0.61, 0.36, 1] }}
           >
             <Card
-              className="border-zinc-800/80 bg-zinc-900/60 backdrop-blur-xl shadow-2xl shadow-indigo-950/30"
+              className="border-white/10 bg-[#0c0d14]/85 backdrop-blur-2xl shadow-[0_0_50px_rgba(99,102,241,0.18)] hover:shadow-[0_0_60px_rgba(99,102,241,0.25)] transition-all duration-500 rounded-3xl relative overflow-hidden"
               animate={false}
             >
-              <CardHeader className="space-y-1 text-center">
+              {/* Subtle top neon line */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#6366f1] via-[#06b6d4] to-[#10b981]" />
+
+              <CardHeader className="space-y-3 text-center pt-8 pb-4">
+                {/* Integrated Portfolio Balance */}
+                <div className="inline-flex flex-col items-center justify-center p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] mb-2">
+                  <div className="text-[10px] font-mono text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-0.5">
+                    <Activity className="w-3 h-3 text-emerald-400" />
+                    Portfolio Balance
+                  </div>
+                  <div className="text-3xl font-black font-mono text-white tracking-tight">
+                    $<AnimatedCounter target={142680} />
+                  </div>
+                  <div className="text-[11px] font-mono text-emerald-400 mt-0.5 flex items-center gap-1">
+                    <motion.span
+                      animate={{ opacity: [1, 0, 1] }}
+                      transition={{ duration: 1.2, repeat: Infinity }}
+                    >▲</motion.span>
+                    +$3,240.00 today (+2.32%)
+                  </div>
+                </div>
+
                 <CardTitle className="text-2xl font-black text-white tracking-tight">
                   {isSignUp ? "Créer un compte" : "Terminal Access"}
                 </CardTitle>
@@ -579,20 +577,20 @@ export default function LoginCardSection({
                     </div>
                   </div>
 
-                  {/* Submit */}
+                  {/* Submit button */}
                   <motion.button
                     type="submit"
-                    className="w-full h-10 mt-2 rounded-lg bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-bold text-xs uppercase tracking-wider shadow-lg cursor-pointer relative overflow-hidden"
-                    whileHover={{ scale: 1.02, boxShadow: "0 0 24px rgba(99,102,241,0.5)" }}
+                    className="w-full h-11 mt-2 rounded-xl bg-gradient-to-r from-[#6366f1] via-[#4f46e5] to-[#06b6d4] hover:from-[#4f46e5] hover:to-[#0891b2] text-white font-bold text-xs uppercase tracking-wider shadow-[0_0_25px_rgba(99,102,241,0.45)] border border-indigo-400/30 transition-all cursor-pointer relative overflow-hidden flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(99,102,241,0.6)" }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <motion.span
-                      className="absolute inset-0 bg-white/10"
+                      className="absolute inset-0 bg-white/15"
                       initial={{ x: "-100%" }}
                       whileHover={{ x: "100%" }}
                       transition={{ duration: 0.5 }}
                     />
-                    {isSignUp ? "S'inscrire" : "Se Connecter →"}
+                    <span>{isSignUp ? "CRÉER UN COMPTE →" : "SE CONNECTER →"}</span>
                   </motion.button>
                 </form>
               </CardContent>
