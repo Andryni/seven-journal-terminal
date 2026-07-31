@@ -20,6 +20,7 @@ export const Accounts: React.FC = () => {
   const [currency, setCurrency] = useState('USD');
   const [maxDailyLoss, setMaxDailyLoss] = useState('');
   const [maxDrawdownLimit, setMaxDrawdownLimit] = useState('');
+  const [drawdownType, setDrawdownType] = useState<'static' | 'trailing'>('static');
   const [profitTarget, setProfitTarget] = useState('');
   const [consistencyRulePercent, setConsistencyRulePercent] = useState('15');
   const [error, setError] = useState('');
@@ -33,6 +34,7 @@ export const Accounts: React.FC = () => {
     setCurrency(acc.currency);
     setMaxDailyLoss(acc.max_daily_loss_limit !== null && acc.max_daily_loss_limit !== undefined ? acc.max_daily_loss_limit.toString() : '');
     setMaxDrawdownLimit(acc.max_drawdown_limit !== null && acc.max_drawdown_limit !== undefined ? acc.max_drawdown_limit.toString() : '');
+    setDrawdownType(acc.drawdown_type || 'static');
     setProfitTarget(acc.profit_target !== null && acc.profit_target !== undefined ? acc.profit_target.toString() : '');
     setConsistencyRulePercent(acc.consistency_rule_percent !== null && acc.consistency_rule_percent !== undefined ? acc.consistency_rule_percent.toString() : '15');
     setShowAddForm(true);
@@ -50,6 +52,7 @@ export const Accounts: React.FC = () => {
     setInitialBalance('');
     setMaxDailyLoss('');
     setMaxDrawdownLimit('');
+    setDrawdownType('static');
     setProfitTarget('');
     setConsistencyRulePercent('15');
     setError('');
@@ -83,6 +86,7 @@ export const Accounts: React.FC = () => {
           currency,
           max_daily_loss_limit: maxDailyLoss ? Number(maxDailyLoss) : null,
           max_drawdown_limit: maxDrawdownLimit ? Number(maxDrawdownLimit) : null,
+          drawdown_type: drawdownType,
           profit_target: profitTarget ? Number(profitTarget) : null,
           consistency_rule_percent: consistencyRulePercent ? Number(consistencyRulePercent) : null,
         });
@@ -97,6 +101,7 @@ export const Accounts: React.FC = () => {
           is_active: true,
           max_daily_loss_limit: maxDailyLoss ? Number(maxDailyLoss) : null,
           max_drawdown_limit: maxDrawdownLimit ? Number(maxDrawdownLimit) : null,
+          drawdown_type: drawdownType,
           profit_target: profitTarget ? Number(profitTarget) : null,
           consistency_rule_percent: consistencyRulePercent ? Number(consistencyRulePercent) : null,
         });
@@ -272,14 +277,26 @@ export const Accounts: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
+                    <Select
+                      label="Type de Drawdown (Calcul) *"
+                      value={drawdownType}
+                      onChange={(e) => setDrawdownType(e.target.value as 'static' | 'trailing')}
+                      options={[
+                        { value: 'static', label: 'STATIC (Fixe sur solde initial)' },
+                        { value: 'trailing', label: 'TRAILING (Suit le high de l\'équité)' },
+                      ]}
+                    />
                     <Input
-                      label="Daily Drawdown / Perte Quotidienne Max ($)"
+                      label="Daily Drawdown / Perte Max Jour ($)"
                       placeholder="ex: 5000 (optionnel)"
                       value={maxDailyLoss}
                       onChange={(e) => setMaxDailyLoss(e.target.value)}
                       type="number"
                       step="0.01"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <Input
                       label="Règle de Consistance / Régularité (%)"
                       placeholder="ex: 15 (ex: FTMO 15%, FundedNext 20%)"

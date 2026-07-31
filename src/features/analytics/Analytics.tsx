@@ -139,16 +139,31 @@ export const Analytics: React.FC = () => {
 
   // ── Equity curve + Drawdown ────────────────────────────────────────────────
 
+  const isTrailingDrawdown = useMemo(() => {
+    return selectedAccount?.drawdown_type === 'trailing';
+  }, [selectedAccount]);
+
   const equityCurve = useMemo(() => {
     const sorted = [...closed].sort(
       (a, b) => new Date(a.exit_time).getTime() - new Date(b.exit_time).getTime()
     );
-    let cum = 0, peak = initialBalance;
+    let cum = 0;
+    let peak = initialBalance;
+
     return sorted.map((t, i) => {
       cum += t.pnl;
       const currentBalance = initialBalance + cum;
-      if (currentBalance > peak) peak = currentBalance;
-      const dd = ((currentBalance - peak) / peak) * 100;
+
+      // Trailing : le peak augmente dès que l'équité fait un nouveau plus haut
+      if (currentBalance > peak) {
+        peak = currentBalance;
+      }
+
+      // Static : le niveau de référence reste l'initialBalance fixe (le max drawdown permis est fixe par rapport à initialBalance)
+      // Trailing : le niveau de référence monte avec le pic d'équité (peak)
+      const referenceBalance = isTrailingDrawdown ? peak : initialBalance;
+      const dd = ((currentBalance - referenceBalance) / referenceBalance) * 100;
+
       return {
         i: i + 1,
         date: new Date(t.exit_time).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
@@ -157,7 +172,7 @@ export const Analytics: React.FC = () => {
         trade_pnl: Number(t.pnl.toFixed(2)),
       };
     });
-  }, [closed, initialBalance]);
+  }, [closed, initialBalance, isTrailingDrawdown]);
 
   const maxDrawdown = useMemo(() => Math.min(0, ...equityCurve.map(e => e.drawdown)), [equityCurve]);
   const netPnL = useMemo(() => closed.reduce((s, t) => s + t.pnl, 0), [closed]);
@@ -1107,7 +1122,16 @@ export const Analytics: React.FC = () => {
             </div>
 
             <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-2">
-              <span className="text-xs font-semibold text-slate-400">Drawdown Max Autorisé (${maxDrawdownLimitAmount.toLocaleString()})</span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400">Drawdown Max Autorisé (${maxDrawdownLimitAmount.toLocaleString()})</span>
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                  isTrailingDrawdown 
+                    ? 'bg-purple-500/10 text-purple-300 border border-purple-500/30' 
+                    : 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/30'
+                }`}>
+                  {isTrailingDrawdown ? 'TRAILING DD' : 'STATIC DD'}
+                </span>
+              </div>
               <div className="text-2xl font-bold text-red-400 tabular-nums">
                 {maxDrawdown.toFixed(2)}% / -{((maxDrawdownLimitAmount / Math.max(initialBalance, 1)) * 100).toFixed(1)}%
               </div>
@@ -1115,7 +1139,7 @@ export const Analytics: React.FC = () => {
                 <div className="bg-red-400 h-full rounded-full transition-all" style={{ width: `${Math.min((Math.abs(maxDrawdown) / Math.max(((maxDrawdownLimitAmount / Math.max(initialBalance, 1)) * 100), 1)) * 100, 100)}%` }} />
               </div>
               <span className="text-[10px] text-slate-500 font-medium block">
-                Marge restante : {(Math.max(((maxDrawdownLimitAmount / Math.max(initialBalance, 1)) * 100) - Math.abs(maxDrawdown), 0)).toFixed(1)}%
+                Marge restante : {(Math.max(((maxDrawdownLimitAmount / Math.max(initialBalance, 1)) * 100) - Math.abs(maxDrawdown), 0)).toFixed(1)}% ({isTrailingDrawdown ? 'Calculé depuis le High d\'équité' : 'Calculé depuis le Solde initial'})
               </span>
             </div>
 

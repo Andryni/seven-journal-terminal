@@ -12,6 +12,7 @@ export interface TradingAccount {
   is_active: boolean;
   max_daily_loss_limit: number | null;
   max_drawdown_limit?: number | null;
+  drawdown_type?: 'static' | 'trailing';
   profit_target?: number | null;
   consistency_rule_percent?: number | null;
   created_at: string;
@@ -51,6 +52,9 @@ export function useAccounts() {
 
       if (newAccount.max_drawdown_limit !== undefined && newAccount.max_drawdown_limit !== null) {
         payload.max_drawdown_limit = newAccount.max_drawdown_limit;
+      }
+      if (newAccount.drawdown_type) {
+        payload.drawdown_type = newAccount.drawdown_type;
       }
       if (newAccount.profit_target !== undefined && newAccount.profit_target !== null) {
         payload.profit_target = newAccount.profit_target;
