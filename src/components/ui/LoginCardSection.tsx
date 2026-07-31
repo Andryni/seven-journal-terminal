@@ -463,18 +463,18 @@ export default function LoginCardSection({
       </motion.header>
 
       {/* ── Main content ── */}
-      <div className="flex-1 flex items-center z-10 px-6 pb-10 pt-4">
-        <div className="w-full max-w-md">
+      {/* ── Floating stat badges (absolute, outside card flow) ── */}
+      <div className="hidden lg:block">
+        <FloatBadge label="Win Rate" value="+68.4%" positive delay={1.0}
+          style={{ right: "4%", top: "22%" }} />
+        <FloatBadge label="Total R" value="+24.7R" positive delay={1.3}
+          style={{ right: "4%", top: "42%" }} />
+        <FloatBadge label="Max DD" value="-4.2%" positive={false} delay={1.6}
+          style={{ right: "4%", top: "60%" }} />
+      </div>
 
-          {/* ── Floating stat badges (visible on wider screens) ── */}
-          <div className="hidden lg:block">
-            <FloatBadge label="Win Rate" value="+68.4%" positive delay={1.0}
-              style={{ right: "6%", top: "22%" }} />
-            <FloatBadge label="Total R" value="+24.7R" positive delay={1.3}
-              style={{ right: "18%", top: "52%" }} />
-            <FloatBadge label="Max DD" value="-4.2%" positive={false} delay={1.6}
-              style={{ right: "4%", top: "62%" }} />
-          </div>
+      <div className="flex-1 flex flex-col items-center justify-center z-10 px-6 pb-10 pt-4">
+        <div className="w-full max-w-md mx-auto">
 
           {/* ── Animated balance counter ── */}
           <motion.div
