@@ -41,10 +41,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
   const { isLocked } = useDailyLock();
 
   return (
-    <div className="min-h-screen bg-[#07080a] text-slate-100 flex font-sans selection:bg-[#6366f1]/30 selection:text-white">
+    <div className="h-screen w-screen overflow-hidden bg-[#07080a] text-slate-100 flex font-sans selection:bg-[#6366f1]/30 selection:text-white">
 
-      {/* ── DESKTOP SIDEBAR ────────────────────────────────────────────── */}
-      <aside className="w-64 bg-[#0d0e14]/90 border-r border-white/[0.07] hidden md:flex flex-col shrink-0 z-20 backdrop-blur-xl">
+      {/* ── DESKTOP SIDEBAR (FIXED) ────────────────────────────────────────────── */}
+      <aside className="w-64 h-full bg-[#0d0e14]/90 border-r border-white/[0.07] hidden md:flex flex-col shrink-0 z-20 backdrop-blur-xl">
 
         {/* Logo */}
         <div className="h-16 px-5 flex items-center gap-3 border-b border-white/[0.07] bg-[#07080a]/60 backdrop-blur-md">
