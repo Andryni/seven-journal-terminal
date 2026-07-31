@@ -50,10 +50,40 @@ export const Dashboard: React.FC = () => {
   const m = usePerformanceMetrics(trades);
   const [now, setNow] = useState(new Date());
 
+  // Session Timer
+  const [sessionActive, setSessionActive] = useState(false);
+  const [sessionStart, setSessionStart] = useState<Date | null>(null);
+  const [sessionElapsed, setSessionElapsed] = useState(0); // seconds
+
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
+    const timer = setInterval(() => {
+      setNow(new Date());
+      if (sessionActive && sessionStart) {
+        setSessionElapsed(Math.floor((Date.now() - sessionStart.getTime()) / 1000));
+      }
+    }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [sessionActive, sessionStart]);
+
+  const toggleSession = () => {
+    if (sessionActive) {
+      setSessionActive(false);
+      setSessionStart(null);
+      setSessionElapsed(0);
+    } else {
+      setSessionActive(true);
+      setSessionStart(new Date());
+    }
+  };
+
+  const formatElapsed = (s: number) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  };
+
+  const sessionOverLimit = sessionElapsed >= 4 * 3600; // 4h warning
 
   if (isLoading) {
     return (
@@ -87,6 +117,33 @@ export const Dashboard: React.FC = () => {
               {now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           </div>
+
+          {/* Session Timer */}
+          <motion.button
+            onClick={toggleSession}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className={`flex items-center gap-2 rounded-xl px-3 py-2 border text-[11px] font-bold font-mono transition-all ${
+              sessionActive
+                ? sessionOverLimit
+                  ? 'bg-red-500/20 border-red-500/50 text-red-300 animate-pulse'
+                  : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                : 'bg-[#181920]/80 border-white/[0.06] text-slate-400 hover:text-white hover:border-white/20'
+            }`}
+          >
+            {sessionActive ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="tabular-nums">{formatElapsed(sessionElapsed)}</span>
+                {sessionOverLimit && <span className="text-[9px] text-red-300">⚠️ 4H+</span>}
+              </>
+            ) : (
+              <>
+                <span className="text-[10px]">▶</span>
+                <span>Session</span>
+              </>
+            )}
+          </motion.button>
         </div>
       </div>
 

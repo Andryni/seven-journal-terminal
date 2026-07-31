@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { useTrades } from '../trades/useTrades';
 import type { Trade } from '../trades/useTrades';
 import { useAccounts } from '../accounts/useAccounts';
@@ -28,6 +28,45 @@ import {
   FirmProgressBar,
 } from '../../components/ui/PremiumCharts';
 import { SessionHeatmap } from './SessionHeatmap';
+
+// ─── Export PNG helper ───────────────────────────────────────────────────────
+async function exportToPng(el: HTMLElement, filename: string) {
+  try {
+    const h2c = (await import('html2canvas')).default;
+    const canvas = await h2c(el, { backgroundColor: '#07080a', scale: 2 });
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch { console.warn('html2canvas non disponible'); }
+}
+
+// ─── Circular Gauge ───────────────────────────────────────────────────────────
+function CircularGauge({ percent, label, color, size = 120 }: { percent: number; label: string; color: string; size?: number }) {
+  const r = (size - 14) / 2;
+  const circ = 2 * Math.PI * r;
+  const pct = Math.min(Math.max(percent, 0), 100);
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="-rotate-90">
+          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#1e2028" strokeWidth={10} />
+          <circle
+            cx={size/2} cy={size/2} r={r} fill="none"
+            stroke={color} strokeWidth={10} strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={circ - (pct / 100) * circ}
+            style={{ filter: `drop-shadow(0 0 6px ${color})`, transition: 'stroke-dashoffset 1.2s ease' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-xl font-black font-mono" style={{ color }}>{pct.toFixed(0)}%</span>
+        </div>
+      </div>
+      <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider text-center">{label}</span>
+    </div>
+  );
+}
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 const Empty = () => (
@@ -110,6 +149,13 @@ export const Analytics: React.FC = () => {
   const { activeAccountId } = useUIStore();
   const { setups: playbookSetups } = usePlaybookSetups();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPng = useCallback(() => {
+    if (exportRef.current) {
+      exportToPng(exportRef.current, `seven_analytics_${new Date().toISOString().split('T')[0]}.png`);
+    }
+  }, []);
 
   const selectedAccount = useMemo(() => {
     if (activeAccountId) return accounts.find(a => a.id === activeAccountId);
@@ -465,7 +511,15 @@ export const Analytics: React.FC = () => {
             {closed.length} trades clôturés analysés · Métriques calculées en temps réel
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Export PNG */}
+          <button
+            onClick={handleExportPng}
+            className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:border-white/30 transition-all"
+          >
+            <span>📥</span>
+            <span className="hidden sm:inline">Export PNG</span>
+          </button>
           <ShareButton />
           <div className="text-right">
             <div
@@ -479,7 +533,7 @@ export const Analytics: React.FC = () => {
         </div>
       </div>
 
-      {/* TABS */}
+    <div ref={exportRef}>   {/* TABS */}
       <div className="flex flex-wrap gap-1.5 bg-[#0a0b0f]/80 border border-white/[0.06] p-2 rounded-2xl backdrop-blur">
         {TABS.map(({ id, label, icon: Icon }) => {
           const active = activeTab === id;
@@ -1111,6 +1165,36 @@ export const Analytics: React.FC = () => {
       {/* ── TAB: PROP FIRM TRACKER ────────────────────────────────────────── */}
       {activeTab === 'propfirm' && (
         <div className="space-y-5">
+          {/* Circular Gauges for visual punch */}
+          <div className="bg-[#0e0f14]/80 border border-white/[0.07] rounded-2xl p-6">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-5 flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-[#6366f1] rounded-full" />
+              Jauges de Performance
+            </div>
+            <div className="flex flex-wrap justify-around gap-6">
+              <CircularGauge
+                percent={Math.min((netPnL / Math.max(targetProfitAmount, 1)) * 100, 100)}
+                label={`Objectif $${targetProfitAmount.toLocaleString()}`}
+                color="#10b981"
+              />
+              <CircularGauge
+                percent={Math.min((Math.abs(maxDrawdown) / Math.max((maxDrawdownLimitAmount / Math.max(initialBalance, 1)) * 100, 1)) * 100, 100)}
+                label={`Drawdown Utilisé (${isTrailingDrawdown ? 'Trailing' : 'Static'})`}
+                color={maxDrawdown > (maxDrawdownLimitAmount / Math.max(initialBalance, 1)) * 80 ? '#ef4444' : '#f59e0b'}
+              />
+              <CircularGauge
+                percent={Math.min((winRate / 100) * 100 * 1.5, 100)}
+                label={`Win Rate ${winRate.toFixed(1)}%`}
+                color="#818cf8"
+              />
+              <CircularGauge
+                percent={Math.min(profitFactor * 25, 100)}
+                label={`Profit Factor ${profitFactor.toFixed(2)}x`}
+                color="#06b6d4"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-[#181920] border border-[#262833] rounded-xl p-5 space-y-2">
               <span className="text-xs font-semibold text-slate-400">Objectif de Profit (${targetProfitAmount.toLocaleString()})</span>
@@ -1185,6 +1269,7 @@ export const Analytics: React.FC = () => {
         </div>
       )}
 
+    </div> {/* end exportRef */}
     </div>
   );
 };

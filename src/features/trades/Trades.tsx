@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTrades } from './useTrades';
 import type { Trade } from './useTrades';
@@ -19,10 +19,13 @@ import {
   Edit3, 
   Eye, 
   Download, 
-  Upload,
   X,
   ExternalLink,
-  Calculator
+  Calculator,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  Image as ImageIcon
 } from 'lucide-react';
 import { PositionCalculator } from './PositionCalculator';
 import { ShareButton } from '../../components/share/ShareCard';
@@ -37,12 +40,41 @@ export const Trades: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Filter states
-  const [filterPair, setFilterPair] = useState('');
-  const [filterDirection, setFilterDirection] = useState<'' | 'BUY' | 'SELL'>('');
-  const [filterResult, setFilterResult] = useState<'' | 'TP' | 'SL' | 'BE' | 'OPEN'>('');
-  const [filterMental, setFilterMental] = useState('');
-  const [filterSearch, setFilterSearch] = useState('');
+  // Filter states — persisted in localStorage
+  const [filterPair, setFilterPair] = useState(() => localStorage.getItem('trades_filter_pair') || '');
+  const [filterDirection, setFilterDirection] = useState<'' | 'BUY' | 'SELL'>(() => (localStorage.getItem('trades_filter_dir') as '' | 'BUY' | 'SELL') || '');
+  const [filterResult, setFilterResult] = useState<'' | 'TP' | 'SL' | 'BE' | 'OPEN'>(() => (localStorage.getItem('trades_filter_result') as '' | 'TP' | 'SL' | 'BE' | 'OPEN') || '');
+  const [filterMental, setFilterMental] = useState(() => localStorage.getItem('trades_filter_mental') || '');
+  const [filterSearch, setFilterSearch] = useState(() => localStorage.getItem('trades_filter_search') || '');
+
+  // Sort state
+  type SortKey = 'date' | 'pair' | 'pnl' | 'r_multiple' | 'result';
+  const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  // Drag & drop state
+  const [isDragging, setIsDragging] = useState(false);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+
+  // Persist filters to localStorage
+  useEffect(() => { localStorage.setItem('trades_filter_pair', filterPair); }, [filterPair]);
+  useEffect(() => { localStorage.setItem('trades_filter_dir', filterDirection); }, [filterDirection]);
+  useEffect(() => { localStorage.setItem('trades_filter_result', filterResult); }, [filterResult]);
+  useEffect(() => { localStorage.setItem('trades_filter_mental', filterMental); }, [filterMental]);
+  useEffect(() => { localStorage.setItem('trades_filter_search', filterSearch); }, [filterSearch]);
+
+  const handleSort = useCallback((key: SortKey) => {
+    setSortKey(prev => {
+      if (prev === key) { setSortDir(d => d === 'asc' ? 'desc' : 'asc'); return prev; }
+      setSortDir('desc');
+      return key;
+    });
+  }, []);
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ChevronsUpDown className="w-3 h-3 opacity-30" />;
+    return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-[#818cf8]" /> : <ChevronDown className="w-3 h-3 text-[#818cf8]" />;
+  };
 
   // UI Control states
   const [showAddForm, setShowAddForm] = useState(false);
@@ -437,20 +469,44 @@ export const Trades: React.FC = () => {
     );
   }
 
-  // Filtered trades (derived)
-  const filteredTrades = trades.filter(t => {
-    if (filterPair && !t.pair.toUpperCase().includes(filterPair.toUpperCase())) return false;
-    if (filterDirection && t.direction !== filterDirection) return false;
-    if (filterResult && t.result !== filterResult) return false;
-    if (filterMental && t.mental_state !== filterMental) return false;
-    if (filterSearch) {
-      const q = filterSearch.toLowerCase();
-      if (!t.pair.toLowerCase().includes(q) && !(t.notes || '').toLowerCase().includes(q)) return false;
-    }
-    return true;
-  });
+  // Filtered + sorted trades
+  const filteredTrades = useMemo(() => {
+    const filtered = trades.filter(t => {
+      if (filterPair && !t.pair.toUpperCase().includes(filterPair.toUpperCase())) return false;
+      if (filterDirection && t.direction !== filterDirection) return false;
+      if (filterResult && t.result !== filterResult) return false;
+      if (filterMental && t.mental_state !== filterMental) return false;
+      if (filterSearch) {
+        const q = filterSearch.toLowerCase();
+        if (!t.pair.toLowerCase().includes(q) && !(t.notes || '').toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => {
+      let av: number | string = 0, bv: number | string = 0;
+      if (sortKey === 'date') { av = new Date(a.entry_time).getTime(); bv = new Date(b.entry_time).getTime(); }
+      else if (sortKey === 'pair') { av = a.pair; bv = b.pair; }
+      else if (sortKey === 'pnl') { av = a.pnl ?? -Infinity; bv = b.pnl ?? -Infinity; }
+      else if (sortKey === 'r_multiple') { av = a.r_multiple ?? -Infinity; bv = b.r_multiple ?? -Infinity; }
+      else if (sortKey === 'result') { av = a.result; bv = b.result; }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [trades, filterPair, filterDirection, filterResult, filterMental, filterSearch, sortKey, sortDir]);
 
   const hasActiveFilters = !!(filterPair || filterDirection || filterResult || filterMental || filterSearch);
+
+  // Drag & drop import handler
+  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const syntheticEvent = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+    handleImportJSON(syntheticEvent);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -468,23 +524,29 @@ export const Trades: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-2">
-          {/* IMPORT BUTTON */}
+          {/* IMPORT — drag & drop zone */}
           <input
             type="file"
             ref={fileInputRef}
             onChange={handleImportJSON}
-            accept=".json"
+            accept=".json,.csv,.html,.htm"
             className="hidden"
           />
-          <Button 
-            variant="outline"
-            size="sm"
+          <div
+            ref={dropZoneRef}
+            onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center space-x-1"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-all ${
+              isDragging
+                ? 'bg-indigo-500/20 border-indigo-400 text-indigo-300 scale-105 shadow-indigo-glow'
+                : 'bg-transparent border-white/10 text-slate-400 hover:border-white/30 hover:text-white'
+            }`}
           >
-            <Upload className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">IMPORT</span>
-          </Button>
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{isDragging ? 'Déposer ici !' : 'IMPORT'}</span>
+          </div>
 
           <Button 
             variant="outline"
@@ -1062,8 +1124,16 @@ export const Trades: React.FC = () => {
         </div>
       , document.body)}
 
-      {/* TABLEAU DES TRADES */}
-      <Table headers={['DATE', 'INSTRUMENT', 'SESSION', 'TYPE', 'LOTS', 'RESULTAT', 'P&L ($)', 'R-MULTIPLE', 'LIENS IMAGES', 'ACTIONS']}>
+      {/* TABLEAU DES TRADES — colonnes triables */}
+      <Table headers={[
+        <button key="date" onClick={() => handleSort('date')} className="flex items-center gap-1 hover:text-white transition-colors">DATE <SortIcon col="date" /></button>,
+        <button key="pair" onClick={() => handleSort('pair')} className="flex items-center gap-1 hover:text-white transition-colors">INSTRUMENT <SortIcon col="pair" /></button>,
+        'SESSION', 'TYPE', 'LOTS',
+        <button key="result" onClick={() => handleSort('result')} className="flex items-center gap-1 hover:text-white transition-colors">RÉSULTAT <SortIcon col="result" /></button>,
+        <button key="pnl" onClick={() => handleSort('pnl')} className="flex items-center gap-1 hover:text-white transition-colors">P&L ($) <SortIcon col="pnl" /></button>,
+        <button key="r" onClick={() => handleSort('r_multiple')} className="flex items-center gap-1 hover:text-white transition-colors">R-MULTIPLE <SortIcon col="r_multiple" /></button>,
+        'IMAGES', 'ACTIONS'
+      ]}>
         {filteredTrades.map((t: Trade) => (
           <TableRow key={t.id} className="trade-row">
             <TableCell className="font-mono text-xs text-slate-400">{new Date(t.entry_time).toLocaleDateString('fr-FR')} {new Date(t.entry_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</TableCell>

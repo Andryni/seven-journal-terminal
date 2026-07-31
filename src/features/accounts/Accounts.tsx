@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import { useAccounts } from './useAccounts';
 import type { TradingAccount } from './useAccounts';
 import { useTrades } from '../trades/useTrades';
 import { Input, Select } from '../../components/ui/Input';
-import { Plus, AlertCircle, Trash2, Edit3, TrendingUp, DollarSign, Wallet, CheckCircle, X } from 'lucide-react';
+import { Plus, AlertCircle, Trash2, Edit3, TrendingUp, DollarSign, Wallet, CheckCircle, X, BarChart3, Shield } from 'lucide-react';
 
 export const Accounts: React.FC = () => {
   const { accounts, isLoading, createAccount, updateAccount, deleteAccount } = useAccounts();
@@ -329,6 +330,47 @@ export const Accounts: React.FC = () => {
           </div>
         </div>
       , document.body)}
+
+      {/* CONSOLIDATED MULTI-ACCOUNT OVERVIEW */}
+      {accounts.length > 1 && (() => {
+        const allClosed = trades.filter(t => t.pnl !== null);
+        const totalPnL = allClosed.reduce((s, t) => s + (t.pnl || 0), 0);
+        const totalCapital = accounts.reduce((s, a) => s + a.initial_balance, 0);
+        const allWins = allClosed.filter(t => (t.pnl || 0) > 0);
+        const combinedWR = allClosed.length > 0 ? (allWins.length / allClosed.length) * 100 : 0;
+        const totalR = allClosed.reduce((s, t) => s + (t.r_multiple || 0), 0);
+        const pnlPct = totalCapital > 0 ? (totalPnL / totalCapital) * 100 : 0;
+        const stats = [
+          { label: 'Capital Total', value: `$${totalCapital.toLocaleString('en-US')}`, icon: Wallet, color: 'text-slate-200' },
+          { label: 'P&L Consolidé', value: `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)} (${pnlPct.toFixed(1)}%)`, icon: TrendingUp, color: totalPnL >= 0 ? 'text-emerald-400' : 'text-red-400' },
+          { label: 'Win Rate Global', value: `${combinedWR.toFixed(1)}%`, icon: BarChart3, color: combinedWR >= 50 ? 'text-indigo-400' : 'text-amber-400' },
+          { label: 'R Cumulé', value: `${totalR >= 0 ? '+' : ''}${totalR.toFixed(1)}R`, icon: Shield, color: totalR >= 0 ? 'text-cyan-400' : 'text-red-400' },
+          { label: 'Trades Clôturés', value: `${allClosed.length}`, icon: DollarSign, color: 'text-slate-300' },
+        ];
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-[#0e0f14]/90 to-[#12131a]/90 border border-[#6366f1]/20 rounded-2xl p-5 backdrop-blur-xl"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1.5 h-5 bg-gradient-to-b from-[#6366f1] to-[#10b981] rounded-full" />
+              <span className="text-xs font-black uppercase tracking-widest text-slate-200">Vue Consolidée — {accounts.length} comptes</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {stats.map(({ label, value, icon: Icon, color }) => (
+                <div key={label} className="bg-[#181920]/60 border border-white/[0.06] rounded-xl p-3 space-y-1">
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <Icon className="w-3 h-3" />
+                    <span className="text-[9px] font-mono uppercase tracking-wider">{label}</span>
+                  </div>
+                  <div className={`text-sm font-bold font-mono tabular-nums ${color}`}>{value}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        );
+      })()}
 
       {/* COMPTES GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
