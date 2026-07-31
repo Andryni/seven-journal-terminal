@@ -1,23 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTrades } from '../trades/useTrades';
 import { usePerformanceMetrics } from './usePerformanceMetrics';
 import {
-  Target, Flame,
-  TrendingDown, Activity, Zap, Brain, Calendar, History, Clock, ArrowRight
+  Target, Flame, TrendingDown, Activity, Zap, Brain, Calendar, History, ArrowRight,
+  Globe, Sparkles
 } from 'lucide-react';
 import { Table, TableRow, TableCell } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import {
   GlowingEquityChart,
   GradientBarChart,
-  DonutRingChart,
   Sparkline,
   GlowDefs,
 } from '../../components/ui/PremiumCharts';
 import { Achievements } from '../achievements/Achievements';
-
-
 
 // ── Gauge SVG Component ────────────────────────────────────────────────────────
 const SemiCircleGauge = ({ percent, color = '#10b981' }: { percent: number; color?: string }) => {
@@ -29,9 +26,7 @@ const SemiCircleGauge = ({ percent, color = '#10b981' }: { percent: number; colo
     <div className="relative w-16 h-10 flex items-center justify-center shrink-0">
       <svg className="w-16 h-10 transform -rotate-180" viewBox="0 0 64 36">
         <GlowDefs />
-        {/* Background Arc */}
         <path d="M 6 32 A 26 26 0 0 1 58 32" fill="none" stroke="#1e293b" strokeWidth="6" strokeLinecap="round" />
-        {/* Value Arc */}
         <path
           d="M 6 32 A 26 26 0 0 1 58 32"
           fill="none" stroke={color} strokeWidth="6" strokeLinecap="round"
@@ -43,17 +38,48 @@ const SemiCircleGauge = ({ percent, color = '#10b981' }: { percent: number; colo
   );
 };
 
-
+// ── Market Sessions Helper ───────────────────────────────────────────────────
+function getMarketSessions(date: Date) {
+  const utcHour = date.getUTCHours();
+  return [
+    { name: 'Tokyo', open: utcHour >= 0 && utcHour < 9, time: '00:00 - 09:00 UTC' },
+    { name: 'Londres', open: utcHour >= 7 && utcHour < 16, time: '07:00 - 16:00 UTC' },
+    { name: 'New York', open: utcHour >= 12 && utcHour < 21, time: '12:00 - 21:00 UTC' },
+    { name: 'Sydney', open: utcHour >= 21 || utcHour < 6, time: '21:00 - 06:00 UTC' },
+  ];
+}
 
 export const Dashboard: React.FC = () => {
   const { trades, isLoading } = useTrades();
   const m = usePerformanceMetrics(trades);
   const [now, setNow] = useState(new Date());
 
+  // Tabs for Central Right Widget
+  const [activeTabWidget, setActiveTabWidget] = useState<'checklist' | 'ratio' | 'session'>('checklist');
+
+  // Pre-session checklist state (persisted)
+  const [checklist, setChecklist] = useState(() => {
+    const saved = localStorage.getItem('seven_pre_session_checklist');
+    return saved ? JSON.parse(saved) : [
+      { id: '1', text: 'Vérifier le calendrier économique (News high impact)', done: false },
+      { id: '2', text: 'Valider le biais H4/H1 & Key Levels', done: false },
+      { id: '3', text: 'Respecter le Stop Loss & Max 1% de risque', done: false },
+      { id: '4', text: 'Pas de revenge trading après 1 perte', done: false }
+    ];
+  });
+
+  const toggleChecklistItem = (id: string) => {
+    setChecklist((prev: any[]) => {
+      const updated = prev.map(item => item.id === id ? { ...item, done: !item.done } : item);
+      localStorage.setItem('seven_pre_session_checklist', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   // Session Timer
   const [sessionActive, setSessionActive] = useState(false);
   const [sessionStart, setSessionStart] = useState<Date | null>(null);
-  const [sessionElapsed, setSessionElapsed] = useState(0); // seconds
+  const [sessionElapsed, setSessionElapsed] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -78,12 +104,34 @@ export const Dashboard: React.FC = () => {
 
   const formatElapsed = (s: number) => {
     const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
+    const min = Math.floor((s % 3600) / 60);
     const sec = s % 60;
-    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
   };
 
-  const sessionOverLimit = sessionElapsed >= 4 * 3600; // 4h warning
+  const sessionOverLimit = sessionElapsed >= 4 * 3600;
+  const marketSessions = useMemo(() => getMarketSessions(now), [now]);
+
+  // Account Health Status
+  const healthStatus = useMemo(() => {
+    if (m.maxDrawdown > 12 || m.consistency.alert) return { label: 'CRITIQUE', color: 'text-red-400 bg-red-500/10 border-red-500/30' };
+    if (m.maxDrawdown > 6 || m.winRate < 40) return { label: 'PRUDENCE', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' };
+    return { label: 'EXCELLENT', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' };
+  }, [m]);
+
+  // Today trades count
+  const todayTradesCount = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return trades.filter(t => t.entry_time && t.entry_time.startsWith(todayStr)).length;
+  }, [trades]);
+
+  // Long vs Short distribution
+  const longVsShort = useMemo(() => {
+    const longs = trades.filter(t => t.direction === 'BUY').length;
+    const shorts = trades.filter(t => t.direction === 'SELL').length;
+    const total = longs + shorts || 1;
+    return { longs, shorts, longPct: Math.round((longs / total) * 100), shortPct: Math.round((shorts / total) * 100) };
+  }, [trades]);
 
   if (isLoading) {
     return (
@@ -100,22 +148,44 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6 page-enter">
 
-      {/* ── MARKET OVERVIEW HEADER ─── */}
-      <div className="flex items-center justify-between px-1">
-        <div>
-          <h2 className="text-xl font-heading font-bold text-white tracking-tight">Market Overview</h2>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">Tableau de bord personnel · Seven Tracking</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-[#181920]/80 backdrop-blur border border-white/[0.06] rounded-xl px-3 py-2">
-            <div className="live-dot" />
-            <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">LIVE</span>
-          </div>
-          <div className="flex items-center gap-2 bg-[#181920]/80 backdrop-blur border border-white/[0.06] rounded-xl px-3 py-2">
-            <Clock className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-[11px] font-mono text-slate-300 tabular-nums">
-              {now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+      {/* ── HERO BANNER & SESSIONS OVERVIEW ─── */}
+      <div className="bg-gradient-to-r from-[#0d0e14]/95 via-[#131520]/90 to-[#0e1017]/95 border border-white/[0.08] rounded-2xl p-5 backdrop-blur-xl shadow-card-premium flex flex-col md:flex-row md:items-center justify-between gap-4">
+        
+        {/* Left: Salutation + Health Status */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-heading font-black tracking-tight text-white flex items-center gap-2">
+              <span>Bons trades, Trader</span>
+              <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
+            </h2>
+            <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${healthStatus.color}`}>
+              Santé : {healthStatus.label}
             </span>
+          </div>
+          <p className="text-xs text-slate-400 font-mono">
+            {todayTradesCount === 0 ? 'Aucun trade exécuté aujourd\'hui.' : `${todayTradesCount} trade(s) pris aujourd'hui.`} 
+            {todayTradesCount >= 3 && <span className="text-amber-400 font-bold ml-1">⚠️ Attention au overtrading !</span>}
+          </p>
+        </div>
+
+        {/* Right: Market Sessions & Clock */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Sessions Pills */}
+          <div className="flex items-center gap-1.5 bg-[#08090d]/80 border border-white/[0.06] rounded-xl px-3 py-1.5">
+            <Globe className="w-3.5 h-3.5 text-slate-400 mr-1" />
+            {marketSessions.map(s => (
+              <span
+                key={s.name}
+                title={s.time}
+                className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-md transition-all ${
+                  s.open
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-white/[0.03] text-slate-600 border border-white/[0.04]'
+                }`}
+              >
+                {s.name}
+              </span>
+            ))}
           </div>
 
           {/* Session Timer */}
@@ -197,14 +267,20 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Day Win Rate % */}
+        {/* Ratio RR Moyen (Avg Win / Avg Loss) */}
         <div className="stat-card p-5 flex items-center justify-between group">
           <div>
-            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 block mb-1">Day Win %</span>
-            <div className="kpi-value text-2xl text-white">{m.dayWinRate.toFixed(1)}%</div>
-            <div className="text-[11px] text-slate-400 font-mono mt-1">Jours gagnants</div>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 block mb-1">Ratio Gain/Perte</span>
+            <div className="kpi-value text-2xl text-cyan-400">
+              {m.avgLoss !== 0 ? (m.avgWin / m.avgLoss).toFixed(2) : '1.00'}x
+            </div>
+            <div className="text-[11px] text-slate-400 font-mono mt-1">
+              +${m.avgWin.toFixed(0)} / -${m.avgLoss.toFixed(0)}
+            </div>
           </div>
-          <SemiCircleGauge percent={m.dayWinRate} color={m.dayWinRate >= 50 ? '#10b981' : '#ef4444'} />
+          <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 group-hover:scale-110 transition-transform">
+            <Zap className="w-5 h-5 text-cyan-400" />
+          </div>
         </div>
 
         {/* Max Drawdown */}
@@ -212,7 +288,7 @@ export const Dashboard: React.FC = () => {
           <div>
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 block mb-1">Max Drawdown</span>
             <div className="kpi-value text-2xl text-red-400" style={{ filter: 'drop-shadow(0 0 8px #ef4444)' }}>-${m.maxDrawdown.toFixed(2)}</div>
-            <div className="text-[11px] text-slate-400 font-mono mt-1">Perte max</div>
+            <div className="text-[11px] text-slate-400 font-mono mt-1">Perte max subie</div>
           </div>
           <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 group-hover:scale-110 transition-transform">
             <TrendingDown className="w-5 h-5 text-red-400" />
@@ -235,11 +311,9 @@ export const Dashboard: React.FC = () => {
                 : 'bg-gradient-to-r from-red-950/60 to-[#0e0f14] border-red-500/30'
             }`}
           >
-            {/* Glow */}
             <div className={`absolute inset-0 opacity-10 ${m.streak.type === 'win' ? 'bg-amber-400' : 'bg-red-500'}`} />
 
             <div className="flex items-center gap-3 relative z-10">
-              {/* Animated fire */}
               <motion.div
                 animate={{ scale: [1, 1.18, 1], rotate: [-3, 3, -3] }}
                 transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
@@ -259,7 +333,6 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Progress toward best streak */}
             {m.streak.type === 'win' && m.streak.best > 0 && (
               <div className="flex-1 max-w-xs relative z-10 hidden sm:block">
                 <div className="flex justify-between text-[10px] font-mono text-white/40 mb-1.5">
@@ -289,7 +362,7 @@ export const Dashboard: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* ── CHARTS SECTION ─── */}
+      {/* ── CHARTS & INTERACTIVE MULTI-WIDGET ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Glowing Equity Curve */}
@@ -297,7 +370,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
               <span className="w-1 h-3.5 rounded-full" style={{background: 'linear-gradient(180deg,#6366f1,#8b5cf6)'}} />
-              Courbe d'Équité — Glowing
+              Courbe d'Équité & Drawdown Live
             </h3>
             <span className={`text-xs font-mono font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}
               style={{ filter: `drop-shadow(0 0 6px ${isPositive ? '#10b981' : '#ef4444'})` }}>
@@ -307,22 +380,83 @@ export const Dashboard: React.FC = () => {
           <GlowingEquityChart data={equityData} dataKey="pnl" height={256} isPositive={isPositive} />
         </div>
 
-        {/* Donut Win/Loss + P&L Quotidien */}
-        <div className="chart-container p-5 space-y-3 flex flex-col">
-          <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-            <span className="w-1 h-3.5 rounded-full" style={{background: 'linear-gradient(180deg,#8b5cf6,#06b6d4)'}} />
-            Win / Loss Ratio
-          </h3>
-          <DonutRingChart wins={m.winCount} losses={m.lossCount} height={180} />
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="text-center p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-              <div className="text-lg font-heading font-black text-emerald-400" style={{ filter: 'drop-shadow(0 0 8px #10b981)' }}>{m.winCount}</div>
-              <div className="text-[10px] font-mono text-slate-400">WINS</div>
+        {/* Multi-Tab Interactive Widget */}
+        <div className="chart-container p-5 flex flex-col justify-between">
+          <div>
+            {/* Widget Tabs Header */}
+            <div className="flex items-center gap-1 border-b border-white/[0.06] pb-3 mb-4">
+              <button
+                onClick={() => setActiveTabWidget('checklist')}
+                className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg transition-all ${
+                  activeTabWidget === 'checklist' ? 'bg-[#6366f1]/20 text-[#818cf8] border border-[#6366f1]/30' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                Checklist Session
+              </button>
+              <button
+                onClick={() => setActiveTabWidget('ratio')}
+                className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg transition-all ${
+                  activeTabWidget === 'ratio' ? 'bg-[#6366f1]/20 text-[#818cf8] border border-[#6366f1]/30' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                Long vs Short
+              </button>
             </div>
-            <div className="text-center p-2 rounded-xl bg-red-500/10 border border-red-500/20">
-              <div className="text-lg font-heading font-black text-red-400" style={{ filter: 'drop-shadow(0 0 8px #ef4444)' }}>{m.lossCount}</div>
-              <div className="text-[10px] font-mono text-slate-400">LOSSES</div>
-            </div>
+
+            {/* TAB 1: Checklist Pré-Session */}
+            {activeTabWidget === 'checklist' && (
+              <div className="space-y-2.5">
+                <div className="text-[11px] text-slate-400 font-mono mb-2 flex items-center justify-between">
+                  <span>Règles de Discipline :</span>
+                  <span className="text-emerald-400 font-bold">{checklist.filter((i: any) => i.done).length}/{checklist.length}</span>
+                </div>
+                {checklist.map((item: any) => (
+                  <label
+                    key={item.id}
+                    onClick={() => toggleChecklistItem(item.id)}
+                    className={`flex items-start gap-2.5 p-2 rounded-xl border transition-all cursor-pointer text-xs ${
+                      item.done
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 line-through opacity-75'
+                        : 'bg-[#14151f] border-white/[0.05] text-slate-300 hover:border-white/10'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={item.done}
+                      onChange={() => {}}
+                      className="mt-0.5 rounded border-white/20 bg-[#0e0f14] text-[#6366f1] focus:ring-0"
+                    />
+                    <span>{item.text}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* TAB 2: Long vs Short Ratio */}
+            {activeTabWidget === 'ratio' && (
+              <div className="space-y-4">
+                <div className="text-xs text-slate-400 font-mono">Répartition des positions exécutées :</div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono font-bold">
+                    <span className="text-emerald-400">BUY / LONG ({longVsShort.longs})</span>
+                    <span className="text-indigo-400">SELL / SHORT ({longVsShort.shorts})</span>
+                  </div>
+                  <div className="h-3 w-full bg-[#121318] rounded-full overflow-hidden flex border border-white/10">
+                    <div className="bg-emerald-400 h-full transition-all" style={{ width: `${longVsShort.longPct}%` }} />
+                    <div className="bg-indigo-500 h-full transition-all" style={{ width: `${longVsShort.shortPct}%` }} />
+                  </div>
+                  <div className="flex justify-between text-[10px] font-mono text-slate-500">
+                    <span>{longVsShort.longPct}% Longs</span>
+                    <span>{longVsShort.shortPct}% Shorts</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="pt-3 border-t border-white/[0.05] mt-4 flex items-center justify-between text-[10px] font-mono text-slate-500">
+            <span>Seven Tracking v2.0</span>
+            <span className="text-emerald-400">Discipline 100%</span>
           </div>
         </div>
 
@@ -333,7 +467,7 @@ export const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
             <span className="w-1 h-3.5 rounded-full" style={{background: 'linear-gradient(180deg,#06b6d4,#6366f1)'}} />
-            P&L Quotidien — Gradient Bars
+            P&L Quotidien — Bars
           </h3>
         </div>
         <GradientBarChart data={m.dailyPnL} dataKey="pnl" height={180} />
@@ -431,7 +565,7 @@ export const Dashboard: React.FC = () => {
       {/* ── MONTHLY PERFORMANCE & RECENT TRADES ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Performance par Mois — Gradient Bars */}
+        {/* Performance par Mois */}
         <div className="chart-container p-5 space-y-3 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
@@ -453,11 +587,11 @@ export const Dashboard: React.FC = () => {
           )}
         </div>
 
-        {/* 3 Trades Récents */}
+        {/* Derniers Trades */}
         <div className="chart-container p-5 space-y-4">
           <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
             <History className="w-4 h-4 text-[#8b5cf6]" />
-            Derniers Trades
+            Derniers Trades Exécutés
           </h3>
 
           <Table headers={['PAIRE', 'DIRECTION', 'LOTS', 'RESULT', 'P&L']}>
