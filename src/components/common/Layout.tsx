@@ -14,8 +14,11 @@ import {
   LogOut,
   Plus,
   Target,
+  Search,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
+import { CommandPalette } from './CommandPalette';
+import { TickerBanner } from './TickerBanner';
 
 export type TabType = 'dashboard' | 'trades' | 'accounts' | 'analytics' | 'calendar' | 'playbook' | 'goals';
 
@@ -39,10 +42,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
   const { activeAccountId, setActiveAccountId } = useUIStore();
   const { accounts } = useAccounts();
   const { isLocked } = useDailyLock();
+  const [isCommandOpen, setIsCommandOpen] = React.useState(false);
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[#07080a] text-slate-100 flex font-sans selection:bg-[#6366f1]/30 selection:text-white">
+    <div className="h-screen w-screen overflow-hidden bg-[#07080a] text-slate-100 flex flex-col font-sans selection:bg-[#6366f1]/30 selection:text-white">
+      {/* ── TOP LIVE TICKER BANNER ── */}
+      <TickerBanner />
 
+      <div className="flex-1 flex min-h-0 overflow-hidden">
       {/* ── DESKTOP SIDEBAR (FIXED) ────────────────────────────────────────────── */}
       <aside className="w-64 h-full bg-[#0d0e14]/90 border-r border-white/[0.07] hidden md:flex flex-col shrink-0 z-20 backdrop-blur-xl">
 
@@ -144,6 +151,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
               {NAV_ITEMS.find(n => n.id === currentTab)?.name}
             </h1>
             <div className="flex items-center gap-2">
+              {/* Command Palette Trigger */}
+              <button
+                onClick={() => setIsCommandOpen(true)}
+                className="hidden sm:flex items-center gap-2 bg-[#14161f] border border-white/10 hover:border-[#6366f1]/50 rounded-xl px-3 py-1.5 text-xs text-slate-400 hover:text-white transition-all cursor-pointer font-mono"
+              >
+                <Search className="w-3.5 h-3.5 text-[#818cf8]" />
+                <span>Rechercher...</span>
+                <span className="text-[9px] bg-white/[0.06] border border-white/10 px-1.5 py-0.5 rounded text-slate-400">Ctrl+K</span>
+              </button>
+
               <select
                 value={activeAccountId || ''}
                 onChange={(e) => setActiveAccountId(e.target.value || null)}
@@ -179,6 +196,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentTab, setCurrent
           {children}
         </main>
       </div>
+      </div>
+
+      {/* ── COMMAND PALETTE MODAL (Ctrl+K) ── */}
+      <CommandPalette
+        isOpen={isCommandOpen}
+        onClose={() => setIsCommandOpen(false)}
+        onSelectTab={setCurrentTab}
+        onOpenAddTrade={() => setCurrentTab('trades')}
+      />
 
       {/* ── MOBILE BOTTOM NAVIGATION ─────────────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0d0e14]/95 border-t border-white/[0.07] z-50 backdrop-blur-xl">
