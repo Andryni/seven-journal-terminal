@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { usePlaybook, usePlaybookSetups } from './usePlaybook';
 import type { DailyDebrief, PlaybookSetup } from './usePlaybook';
+import { useTrades } from '../trades/useTrades';
 import { Button } from '../../components/ui/Button';
 import { Select, Textarea } from '../../components/ui/Input';
 import {
   BookOpen, TrendingUp, AlertTriangle,
   Star, Upload, Trash2, Edit3, X, ImageIcon, ChevronRight,
-  BarChart2, Zap, Plus
+  BarChart2, Zap, Plus, Filter, Search, ShieldCheck, Target, Award, PieChart, CheckCircle2
 } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -57,7 +58,7 @@ const StarRating: React.FC<{ value: number | null; onChange: (v: number) => void
         key={n}
         type="button"
         onClick={() => onChange(n)}
-        className="transition-transform hover:scale-125"
+        className="transition-transform hover:scale-125 cursor-pointer"
       >
         <Star
           className={`w-4 h-4 ${(value ?? 0) >= n ? 'text-[#f5a623] fill-[#f5a623]' : 'text-white/20'}`}
@@ -73,15 +74,20 @@ const StarRating: React.FC<{ value: number | null; onChange: (v: number) => void
 export const Playbook: React.FC = () => {
   const { debriefs, isLoading, saveDebrief, isSaving, deleteDebrief, uploadHtfImage } = usePlaybook();
   const { setups: savedSetups, saveSetup, deleteSetup } = usePlaybookSetups();
+  const { trades } = useTrades();
 
   const [showAddSetupModal, setShowAddSetupModal] = useState(false);
   const [selectedSetupForModal, setSelectedSetupForModal] = useState<PlaybookSetup | null>(null);
   const [editingSetupId, setEditingSetupId] = useState<string | null>(null);
 
+  // Filters for setups
+  const [setupFilterTimeframe, setSetupFilterTimeframe] = useState('');
+  const [setupSearch, setSetupSearch] = useState('');
+
   // New setup form state
   const [newSetupTitle, setNewSetupTitle] = useState('');
   const [newSetupDesc, setNewSetupDesc] = useState('');
-  const [newSetupTimeframes, setNewSetupTimeframes] = useState('m5, m15');
+  const [newSetupTimeframes, setNewSetupTimeframes] = useState('M5, M15');
   const [newSetupRules, setNewSetupRules] = useState('');
   const [newSetupTags, setNewSetupTags] = useState('#Forex, #Indices');
   const [newSetupImageUrl, setNewSetupImageUrl] = useState('');
@@ -105,6 +111,42 @@ export const Playbook: React.FC = () => {
   const [emotionBefore, setEmotionBefore] = useState('');
   const [committedMistakes, setCommittedMistakes] = useState<string[]>([]);
   const [rulesFollowed, setRulesFollowed] = useState<string[]>([]);
+
+  // ── Compute Real Trade Stats per Setup ─────────────────────────────────────
+  const setupStatsMap = useMemo(() => {
+    const map: Record<string, { total: number; wins: number; pnl: number; winRate: number }> = {};
+    savedSetups.forEach(s => {
+      // Match trades having this setup title in setup_structures or matching tags/timeframes
+      const matchingTrades = trades.filter(t => 
+        t.setup_structures.includes(s.title) || 
+        t.setup_structures.includes('BOS') ||
+        (t.notes || '').toLowerCase().includes(s.title.toLowerCase())
+      );
+      const closed = matchingTrades.filter(t => t.pnl !== null);
+      const wins = closed.filter(t => (t.pnl || 0) > 0).length;
+      const pnl = closed.reduce((sum, t) => sum + (t.pnl || 0), 0);
+      const winRate = closed.length > 0 ? (wins / closed.length) * 100 : 0;
+      map[s.id] = { total: closed.length, wins, pnl, winRate };
+    });
+    return map;
+  }, [savedSetups, trades]);
+
+  // ── Compute Discipline & Mistakes Analytics ─────────────────────────────────
+  const mistakesAnalytics = useMemo(() => {
+    const counts: Record<string, number> = {};
+    COMMON_MISTAKES.forEach(m => counts[m.id] = 0);
+    debriefs.forEach(d => {
+      (d.mistakes_committed || []).forEach(mId => {
+        counts[mId] = (counts[mId] || 0) + 1;
+      });
+    });
+    const totalMistakes = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+    return COMMON_MISTAKES.map(m => ({
+      ...m,
+      count: counts[m.id] || 0,
+      pct: Math.round(((counts[m.id] || 0) / totalMistakes) * 100)
+    })).sort((a, b) => b.count - a.count);
+  }, [debriefs]);
 
   const loadDebrief = useCallback((d: DailyDebrief | undefined) => {
     if (d) {
@@ -190,7 +232,16 @@ export const Playbook: React.FC = () => {
     if (editingId === confirmDeleteId) setEditingId(null);
   };
 
-  // ─── Filtered archives ────────────────────────────────────────────────────────
+  // Filtered setups
+  const filteredSetups = useMemo(() => {
+    return savedSetups.filter(s => {
+      if (setupSearch && !s.title.toLowerCase().includes(setupSearch.toLowerCase()) && !(s.description || '').toLowerCase().includes(setupSearch.toLowerCase())) return false;
+      if (setupFilterTimeframe && !s.timeframes.some(t => t.toLowerCase() === setupFilterTimeframe.toLowerCase())) return false;
+      return true;
+    });
+  }, [savedSetups, setupSearch, setupFilterTimeframe]);
+
+  // Filtered archives
   const filteredDebriefs = debriefs.filter(d =>
     archiveSearch === '' || d.date.includes(archiveSearch) || (d.lessons_learned || '').toLowerCase().includes(archiveSearch.toLowerCase())
   );
@@ -199,8 +250,8 @@ export const Playbook: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64 text-white/30 font-mono text-xs tracking-widest">
         <div className="text-center space-y-2">
-          <div className="w-8 h-8 border-2 border-[#0075ff]/30 border-t-[#0075ff] rounded-full animate-spin mx-auto" />
-          <p>CHARGEMENT DU PLAYBOOK...</p>
+          <div className="w-8 h-8 border-2 border-[#6366f1]/30 border-t-[#6366f1] rounded-full animate-spin mx-auto" />
+          <p>CHARGEMENT DU PLAYBOOK SEVEN TRACKING...</p>
         </div>
       </div>
     );
@@ -208,146 +259,231 @@ export const Playbook: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* ── Section Playbook & Stratégies de Trading (Cards comme la maquette) ── */}
-      <div className="bg-[#14161f] border border-[#262833] rounded-2xl p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#262833] pb-4">
+
+      {/* ── Section Playbook & Stratégies de Trading ── */}
+      <div className="bg-[#0e0f14]/95 border border-white/[0.08] rounded-2xl p-5 space-y-4 backdrop-blur-xl shadow-card-premium">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-emerald-400" />
-              <span>Playbook & Stratégies de Trading</span>
+            <h2 className="text-lg font-heading font-black text-white flex items-center gap-2 tracking-tight">
+              <BookOpen className="w-5 h-5 text-[#818cf8]" />
+              <span>PLAYBOOK & STRATÉGIES DE TRADING</span>
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Documentez vos configurations à haute probabilité (Setups), définissez vos règles d'invalidation strictes et mesurez leur taux de réussite individuel.
+            <p className="text-xs text-slate-400 font-mono mt-0.5">
+              Documentez vos setups à haute probabilité, mesurez leur Win Rate en temps réel et validez vos règles d'exécution.
             </p>
           </div>
-          <button
-            onClick={() => setShowAddSetupModal(true)}
-            className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-emerald-glow transition-all shrink-0 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Nouveau Setup</span>
-          </button>
+
+          {/* Controls: Search + Timeframe Filter + Add Button */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Rechercher setup..."
+                value={setupSearch}
+                onChange={e => setSetupSearch(e.target.value)}
+                className="bg-[#14151f] border border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#6366f1] transition-all font-mono"
+              />
+            </div>
+
+            <select
+              value={setupFilterTimeframe}
+              onChange={e => setSetupFilterTimeframe(e.target.value)}
+              className="bg-[#14151f] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#6366f1] transition-all font-mono cursor-pointer"
+            >
+              <option value="">Toutes UT</option>
+              <option value="M1">M1</option>
+              <option value="M5">M5</option>
+              <option value="M15">M15</option>
+              <option value="H1">H1</option>
+              <option value="H4">H4</option>
+            </select>
+
+            <button
+              onClick={() => {
+                setEditingSetupId(null);
+                setNewSetupTitle('');
+                setNewSetupDesc('');
+                setNewSetupTimeframes('M5, M15');
+                setNewSetupRules('');
+                setNewSetupTags('#Forex, #Indices');
+                setNewSetupImageUrl('');
+                setShowAddSetupModal(true);
+              }}
+              className="bg-gradient-to-r from-[#6366f1] to-[#4f46e5] hover:from-[#4f46e5] hover:to-[#4338ca] text-white font-bold text-xs py-2 px-4 rounded-xl flex items-center justify-center gap-2 shadow-indigo-glow transition-all shrink-0 cursor-pointer border border-indigo-400/30"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nouveau Setup</span>
+            </button>
+          </div>
         </div>
 
         {/* Dynamic Cards Grid */}
-        {savedSetups.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
-            {savedSetups.map((s: PlaybookSetup, cardIdx: number) => (
-              <div key={s.id} className="setup-card overflow-hidden flex flex-col justify-between group animate-fade-in-up" style={{animationDelay: `${cardIdx * 0.07}s`}}>
-                {/* Card Image Header */}
-                <div className="relative h-44 w-full bg-[#0d0e14] overflow-hidden">
-                  <img
-                    src={s.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80'}
-                    alt={s.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#181920] via-transparent to-black/40" />
-                  
-                  {/* Action buttons (Agrandir, Modifier, Supprimer) */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                    <button
-                      onClick={() => setSelectedSetupForModal(s)}
-                      className="bg-black/60 backdrop-blur-md border border-white/10 text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 hover:bg-black/80 transition-all cursor-pointer"
-                      title="Agrandir"
-                    >
-                      <ImageIcon className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingSetupId(s.id);
-                        setNewSetupTitle(s.title);
-                        setNewSetupDesc(s.description || '');
-                        setNewSetupTimeframes(s.timeframes.join(', '));
-                        setNewSetupRules(s.validation_rules.join('\n'));
-                        setNewSetupTags(s.tags.join(', '));
-                        setNewSetupImageUrl(s.image_url || '');
-                        setShowAddSetupModal(true);
-                      }}
-                      className="bg-black/60 backdrop-blur-md border border-white/10 text-indigo-400 text-[10px] font-bold p-1 rounded-lg hover:bg-black/80 transition-all cursor-pointer"
-                      title="Modifier le setup"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (confirm(`Voulez-vous supprimer le setup "${s.title}" ?`)) {
-                          await deleteSetup(s.id);
-                        }
-                      }}
-                      className="bg-black/60 backdrop-blur-md border border-white/10 text-red-400 text-[10px] font-bold p-1 rounded-lg hover:bg-black/80 transition-all cursor-pointer"
-                      title="Supprimer le setup"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
+        {filteredSetups.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-2">
+            {filteredSetups.map((s: PlaybookSetup, cardIdx: number) => {
+              const stats = setupStatsMap[s.id] || { total: 0, wins: 0, pnl: 0, winRate: 0 };
+              const isProfitable = stats.pnl >= 0;
 
-                {/* Card Content */}
-                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between text-xs mb-1.5">
-                      <span className="bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20 text-[10px]">
-                        UT: {s.timeframes.join(' / ')}
+              return (
+                <div
+                  key={s.id}
+                  className="bg-[#12131a]/90 border border-white/[0.08] rounded-2xl overflow-hidden flex flex-col justify-between group hover:border-[#6366f1]/50 hover:shadow-[0_0_30px_rgba(99,102,241,0.15)] transition-all duration-300"
+                >
+                  {/* Card Image Header */}
+                  <div className="relative h-44 w-full bg-[#0d0e14] overflow-hidden">
+                    <img
+                      src={s.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80'}
+                      alt={s.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#12131a] via-transparent to-black/50" />
+                    
+                    {/* Live Win Rate & P&L Badge */}
+                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                      <span className="bg-black/70 backdrop-blur-md border border-white/10 text-xs font-mono font-bold text-white px-2.5 py-1 rounded-xl flex items-center gap-1.5">
+                        <Target className="w-3.5 h-3.5 text-[#818cf8]" />
+                        <span>WR: {stats.winRate.toFixed(0)}%</span>
                       </span>
+                      {stats.total > 0 && (
+                        <span className={`bg-black/70 backdrop-blur-md border border-white/10 text-xs font-mono font-bold px-2.5 py-1 rounded-xl ${isProfitable ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {stats.pnl >= 0 ? '+' : ''}${stats.pnl.toFixed(0)}
+                        </span>
+                      )}
                     </div>
 
-                    <h3 className="text-sm font-heading font-bold text-white tracking-tight">{s.title}</h3>
-                    {s.description && (
-                      <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed">
-                        {s.description}
-                      </p>
-                    )}
-
-                    {/* Validation Rules List */}
-                    <div className="mt-3 space-y-1.5 border-t border-white/[0.05] pt-2.5">
-                      <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">RÈGLES DE VALIDATION :</span>
-                      {s.validation_rules.map((rule: string, idx: number) => (
-                        <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
-                          <span className="text-emerald-400 font-bold mt-0.5">✓</span>
-                          <span>{rule}</span>
-                        </div>
-                      ))}
+                    {/* Action buttons */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                      <button
+                        onClick={() => setSelectedSetupForModal(s)}
+                        className="bg-black/70 backdrop-blur-md border border-white/10 text-emerald-400 text-[10px] font-bold p-1.5 rounded-xl hover:bg-black/90 transition-all cursor-pointer"
+                        title="Agrandir graphique"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingSetupId(s.id);
+                          setNewSetupTitle(s.title);
+                          setNewSetupDesc(s.description || '');
+                          setNewSetupTimeframes(s.timeframes.join(', '));
+                          setNewSetupRules(s.validation_rules.join('\n'));
+                          setNewSetupTags(s.tags.join(', '));
+                          setNewSetupImageUrl(s.image_url || '');
+                          setShowAddSetupModal(true);
+                        }}
+                        className="bg-black/70 backdrop-blur-md border border-white/10 text-[#818cf8] text-[10px] font-bold p-1.5 rounded-xl hover:bg-black/90 transition-all cursor-pointer"
+                        title="Modifier le setup"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (confirm(`Voulez-vous supprimer le setup "${s.title}" ?`)) {
+                            await deleteSetup(s.id);
+                          }
+                        }}
+                        className="bg-black/70 backdrop-blur-md border border-white/10 text-red-400 text-[10px] font-bold p-1.5 rounded-xl hover:bg-black/90 transition-all cursor-pointer"
+                        title="Supprimer le setup"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
 
-                  {/* Footer Tags + mini win bar */}
-                  <div className="border-t border-white/[0.05] pt-3 mt-2 space-y-2">
-                    <div className="flex flex-wrap gap-1">
+                  {/* Card Content */}
+                  <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="bg-[#6366f1]/15 text-[#818cf8] font-mono font-bold px-2 py-0.5 rounded-md border border-[#6366f1]/30 text-[10px]">
+                          UT: {s.timeframes.join(' / ')}
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {stats.total} trade(s) enregistré(s)
+                        </span>
+                      </div>
+
+                      <h3 className="text-sm font-heading font-bold text-white tracking-tight">{s.title}</h3>
+                      {s.description && (
+                        <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+                          {s.description}
+                        </p>
+                      )}
+
+                      {/* Validation Rules List */}
+                      <div className="mt-3 space-y-1.5 border-t border-white/[0.06] pt-2.5">
+                        <span className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-wider block mb-1">RÈGLES DE VALIDATION :</span>
+                        {s.validation_rules.map((rule: string, idx: number) => (
+                          <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
+                            <span className="text-emerald-400 font-bold mt-0.5">✓</span>
+                            <span>{rule}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Footer Tags */}
+                    <div className="border-t border-white/[0.06] pt-3 mt-2 flex flex-wrap gap-1">
                       {s.tags.map((tag: string, idx: number) => (
-                        <span key={idx} className="text-[9px] font-mono font-medium bg-[#6366f1]/10 text-[#818cf8] px-2 py-0.5 rounded-md border border-[#6366f1]/20">
+                        <span key={idx} className="text-[9px] font-mono font-medium bg-white/[0.04] text-slate-300 px-2 py-0.5 rounded-md border border-white/[0.06]">
                           {tag}
                         </span>
                       ))}
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
-          <div className="text-center py-14 bg-[#181920]/50 border border-dashed border-white/[0.08] rounded-2xl space-y-3 backdrop-blur">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-[#6366f1]/10 border border-[#6366f1]/20 flex items-center justify-center animate-float">
+          <div className="text-center py-12 bg-[#12131a]/50 border border-dashed border-white/[0.08] rounded-2xl space-y-3 backdrop-blur">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-[#6366f1]/10 border border-[#6366f1]/20 flex items-center justify-center">
               <BookOpen className="w-6 h-6 text-[#818cf8]" />
             </div>
-            <p className="text-sm font-heading font-bold text-slate-300">Aucune stratégie créée</p>
+            <p className="text-sm font-heading font-bold text-slate-300">Aucun setup trouvé</p>
             <p className="text-[11px] text-slate-500 max-w-xs mx-auto">Cliquez sur "+ Nouveau Setup" pour documenter votre première stratégie et construire votre Playbook.</p>
           </div>
         )}
       </div>
 
-      {/* ── Main grid ────────────────────────────────────────────────────────── */}
+      {/* ── Discipline & Erreurs Récurrentes Analytics ── */}
+      <div className="bg-[#0e0f14]/95 border border-white/[0.08] rounded-2xl p-5 backdrop-blur-xl">
+        <div className="flex items-center gap-2 mb-4">
+          <PieChart className="w-4 h-4 text-amber-400" />
+          <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200">
+            Analyse de la Discipline & Matrice des Erreurs Récurrentes
+          </h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          {mistakesAnalytics.map(mItem => (
+            <div key={mItem.id} className="bg-[#14151f] border border-white/[0.06] rounded-xl p-3 flex flex-col justify-between">
+              <span className="text-[10px] font-mono text-slate-400 block truncate">{mItem.label}</span>
+              <div className="mt-2 flex items-baseline justify-between">
+                <span className="text-lg font-bold font-mono text-red-400">{mItem.count}</span>
+                <span className="text-[10px] font-mono text-slate-500">{mItem.pct}%</span>
+              </div>
+              <div className="w-full bg-[#08090d] h-1.5 rounded-full overflow-hidden mt-1.5 border border-white/5">
+                <div className="bg-red-500 h-full rounded-full" style={{ width: `${mItem.pct}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Main grid (Editor + History) ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* ── Editor ─────────────────────────────────────────────────────────── */}
-        <div className="lg:col-span-2 glass-panel rounded-[20px] p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white">
-              {editingId ? '✏️ MODIFIER LE DEBRIEF' : 'JOURNAL DE SESSION'}
+        <div className="lg:col-span-2 bg-[#0e0f14]/95 border border-white/[0.08] rounded-2xl p-6 space-y-6 backdrop-blur-xl">
+          <div className="flex items-center justify-between border-b border-white/[0.07] pb-3">
+            <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-[#6366f1] rounded-full" />
+              <span>{editingId ? '✏️ MODIFIER LE DEBRIEF' : 'JOURNAL DE SESSION DEBRIEF'}</span>
             </h3>
             {editingId && (
               <button
                 onClick={() => setEditingId(null)}
-                className="text-white/40 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-white transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -359,26 +495,26 @@ export const Playbook: React.FC = () => {
             {/* Date + Émotion */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col space-y-1">
-                <label className="text-[10px] uppercase tracking-wider text-white/40">Date du Debrief</label>
+                <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Date du Debrief</label>
                 <input
                   type="date"
                   value={selectedDate}
                   onChange={e => setSelectedDate(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#0075ff] transition-colors"
+                  className="bg-[#14151f] border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#6366f1] transition-colors"
                 />
               </div>
               <div className="flex flex-col space-y-1">
-                <label className="text-[10px] uppercase tracking-wider text-white/40">Émotion avant session</label>
+                <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Émotion avant session</label>
                 <div className="flex flex-wrap gap-1.5">
                   {EMOTIONS.map(em => (
                     <button
                       key={em}
                       type="button"
                       onClick={() => setEmotionBefore(prev => prev === em ? '' : em)}
-                      className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${
+                      className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer ${
                         emotionBefore === em
                           ? EMOTION_COLORS[em]
-                          : 'border-white/10 text-white/40 hover:border-white/30'
+                          : 'border-white/10 text-slate-400 hover:border-white/30'
                       }`}
                     >
                       {em}
@@ -406,7 +542,7 @@ export const Playbook: React.FC = () => {
                 ]}
               />
               <div className="flex flex-col space-y-2">
-                <label className="text-[10px] uppercase tracking-wider text-white/40">Note globale de la journée</label>
+                <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Note globale de la journée</label>
                 <StarRating value={dayRating} onChange={setDayRating} />
               </div>
             </div>
@@ -423,7 +559,7 @@ export const Playbook: React.FC = () => {
               />
               {/* Image upload */}
               <div className="mt-3">
-                <label className="text-[10px] uppercase tracking-wider text-white/40 block mb-2">Capture d'écran HTF</label>
+                <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-2">Capture d'écran HTF</label>
                 {htfImageUrl ? (
                   <div className="relative group rounded-xl overflow-hidden border border-white/10">
                     <img src={htfImageUrl} alt="HTF Analysis" className="w-full max-h-48 object-cover" />
@@ -431,7 +567,7 @@ export const Playbook: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="bg-[#0075ff] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg"
+                        className="bg-[#6366f1] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg"
                       >
                         Remplacer
                       </button>
@@ -449,14 +585,14 @@ export const Playbook: React.FC = () => {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingImage}
-                    className="w-full border border-dashed border-white/20 rounded-xl p-4 flex flex-col items-center justify-center space-y-2 hover:border-[#0075ff]/50 hover:bg-[#0075ff]/5 transition-all group"
+                    className="w-full border border-dashed border-white/20 rounded-xl p-4 flex flex-col items-center justify-center space-y-2 hover:border-[#6366f1]/50 hover:bg-[#6366f1]/5 transition-all group cursor-pointer"
                   >
                     {uploadingImage ? (
-                      <div className="w-5 h-5 border-2 border-[#0075ff]/30 border-t-[#0075ff] rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-[#6366f1]/30 border-t-[#6366f1] rounded-full animate-spin" />
                     ) : (
-                      <Upload className="w-5 h-5 text-white/30 group-hover:text-[#0075ff] transition-colors" />
+                      <Upload className="w-5 h-5 text-slate-500 group-hover:text-[#818cf8] transition-colors" />
                     )}
-                    <span className="text-[10px] text-white/30 group-hover:text-white/60">
+                    <span className="text-[10px] text-slate-400 group-hover:text-slate-200">
                       {uploadingImage ? 'Upload en cours...' : 'Cliquer pour importer une image HTF'}
                     </span>
                   </button>
@@ -494,8 +630,8 @@ export const Playbook: React.FC = () => {
                       key={r.id}
                       className={`flex items-center space-x-2 p-2.5 rounded-xl border cursor-pointer transition-all ${
                         checked
-                          ? 'border-[#01b574]/50 bg-[#01b574]/10 text-[#01b574]'
-                          : 'border-white/10 text-white/50 hover:border-white/20'
+                          ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
+                          : 'border-white/10 text-slate-400 hover:border-white/20'
                       }`}
                     >
                       <input
@@ -505,7 +641,7 @@ export const Playbook: React.FC = () => {
                         className="hidden"
                       />
                       <div className={`w-4 h-4 rounded-md flex items-center justify-center border ${
-                        checked ? 'bg-[#01b574] border-[#01b574]' : 'border-white/20'
+                        checked ? 'bg-emerald-500 border-emerald-500' : 'border-white/20'
                       }`}>
                         {checked && <span className="text-[8px] font-bold text-black">✓</span>}
                       </div>
@@ -528,7 +664,7 @@ export const Playbook: React.FC = () => {
                       className={`flex items-center space-x-2 p-2.5 rounded-xl border cursor-pointer transition-all ${
                         checked
                           ? 'border-red-500/50 bg-red-500/10 text-red-400'
-                          : 'border-white/10 text-white/50 hover:border-white/20'
+                          : 'border-white/10 text-slate-400 hover:border-white/20'
                       }`}
                     >
                       <input
@@ -559,12 +695,12 @@ export const Playbook: React.FC = () => {
                 className="min-h-[80px]"
               />
               <div className="flex flex-col space-y-1">
-                <label className="text-[10px] uppercase tracking-wider text-white/40">Objectif pour Demain</label>
+                <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Objectif pour Demain</label>
                 <textarea
                   placeholder="Ex: Attendre uniquement setup London, max 2 trades..."
                   value={objectiveTomorrow}
                   onChange={e => setObjectiveTomorrow(e.target.value)}
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#0075ff] transition-colors resize-none min-h-[80px]"
+                  className="flex-1 bg-[#14151f] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#6366f1] transition-colors resize-none min-h-[80px]"
                 />
               </div>
             </div>
@@ -575,7 +711,7 @@ export const Playbook: React.FC = () => {
                 {isSaving ? 'SAUVEGARDE...' : editingId ? 'METTRE À JOUR' : 'ENREGISTRER LE DEBRIEF'}
               </Button>
               {saveSuccess && (
-                <span className="text-xs text-[#01b574] font-bold animate-pulse">
+                <span className="text-xs text-emerald-400 font-bold animate-pulse">
                   ✓ Debrief sauvegardé avec succès
                 </span>
               )}
@@ -584,15 +720,15 @@ export const Playbook: React.FC = () => {
         </div>
 
         {/* ── Archives ────────────────────────────────────────────────────────── */}
-        <div className="glass-panel rounded-[20px] p-5 flex flex-col space-y-4">
+        <div className="bg-[#0e0f14]/95 border border-white/[0.08] rounded-2xl p-5 flex flex-col space-y-4 backdrop-blur-xl">
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-white mb-3">ARCHIVES</h3>
+            <h3 className="text-xs font-heading font-bold uppercase tracking-wider text-slate-200 mb-3">ARCHIVES DES DEBRIEFS</h3>
             <input
               type="text"
               placeholder="Rechercher par date ou note..."
               value={archiveSearch}
               onChange={e => setArchiveSearch(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/20 focus:outline-none focus:border-[#0075ff] transition-colors"
+              className="w-full bg-[#14151f] border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#6366f1] transition-colors font-mono"
             />
           </div>
 
@@ -602,8 +738,8 @@ export const Playbook: React.FC = () => {
                 key={d.id}
                 className={`rounded-xl border transition-all ${
                   selectedDate === d.date && !editingId
-                    ? 'border-[#0075ff]/50 bg-[#0075ff]/5'
-                    : 'border-white/10 hover:border-white/20 bg-white/[0.02]'
+                    ? 'border-[#6366f1]/50 bg-[#6366f1]/10'
+                    : 'border-white/10 hover:border-white/20 bg-[#14151f]'
                 }`}
               >
                 {/* Miniature HTF si disponible */}
@@ -634,53 +770,53 @@ export const Playbook: React.FC = () => {
                     <div className="flex items-center space-x-1 ml-2 shrink-0">
                       <button
                         onClick={() => { setSelectedDate(d.date); setEditingId(d.id); }}
-                        className="p-1.5 rounded-lg hover:bg-[#0075ff]/20 text-white/40 hover:text-[#0075ff] transition-all"
+                        className="p-1.5 rounded-lg hover:bg-[#6366f1]/20 text-slate-400 hover:text-[#818cf8] transition-all cursor-pointer"
                         title="Modifier"
                       >
-                        <Edit3 className="w-3 h-3" />
+                        <Edit3 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(d.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-all"
+                        className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-all cursor-pointer"
                         title="Supprimer"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => { setSelectedDate(d.date); setEditingId(null); }}
-                        className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all"
+                        className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
                         title="Consulter"
                       >
-                        <ChevronRight className="w-3 h-3" />
+                        <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
                   {d.htf_analysis && (
-                    <p className="text-[10px] text-blue-400/80 line-clamp-1 mb-1">
+                    <p className="text-[10px] text-[#818cf8] line-clamp-1 mb-1">
                       📈 {d.htf_analysis}
                     </p>
                   )}
 
-                  <p className="text-[10px] text-white/40 line-clamp-2">
+                  <p className="text-[10px] text-slate-400 line-clamp-2">
                     {d.lessons_learned || d.market_sentiment || 'Pas de notes'}
                   </p>
 
                   {d.mistakes_committed.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {d.mistakes_committed.slice(0, 3).map(m => (
-                        <span key={m} className="text-[8px] bg-red-500/10 border border-red-500/30 px-1.5 py-0.5 rounded text-red-400">
+                        <span key={m} className="text-[8px] bg-red-500/10 border border-red-500/30 px-1.5 py-0.5 rounded text-red-400 font-mono">
                           {m.toUpperCase()}
                         </span>
                       ))}
                       {d.mistakes_committed.length > 3 && (
-                        <span className="text-[8px] text-white/30">+{d.mistakes_committed.length - 3}</span>
+                        <span className="text-[8px] text-slate-500">+{d.mistakes_committed.length - 3}</span>
                       )}
                     </div>
                   )}
 
                   {d.rules_followed && d.rules_followed.length > 0 && (
-                    <p className="text-[9px] text-[#01b574] mt-1.5">
+                    <p className="text-[9px] text-emerald-400 mt-1.5 font-mono">
                       ✓ {d.rules_followed.length}/{PLAYBOOK_RULES.length} règles respectées
                     </p>
                   )}
@@ -691,7 +827,7 @@ export const Playbook: React.FC = () => {
             {filteredDebriefs.length === 0 && (
               <div className="text-center py-10 space-y-2">
                 <ImageIcon className="w-8 h-8 text-white/10 mx-auto" />
-                <p className="text-[11px] text-white/20 uppercase tracking-wider">Aucun debrief trouvé</p>
+                <p className="text-[11px] text-slate-500 uppercase tracking-wider">Aucun debrief trouvé</p>
               </div>
             )}
           </div>
@@ -701,13 +837,13 @@ export const Playbook: React.FC = () => {
       {/* ── Modal Nouveau Setup ────────────────────────────────────────────────── */}
       {showAddSetupModal && createPortal(
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 backdrop-blur-md">
-          <div className="bg-[#14161f] border border-[#262833] rounded-2xl p-6 max-w-lg w-full space-y-4 animate-scale-up">
+          <div className="bg-[#14161f] border border-[#262833] rounded-2xl p-6 max-w-lg w-full space-y-4 animate-scale-up shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#262833] pb-3">
               <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-emerald-400" />
-                <span>+ NOUVEAU SETUP PLAYBOOK</span>
+                <span>{editingSetupId ? 'ÉDITION DU SETUP' : '+ NOUVEAU SETUP PLAYBOOK'}</span>
               </h3>
-              <button onClick={() => setShowAddSetupModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowAddSetupModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -745,7 +881,7 @@ export const Playbook: React.FC = () => {
                   placeholder="ex: ICT Silver Bullet & FVG"
                   value={newSetupTitle}
                   onChange={e => setNewSetupTitle(e.target.value)}
-                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#6366f1]"
                   required
                 />
               </div>
@@ -757,19 +893,19 @@ export const Playbook: React.FC = () => {
                   value={newSetupDesc}
                   onChange={e => setNewSetupDesc(e.target.value)}
                   rows={2}
-                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#6366f1]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1 font-semibold">Unités de Temps (séparées par virgule)</label>
+                  <label className="text-slate-400 block mb-1 font-semibold">Unités de Temps (ex: M5, M15)</label>
                   <input
                     type="text"
-                    placeholder="m5, m15, h1"
+                    placeholder="M5, M15, H1"
                     value={newSetupTimeframes}
                     onChange={e => setNewSetupTimeframes(e.target.value)}
-                    className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#6366f1]"
                   />
                 </div>
                 <div>
@@ -779,7 +915,7 @@ export const Playbook: React.FC = () => {
                     placeholder="#Indices, #Killzone"
                     value={newSetupTags}
                     onChange={e => setNewSetupTags(e.target.value)}
-                    className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#6366f1]"
                   />
                 </div>
               </div>
@@ -791,7 +927,7 @@ export const Playbook: React.FC = () => {
                   value={newSetupRules}
                   onChange={e => setNewSetupRules(e.target.value)}
                   rows={3}
-                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#6366f1]"
                 />
               </div>
 
@@ -802,21 +938,21 @@ export const Playbook: React.FC = () => {
                   placeholder="https://..."
                   value={newSetupImageUrl}
                   onChange={e => setNewSetupImageUrl(e.target.value)}
-                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#181920] border border-[#262833] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#6366f1]"
                 />
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl transition-all"
+                  className="flex-1 bg-[#6366f1] hover:bg-[#4f46e5] text-white font-bold py-2.5 rounded-xl transition-all shadow-indigo-glow cursor-pointer"
                 >
                   ENREGISTRER LE SETUP
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAddSetupModal(false)}
-                  className="px-4 bg-[#181920] text-slate-300 rounded-xl border border-[#262833]"
+                  className="px-4 bg-[#181920] text-slate-300 rounded-xl border border-[#262833] cursor-pointer"
                 >
                   ANNULER
                 </button>
@@ -830,13 +966,13 @@ export const Playbook: React.FC = () => {
       {/* ── Modal Agrandir Setup ───────────────────────────────────────────────── */}
       {selectedSetupForModal && createPortal(
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999] p-4 backdrop-blur-md">
-          <div className="bg-[#14161f] border border-[#262833] rounded-2xl max-w-3xl w-full overflow-hidden animate-scale-up space-y-4 p-5">
+          <div className="bg-[#14161f] border border-[#262833] rounded-2xl max-w-3xl w-full overflow-hidden animate-scale-up space-y-4 p-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#262833] pb-3">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <span className="text-emerald-400">UT: {selectedSetupForModal.timeframes.join(' / ')}</span>
+                <span className="text-[#818cf8]">UT: {selectedSetupForModal.timeframes.join(' / ')}</span>
                 <span>— {selectedSetupForModal.title}</span>
               </h3>
-              <button onClick={() => setSelectedSetupForModal(null)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setSelectedSetupForModal(null)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -868,26 +1004,26 @@ export const Playbook: React.FC = () => {
       {/* ── Confirm Delete Modal ──────────────────────────────────────────────── */}
       {confirmDeleteId && createPortal(
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4">
-          <div className="glass-panel rounded-[20px] p-6 max-w-sm w-full space-y-4 border border-red-500/20">
+          <div className="bg-[#14161f] rounded-[20px] p-6 max-w-sm w-full space-y-4 border border-red-500/20 shadow-2xl">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center">
                 <Trash2 className="w-5 h-5 text-red-400" />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white">Supprimer ce debrief ?</h3>
-                <p className="text-[10px] text-white/40">Cette action est irréversible.</p>
+                <p className="text-[10px] text-slate-400">Cette action est irréversible.</p>
               </div>
             </div>
             <div className="flex space-x-3">
               <button
                 onClick={() => setConfirmDeleteId(null)}
-                className="flex-1 border border-white/10 rounded-xl py-2 text-xs text-white/60 hover:border-white/30 transition-all"
+                className="flex-1 border border-white/10 rounded-xl py-2 text-xs text-slate-300 hover:border-white/30 transition-all cursor-pointer"
               >
                 Annuler
               </button>
               <button
                 onClick={handleDeleteConfirm}
-                className="flex-1 bg-red-500 rounded-xl py-2 text-xs font-bold text-white hover:bg-red-600 transition-all"
+                className="flex-1 bg-red-500 rounded-xl py-2 text-xs font-bold text-white hover:bg-red-600 transition-all cursor-pointer"
               >
                 Supprimer
               </button>
