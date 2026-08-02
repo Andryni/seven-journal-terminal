@@ -8,7 +8,7 @@ import { Select, Textarea } from '../../components/ui/Input';
 import {
   BookOpen, TrendingUp, AlertTriangle,
   Star, Upload, Trash2, Edit3, X, ImageIcon, ChevronRight,
-  BarChart2, Zap, Plus, Filter, Search, ShieldCheck, Target, Award, PieChart, CheckCircle2
+  BarChart2, Zap, Plus, Search, Target, PieChart
 } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -321,7 +321,7 @@ export const Playbook: React.FC = () => {
         {/* Dynamic Cards Grid */}
         {filteredSetups.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-2">
-            {filteredSetups.map((s: PlaybookSetup, cardIdx: number) => {
+            {filteredSetups.map((s: PlaybookSetup) => {
               const stats = setupStatsMap[s.id] || { total: 0, wins: 0, pnl: 0, winRate: 0 };
               const isProfitable = stats.pnl >= 0;
 
