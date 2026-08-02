@@ -81,9 +81,10 @@ export default {
         }
       },
       fontFamily: {
-        mono:    ['JetBrains Mono', 'Geist Mono', 'Fira Code', 'monospace'],
-        heading: ['Space Grotesk', 'Outfit', 'sans-serif'],
-        sans:    ['DM Sans', 'Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        mono:    ['JetBrains Mono', 'Fira Code', 'monospace'],
+        heading: ['Space Grotesk', 'Syne', 'sans-serif'],
+        brand:   ['Syne', 'Space Grotesk', 'sans-serif'],
+        sans:    ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
       },
       animation: {
         'fade-in-up':    'fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both',
