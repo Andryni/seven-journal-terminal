@@ -116,8 +116,14 @@ export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
     // Daily P&L & Day Win Rate calculation
     const dailyMap: Record<string, number> = {};
     closedTrades.forEach((t) => {
-      const dateKey = t.exit_time.split('T')[0];
-      dailyMap[dateKey] = (dailyMap[dateKey] || 0) + t.pnl;
+      const timeStr = t.entry_time || t.exit_time;
+      if (timeStr) {
+        const d = new Date(timeStr);
+        if (!isNaN(d.getTime())) {
+          const dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          dailyMap[dateKey] = (dailyMap[dateKey] || 0) + t.pnl;
+        }
+      }
     });
     const dailyPnL = Object.entries(dailyMap)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -126,25 +132,33 @@ export function usePerformanceMetrics(trades: Trade[]): PerformanceMetrics {
     const greenDays = dailyPnL.filter(d => d.pnl > 0).length;
     const dayWinRate = dailyPnL.length > 0 ? (greenDays / dailyPnL.length) * 100 : 0;
 
-    // Monthly performance calculation
-    const monthlyMap: Record<string, { pnl: number; count: number; wins: number }> = {};
+    // Monthly performance calculation (grouped by YYYY-MM order)
+    const monthlyMap: Record<string, { label: string; pnl: number; count: number; wins: number; sortKey: string }> = {};
     closedTrades.forEach((t) => {
-      const date = new Date(t.exit_time);
-      const monthKey = date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
-      if (!monthlyMap[monthKey]) {
-        monthlyMap[monthKey] = { pnl: 0, count: 0, wins: 0 };
+      const timeStr = t.entry_time || t.exit_time;
+      if (timeStr) {
+        const d = new Date(timeStr);
+        if (!isNaN(d.getTime())) {
+          const sortKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+          const monthLabel = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }).toUpperCase();
+          if (!monthlyMap[sortKey]) {
+            monthlyMap[sortKey] = { label: monthLabel, pnl: 0, count: 0, wins: 0, sortKey };
+          }
+          monthlyMap[sortKey].pnl += t.pnl;
+          monthlyMap[sortKey].count += 1;
+          if (t.pnl > 0) monthlyMap[sortKey].wins += 1;
+        }
       }
-      monthlyMap[monthKey].pnl += t.pnl;
-      monthlyMap[monthKey].count += 1;
-      if (t.pnl > 0) monthlyMap[monthKey].wins += 1;
     });
 
-    const monthlyPerformance = Object.entries(monthlyMap).map(([month, data]) => ({
-      month: month.toUpperCase(),
-      pnl: Number(data.pnl.toFixed(2)),
-      count: data.count,
-      winRate: Number(((data.wins / data.count) * 100).toFixed(1)),
-    }));
+    const monthlyPerformance = Object.values(monthlyMap)
+      .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+      .map((data) => ({
+        month: data.label,
+        pnl: Number(data.pnl.toFixed(2)),
+        count: data.count,
+        winRate: Number(((data.wins / data.count) * 100).toFixed(1)),
+      }));
 
     // Recent 3 trades
     const recentTrades = [...trades]
