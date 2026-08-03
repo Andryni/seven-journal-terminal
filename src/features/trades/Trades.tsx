@@ -297,7 +297,18 @@ export const Trades: React.FC = () => {
     const setup_structures: string[] = [];
     if (bos) setup_structures.push('BOS');
 
-    const formattedEntryTime = entryDate ? new Date(entryDate).toISOString() : new Date().toISOString();
+    // Ensure local entryDate (YYYY-MM-DDTHH:mm) is converted to a clean ISO timestamppreserving local day
+    let formattedEntryTime: string;
+    if (entryDate) {
+      const d = new Date(entryDate);
+      if (!isNaN(d.getTime())) {
+        formattedEntryTime = d.toISOString();
+      } else {
+        formattedEntryTime = new Date().toISOString();
+      }
+    } else {
+      formattedEntryTime = new Date().toISOString();
+    }
 
     const tradeData: any = {
       account_id: accountId,

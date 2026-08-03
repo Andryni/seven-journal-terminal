@@ -103,11 +103,16 @@ export const Calendar: React.FC = () => {
   const tradesByDate = useMemo(() => {
     const map: Record<string, { pnl: number; count: number; wins: number; losses: number; trades: Trade[] }> = {};
     trades.forEach(t => {
-      const timeStr = t.exit_time || t.entry_time;
+      const timeStr = t.entry_time || t.exit_time;
       if (timeStr) {
+        // Parse date considering local timezone or ISO string
         const d = new Date(timeStr);
         if (!isNaN(d.getTime())) {
-          const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          // Use local date components or substring if ISO string
+          const yearNum = d.getFullYear();
+          const monthNum = String(d.getMonth() + 1).padStart(2, '0');
+          const dayNum = String(d.getDate()).padStart(2, '0');
+          const dateStr = `${yearNum}-${monthNum}-${dayNum}`;
           if (!map[dateStr]) map[dateStr] = { pnl: 0, count: 0, wins: 0, losses: 0, trades: [] };
           map[dateStr].pnl += t.pnl || 0;
           map[dateStr].count += 1;
