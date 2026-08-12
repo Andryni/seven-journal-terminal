@@ -1148,15 +1148,15 @@ export const Trades: React.FC = () => {
       , document.body)}
 
       {/* TABLEAU DES TRADES — colonnes triables */}
-      <Table headers={[
-        <button key="date" onClick={() => handleSort('date')} className="flex items-center gap-1 hover:text-white transition-colors">DATE <SortIcon col="date" /></button>,
-        <button key="pair" onClick={() => handleSort('pair')} className="flex items-center gap-1 hover:text-white transition-colors">INSTRUMENT <SortIcon col="pair" /></button>,
+      <Table headers={useMemo(() => [
+        <button key="date" onClick={() => handleSort('date')} className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">DATE <SortIcon col="date" /></button>,
+        <button key="pair" onClick={() => handleSort('pair')} className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">INSTRUMENT <SortIcon col="pair" /></button>,
         'SESSION', 'TYPE', 'LOTS',
-        <button key="result" onClick={() => handleSort('result')} className="flex items-center gap-1 hover:text-white transition-colors">RÉSULTAT <SortIcon col="result" /></button>,
-        <button key="pnl" onClick={() => handleSort('pnl')} className="flex items-center gap-1 hover:text-white transition-colors">P&L ($) <SortIcon col="pnl" /></button>,
-        <button key="r" onClick={() => handleSort('r_multiple')} className="flex items-center gap-1 hover:text-white transition-colors">R-MULTIPLE <SortIcon col="r_multiple" /></button>,
+        <button key="result" onClick={() => handleSort('result')} className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">RÉSULTAT <SortIcon col="result" /></button>,
+        <button key="pnl" onClick={() => handleSort('pnl')} className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">P&L ($) <SortIcon col="pnl" /></button>,
+        <button key="r" onClick={() => handleSort('r_multiple')} className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">R-MULTIPLE <SortIcon col="r_multiple" /></button>,
         'IMAGES', 'ACTIONS'
-      ]}>
+      ], [handleSort, sortKey, sortDir])}>
         {filteredTrades.map((t: Trade) => (
           <TableRow key={t.id} className="trade-row">
             <TableCell className="font-mono text-xs text-slate-400">{new Date(t.entry_time).toLocaleDateString('fr-FR')} {new Date(t.entry_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</TableCell>
