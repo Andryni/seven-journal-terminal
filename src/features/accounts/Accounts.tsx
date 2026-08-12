@@ -225,9 +225,12 @@ export const Accounts: React.FC = () => {
                 </div>
               </div>
 
-              {/* Section 2 — Capital */}
+              {/* Section 2 — Capital & Garde-fou Anti-Revenge */}
               <div className="bg-[#121318] border border-[#262833] p-4 rounded-xl space-y-4">
-                <p className="text-xs font-bold text-[#818cf8] uppercase tracking-wider border-b border-[#262833] pb-2">2. Capital</p>
+                <p className="text-xs font-bold text-[#818cf8] uppercase tracking-wider border-b border-[#262833] pb-2 flex items-center justify-between">
+                  <span>2. Capital & Garde-fou (Daily Loss Limit)</span>
+                  <span className="text-[10px] text-amber-400 font-bold">🔒 Lock Guard</span>
+                </p>
                 <div className="grid grid-cols-2 gap-4">
                   <Input
                     label="Capital Initial *"
@@ -247,6 +250,19 @@ export const Accounts: React.FC = () => {
                     step="0.01"
                     required
                   />
+                </div>
+                <div className="space-y-1">
+                  <Input
+                    label="Limite de Perte Quotidienne / Max Daily Loss ($) *"
+                    placeholder="ex: 1000 (ex: $1,000 ou 1% du capital)"
+                    value={maxDailyLoss}
+                    onChange={(e) => setMaxDailyLoss(e.target.value)}
+                    type="number"
+                    step="0.01"
+                  />
+                  <p className="text-[10px] text-slate-400 font-mono">
+                    La session sera automatiquement verrouillée si la perte du jour atteint ce montant ($).
+                  </p>
                 </div>
               </div>
 

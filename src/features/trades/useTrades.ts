@@ -63,13 +63,12 @@ export function useTrades() {
   const checkAndApplyDailyLock = async (userId: string) => {
     const todayStr = new Date().toISOString().split('T')[0];
     
-    // 1. Fetch trades exit today
+    // 1. Fetch trades entered/exited today
     const { data: todayTrades, error: fetchError } = await supabase
       .from('trades')
       .select('*')
       .eq('user_id', userId)
-      .gte('exit_time', `${todayStr}T00:00:00Z`)
-      .order('exit_time', { ascending: true });
+      .gte('entry_time', `${todayStr}T00:00:00Z`);
 
     // 2. Fetch accounts to check max_daily_loss_limit
     const { data: accounts } = await supabase
@@ -77,53 +76,39 @@ export function useTrades() {
       .select('*')
       .eq('user_id', userId);
 
-    if (!fetchError && todayTrades) {
-      // Rule 1: 2 consecutive SLs
-      let consecutiveSLCount = 0;
-      for (const t of todayTrades) {
-        if (t.pnl !== null) {
-          if (t.pnl < 0) {
-            consecutiveSLCount++;
-          } else {
-            consecutiveSLCount = 0;
-          }
-        }
-      }
-
-      // Rule 2: Max daily loss limit per account
+    if (!fetchError && todayTrades && accounts) {
       let dailyLossExceeded = false;
       let exceededAccountName = '';
       let exceededAmount = 0;
       let limitAmount = 0;
 
-      if (accounts) {
-        for (const acc of accounts) {
-          if (acc.max_daily_loss_limit !== null && acc.max_daily_loss_limit > 0) {
-            // Calculate sum of P&L for this account today
-            const accTodayTrades = todayTrades.filter(t => t.account_id === acc.id);
-            const todayPnl = accTodayTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-            
-            // If net P&L is negative and exceeds limit
-            if (todayPnl < 0 && Math.abs(todayPnl) >= acc.max_daily_loss_limit) {
-              dailyLossExceeded = true;
-              exceededAccountName = acc.name;
-              exceededAmount = Math.abs(todayPnl);
-              limitAmount = acc.max_daily_loss_limit;
-              break;
-            }
-          }
+      for (const acc of accounts) {
+        // Effective daily loss limit in USD: configured limit OR default 1% of initial balance
+        const effectiveLimitUsd = (acc.max_daily_loss_limit !== null && acc.max_daily_loss_limit > 0)
+          ? acc.max_daily_loss_limit
+          : (acc.initial_balance ? acc.initial_balance * 0.01 : 1000);
+
+        // Calculate sum of P&L for this account today
+        const accTodayTrades = todayTrades.filter(t => t.account_id === acc.id);
+        const todayPnl = accTodayTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+        
+        // Lock if daily net loss exceeds threshold
+        if (todayPnl < 0 && Math.abs(todayPnl) >= effectiveLimitUsd) {
+          dailyLossExceeded = true;
+          exceededAccountName = acc.name;
+          exceededAmount = Math.abs(todayPnl);
+          limitAmount = effectiveLimitUsd;
+          break;
         }
       }
 
-      if (consecutiveSLCount >= 2 || dailyLossExceeded) {
-        const reason = dailyLossExceeded 
-          ? `Limite de perte quotidienne dépassée sur le compte ${exceededAccountName} (${exceededAmount.toFixed(2)} / limit ${limitAmount.toFixed(2)}). Session verrouillée.`
-          : '2 Stop Loss consécutifs atteints aujourd\'hui. Session verrouillée.';
+      if (dailyLossExceeded) {
+        const reason = `Limite de perte quotidienne ($ / %) atteinte sur ${exceededAccountName} (-$${exceededAmount.toFixed(2)} / max $${limitAmount.toFixed(2)}). Session verrouillée.`;
 
         await supabase.from('daily_session_locks').upsert({
           user_id: userId,
           date: todayStr,
-          sl_count: consecutiveSLCount,
+          sl_count: todayTrades.filter(t => (t.pnl || 0) < 0).length,
           is_locked: true,
           locked_at: new Date().toISOString(),
           lock_reason: reason,
