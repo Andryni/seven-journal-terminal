@@ -82,10 +82,19 @@ export const Trades: React.FC = () => {
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
 
+  const getLocalDatetimeString = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   // Form State
   const [accountId, setAccountId] = useState('');
   const [pair, setPair] = useState('XAUUSD');
-  const [entryDate, setEntryDate] = useState(() => new Date().toISOString().slice(0, 16));
+  const [entryDate, setEntryDate] = useState(() => getLocalDatetimeString());
   const [direction, setDirection] = useState<'BUY' | 'SELL'>('BUY');
   const [entryPrice, setEntryPrice] = useState('');
   const [exitPrice, setExitPrice] = useState('');
@@ -204,7 +213,12 @@ export const Trades: React.FC = () => {
     if (trade.entry_time) {
       const dt = new Date(trade.entry_time);
       if (!isNaN(dt.getTime())) {
-        setEntryDate(dt.toISOString().slice(0, 16));
+        const year = dt.getFullYear();
+        const month = String(dt.getMonth() + 1).padStart(2, '0');
+        const day = String(dt.getDate()).padStart(2, '0');
+        const hours = String(dt.getHours()).padStart(2, '0');
+        const minutes = String(dt.getMinutes()).padStart(2, '0');
+        setEntryDate(`${year}-${month}-${day}T${hours}:${minutes}`);
       }
     }
     setDirection(trade.direction);
@@ -240,7 +254,7 @@ export const Trades: React.FC = () => {
   };
 
   const clearForm = () => {
-    setEntryDate(new Date().toISOString().slice(0, 16));
+    setEntryDate(getLocalDatetimeString());
     setEntryPrice('');
     setExitPrice('');
     setStopLoss('');
