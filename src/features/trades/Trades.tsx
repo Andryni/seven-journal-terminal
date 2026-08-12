@@ -148,8 +148,10 @@ export const Trades: React.FC = () => {
     }
   }, [accounts, accountId]);
 
-  // Live Auto-Calculation Effect
+  // Live Auto-Calculation Effect (only when form is open to avoid infinite re-render loops)
   React.useEffect(() => {
+    if (!showAddForm) return;
+
     const entry = Number(entryPrice);
     const sl = Number(stopLoss);
     const tp = Number(takeProfit);
@@ -158,9 +160,8 @@ export const Trades: React.FC = () => {
 
     if (!isNaN(entry) && !isNaN(sl) && entry > 0 && sl > 0 && entry !== sl) {
       const selectedAccount = accounts.find(acc => acc.id === accountId);
-      const balance = selectedAccount ? selectedAccount.balance : 100000; // fallback standard balance
+      const balance = selectedAccount ? selectedAccount.balance : 100000;
 
-      // 1. Calculate risk in USD
       let calculatedRiskUsd = 0;
       if (!isNaN(rVal) && rVal > 0) {
         if (riskType === 'percent') {
@@ -170,11 +171,8 @@ export const Trades: React.FC = () => {
         }
       }
 
-      // 2. Auto calculate Lot Size based on risk and SL distance (Assuming standard Gold/FX contract size as approximation)
-      // distance in pips/ticks
       const slDistance = Math.abs(entry - sl);
       
-      // 3. Auto calculate R-Multiple
       let calculatedR = 0;
       if (result === 'TP') {
         calculatedR = Math.abs(tp - entry) / slDistance;
@@ -187,16 +185,16 @@ export const Trades: React.FC = () => {
       }
       
       if (calculatedR !== 0 && !isNaN(calculatedR)) {
-        setManualRMultiple(calculatedR.toFixed(2));
+        const nextR = calculatedR.toFixed(2);
+        setManualRMultiple(prev => prev === nextR ? prev : nextR);
         
-        // 4. Auto calculate P&L ($) based on R-multiple and Risk Usd
         if (calculatedRiskUsd > 0) {
-          const calculatedPnl = calculatedRiskUsd * calculatedR;
-          setManualPnl(calculatedPnl.toFixed(2));
+          const nextPnl = (calculatedRiskUsd * calculatedR).toFixed(2);
+          setManualPnl(prev => prev === nextPnl ? prev : nextPnl);
         }
       }
     }
-  }, [entryPrice, stopLoss, takeProfit, exitPrice, riskType, riskValue, result, accountId, accounts, direction]);
+  }, [showAddForm, entryPrice, stopLoss, takeProfit, exitPrice, riskType, riskValue, result, accountId, accounts, direction]);
 
   // Load editing trade info
   const handleEditClick = (trade: Trade) => {
