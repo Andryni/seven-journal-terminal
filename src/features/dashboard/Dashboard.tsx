@@ -4,7 +4,7 @@ import { useTrades } from '../trades/useTrades';
 import { usePerformanceMetrics } from './usePerformanceMetrics';
 import {
   Target, Flame, TrendingDown, Activity, Zap, Brain, Calendar, History, ArrowRight,
-  Globe, Sparkles
+  Globe, Sparkles, Plus, Trash2, ShieldAlert
 } from 'lucide-react';
 import { Table, TableRow, TableCell } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
@@ -15,6 +15,7 @@ import {
   GlowDefs,
 } from '../../components/ui/PremiumCharts';
 import { Achievements } from '../achievements/Achievements';
+import { useChecklist } from './useChecklist';
 
 // ── Gauge SVG Component ────────────────────────────────────────────────────────
 const SemiCircleGauge = ({ percent, color = '#10b981' }: { percent: number; color?: string }) => {
@@ -54,27 +55,9 @@ export const Dashboard: React.FC = () => {
   const m = usePerformanceMetrics(trades);
   const [now, setNow] = useState(new Date());
 
-  // Tabs for Central Right Widget
-  const [activeTabWidget, setActiveTabWidget] = useState<'checklist' | 'ratio' | 'session'>('checklist');
-
-  // Pre-session checklist state (persisted)
-  const [checklist, setChecklist] = useState(() => {
-    const saved = localStorage.getItem('seven_pre_session_checklist');
-    return saved ? JSON.parse(saved) : [
-      { id: '1', text: 'Vérifier le calendrier économique (News high impact)', done: false },
-      { id: '2', text: 'Valider le biais H4/H1 & Key Levels', done: false },
-      { id: '3', text: 'Respecter le Stop Loss & Max 1% de risque', done: false },
-      { id: '4', text: 'Pas de revenge trading après 1 perte', done: false }
-    ];
-  });
-
-  const toggleChecklistItem = (id: string) => {
-    setChecklist((prev: any[]) => {
-      const updated = prev.map(item => item.id === id ? { ...item, done: !item.done } : item);
-      localStorage.setItem('seven_pre_session_checklist', JSON.stringify(updated));
-      return updated;
-    });
-  };
+  // Supabase Interactive Checklist
+  const { items: checklistItems, toggleItem, addItem, deleteItem, resetAll } = useChecklist();
+  const [newRuleText, setNewRuleText] = useState('');
 
   // Session Timer
   const [sessionActive, setSessionActive] = useState(false);
@@ -123,14 +106,6 @@ export const Dashboard: React.FC = () => {
   const todayTradesCount = useMemo(() => {
     const todayStr = new Date().toISOString().split('T')[0];
     return trades.filter(t => t.entry_time && t.entry_time.startsWith(todayStr)).length;
-  }, [trades]);
-
-  // Long vs Short distribution
-  const longVsShort = useMemo(() => {
-    const longs = trades.filter(t => t.direction === 'BUY').length;
-    const shorts = trades.filter(t => t.direction === 'SELL').length;
-    const total = longs + shorts || 1;
-    return { longs, shorts, longPct: Math.round((longs / total) * 100), shortPct: Math.round((shorts / total) * 100) };
   }, [trades]);
 
   if (isLoading) {
@@ -380,78 +355,94 @@ export const Dashboard: React.FC = () => {
           <GlowingEquityChart data={equityData} dataKey="pnl" height={256} isPositive={isPositive} />
         </div>
 
-        {/* Multi-Tab Interactive Widget */}
+        {/* Pre-Session Checklist (Personnalisable & Synchronisée) */}
         <div className="chart-container p-5 flex flex-col justify-between">
-          <div>
-            {/* Widget Tabs Header */}
-            <div className="flex items-center gap-1 border-b border-white/[0.06] pb-3 mb-4">
-              <button
-                onClick={() => setActiveTabWidget('checklist')}
-                className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg transition-all ${
-                  activeTabWidget === 'checklist' ? 'bg-[#6366f1]/20 text-[#818cf8] border border-[#6366f1]/30' : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                Checklist Session
-              </button>
-              <button
-                onClick={() => setActiveTabWidget('ratio')}
-                className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg transition-all ${
-                  activeTabWidget === 'ratio' ? 'bg-[#6366f1]/20 text-[#818cf8] border border-[#6366f1]/30' : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                Long vs Short
-              </button>
+          <div className="space-y-4">
+            {/* Header with Title & Reset Button */}
+            <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-[#818cf8]" />
+                <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                  Checklist Pré-Session
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                  {checklistItems.filter(i => i.is_done).length}/{checklistItems.length}
+                </span>
+                <button
+                  onClick={() => resetAll()}
+                  title="Réinitialiser pour la session"
+                  className="text-[10px] text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] px-2 py-0.5 rounded-md border border-white/[0.06] transition-all font-mono"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
 
-            {/* TAB 1: Checklist Pré-Session */}
-            {activeTabWidget === 'checklist' && (
-              <div className="space-y-2.5">
-                <div className="text-[11px] text-slate-400 font-mono mb-2 flex items-center justify-between">
-                  <span>Règles de Discipline :</span>
-                  <span className="text-emerald-400 font-bold">{checklist.filter((i: any) => i.done).length}/{checklist.length}</span>
-                </div>
-                {checklist.map((item: any) => (
-                  <label
-                    key={item.id}
-                    onClick={() => toggleChecklistItem(item.id)}
-                    className={`flex items-start gap-2.5 p-2 rounded-xl border transition-all cursor-pointer text-xs ${
-                      item.done
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 line-through opacity-75'
-                        : 'bg-[#14151f] border-white/[0.05] text-slate-300 hover:border-white/10'
-                    }`}
-                  >
+            {/* Checklist Items */}
+            <div className="space-y-2 max-h-[190px] overflow-y-auto pr-1">
+              {checklistItems.map(item => (
+                <div
+                  key={item.id}
+                  className={`flex items-center justify-between gap-2.5 p-2.5 rounded-xl border transition-all text-xs ${
+                    item.is_done
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 line-through opacity-80'
+                      : 'bg-[#14151f] border-white/[0.05] text-slate-300 hover:border-white/10'
+                  }`}
+                >
+                  <label className="flex items-center gap-2.5 flex-1 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={item.done}
-                      onChange={() => {}}
-                      className="mt-0.5 rounded border-white/20 bg-[#0e0f14] text-[#6366f1] focus:ring-0"
+                      checked={item.is_done}
+                      onChange={() => toggleItem(item.id, !item.is_done)}
+                      className="rounded border-white/20 bg-[#0e0f14] text-[#6366f1] focus:ring-0 cursor-pointer"
                     />
-                    <span>{item.text}</span>
+                    <span className="text-xs font-mono">{item.text}</span>
                   </label>
-                ))}
-              </div>
-            )}
-
-            {/* TAB 2: Long vs Short Ratio */}
-            {activeTabWidget === 'ratio' && (
-              <div className="space-y-4">
-                <div className="text-xs text-slate-400 font-mono">Répartition des positions exécutées :</div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-mono font-bold">
-                    <span className="text-emerald-400">BUY / LONG ({longVsShort.longs})</span>
-                    <span className="text-indigo-400">SELL / SHORT ({longVsShort.shorts})</span>
-                  </div>
-                  <div className="h-3 w-full bg-[#121318] rounded-full overflow-hidden flex border border-white/10">
-                    <div className="bg-emerald-400 h-full transition-all" style={{ width: `${longVsShort.longPct}%` }} />
-                    <div className="bg-indigo-500 h-full transition-all" style={{ width: `${longVsShort.shortPct}%` }} />
-                  </div>
-                  <div className="flex justify-between text-[10px] font-mono text-slate-500">
-                    <span>{longVsShort.longPct}% Longs</span>
-                    <span>{longVsShort.shortPct}% Shorts</span>
-                  </div>
+                  <button
+                    onClick={() => deleteItem(item.id)}
+                    className="text-slate-500 hover:text-red-400 p-1 transition-colors"
+                    title="Supprimer la règle"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-              </div>
-            )}
+              ))}
+
+              {checklistItems.length === 0 && (
+                <div className="text-center py-4 text-xs text-slate-500 font-mono">
+                  Aucune règle configurée. Ajoutez vos critères de discipline ci-dessous.
+                </div>
+              )}
+            </div>
+
+            {/* Add Rule Form */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (newRuleText.trim()) {
+                  addItem(newRuleText);
+                  setNewRuleText('');
+                }
+              }}
+              className="flex items-center gap-2 pt-2 border-t border-white/[0.06]"
+            >
+              <input
+                type="text"
+                placeholder="Ajouter une règle de discipline..."
+                value={newRuleText}
+                onChange={(e) => setNewRuleText(e.target.value)}
+                className="flex-1 bg-[#0d0e14] border border-white/[0.08] focus:border-[#6366f1] rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none transition-all font-mono"
+              />
+              <button
+                type="submit"
+                className="bg-[#6366f1] hover:bg-[#4f46e5] text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 font-mono"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Ajouter</span>
+              </button>
+            </form>
           </div>
 
           <div className="pt-3 border-t border-white/[0.05] mt-4 flex items-center justify-between text-[10px] font-mono text-slate-500">
