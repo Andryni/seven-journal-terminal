@@ -10,12 +10,8 @@ export interface ChecklistItem {
   created_at?: string;
 }
 
-const DEFAULT_ITEMS: Omit<ChecklistItem, 'id'>[] = [
-  { text: 'Vérifier le calendrier économique (News high impact)', is_done: false, sort_order: 1 },
-  { text: 'Valider le biais H4/H1 & Key Levels', is_done: false, sort_order: 2 },
-  { text: 'Respecter le Stop Loss & Max 1% de risque', is_done: false, sort_order: 3 },
-  { text: 'Pas de revenge trading après 1 perte', is_done: false, sort_order: 4 },
-];
+
+
 
 export function useChecklist() {
   const queryClient = useQueryClient();
@@ -33,26 +29,8 @@ export function useChecklist() {
         .order('created_at', { ascending: true });
 
       if (error) {
-        // Si la table n'est pas encore créée, fallback gracieux
         console.warn('Checklist table not found or error:', error.message);
         return [];
-      }
-
-      // Si première utilisation, initialiser avec les règles par défaut
-      if (data.length === 0) {
-        const seeded = DEFAULT_ITEMS.map((item, idx) => ({
-          user_id: user.id,
-          text: item.text,
-          is_done: false,
-          sort_order: idx + 1,
-        }));
-
-        const { data: inserted } = await supabase
-          .from('user_checklists')
-          .insert(seeded)
-          .select();
-
-        return inserted || [];
       }
 
       return data;
