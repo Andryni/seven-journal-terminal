@@ -1269,14 +1269,25 @@ export const Trades: React.FC = () => {
               </div>
             </div>
 
-            {/* Confirmations techniques SMC */}
+            {/* Stratégie du Playbook */}
             <div className="space-y-2 mb-6">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Confirmations Techniques SMC/ICT</h4>
+              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Stratégie du Playbook</h4>
               <div className="flex flex-wrap gap-2">
-                {viewingTrade.setup_structures.map(s => <span key={s} className="bg-[#121318] border border-[#262833] px-2.5 py-1 rounded-lg text-xs text-white font-semibold">{s}</span>)}
-                {viewingTrade.setup_ob && <span className="bg-[#121318] border border-[#262833] px-2.5 py-1 rounded-lg text-xs text-white font-semibold">ORDER BLOCK</span>}
-                {viewingTrade.setup_fvg && <span className="bg-[#121318] border border-[#262833] px-2.5 py-1 rounded-lg text-xs text-white font-semibold">FAIR VALUE GAP (FVG)</span>}
-                {viewingTrade.setup_liquidity_sweep && <span className="bg-[#121318] border border-[#262833] px-2.5 py-1 rounded-lg text-xs text-white font-semibold">LIQUIDITY SWEEP</span>}
+                {(() => {
+                  const playbookSetups = viewingTrade.setup_structures.filter(s => s !== 'BOS');
+                  if (playbookSetups.length > 0) {
+                    return playbookSetups.map(s => (
+                      <span key={s} className="bg-[#6366f1]/15 border border-[#6366f1] text-[#818cf8] px-3 py-1 rounded-xl text-xs font-bold">
+                        🎯 {s}
+                      </span>
+                    ));
+                  }
+                  return (
+                    <span className="text-xs text-slate-500 italic">
+                      Aucune stratégie spécifique associée
+                    </span>
+                  );
+                })()}
               </div>
             </div>
 
