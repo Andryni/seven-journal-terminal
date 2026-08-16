@@ -962,59 +962,26 @@ export const Trades: React.FC = () => {
                         })}
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        <p className="text-[10px] text-slate-400">Confirmations SMC / ICT par défaut (Ajoutez vos stratégies dans le Playbook pour les personnaliser) :</p>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <label className={`flex items-center space-x-2 cursor-pointer p-2.5 rounded-xl border transition-all ${bos ? 'bg-[#6366f1]/15 border-[#6366f1] text-white font-bold' : 'bg-[#181920] border-[#262833] text-slate-300'}`}>
-                            <input type="checkbox" checked={bos} onChange={(e) => setBos(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
-                            <span>BOS (Break of Structure)</span>
-                          </label>
-                          <label className={`flex items-center space-x-2 cursor-pointer p-2.5 rounded-xl border transition-all ${ob ? 'bg-[#6366f1]/15 border-[#6366f1] text-white font-bold' : 'bg-[#181920] border-[#262833] text-slate-300'}`}>
-                            <input type="checkbox" checked={ob} onChange={(e) => setOb(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
-                            <span>Order Block</span>
-                          </label>
-                          <label className={`flex items-center space-x-2 cursor-pointer p-2.5 rounded-xl border transition-all ${fvg ? 'bg-[#6366f1]/15 border-[#6366f1] text-white font-bold' : 'bg-[#181920] border-[#262833] text-slate-300'}`}>
-                            <input type="checkbox" checked={fvg} onChange={(e) => setFvg(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
-                            <span>Fair Value Gap (FVG)</span>
-                          </label>
-                          <label className={`flex items-center space-x-2 cursor-pointer p-2.5 rounded-xl border transition-all ${liquiditySweep ? 'bg-[#6366f1]/15 border-[#6366f1] text-white font-bold' : 'bg-[#181920] border-[#262833] text-slate-300'}`}>
-                            <input type="checkbox" checked={liquiditySweep} onChange={(e) => setLiquiditySweep(e.target.checked)} className="rounded border-[#262833] bg-[#121318] text-[#6366f1] focus:ring-0" />
-                            <span>Liquidity Sweep</span>
-                          </label>
-                        </div>
-                      </div>
+                      <p className="text-[11px] text-slate-400 italic bg-[#181920] p-3 rounded-xl border border-[#262833]">
+                        Aucune stratégie créée. Ajoutez vos stratégies dans le Playbook pour structurer vos setups.
+                      </p>
                     )}
                   </div>
 
                   <div className="space-y-3 border-t border-[#262833] pt-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <Select
-                        label="Psychologie"
-                        value={mentalState}
-                        onChange={(e) => setMentalState(e.target.value as any)}
-                        options={[
-                          { value: 'focused', label: 'FOCUSED - Calme' },
-                          { value: 'anxious', label: 'ANXIOUS - Stressé' },
-                          { value: 'greedy', label: 'GREEDY - Cupide' },
-                          { value: 'revenge', label: 'REVENGE - Vengeance' },
-                          { value: 'fomo', label: 'FOMO - Peur de louper' },
-                          { value: 'tired', label: 'TIRED - Fatigué' },
-                        ]}
-                      />
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-semibold text-slate-400 block">Frameworks Mentaux</label>
-                        <div className="flex flex-col gap-2 pt-1">
-                          <label className="flex items-center space-x-2 text-xs text-slate-200 cursor-pointer">
-                            <input type="checkbox" checked={cookieJar} onChange={(e) => setCookieJar(e.target.checked)} className="rounded border-[#262833] bg-[#181920] text-[#6366f1] focus:ring-0" />
-                            <span>Cookie Jar</span>
-                          </label>
-                          <label className="flex items-center space-x-2 text-xs text-slate-200 cursor-pointer">
-                            <input type="checkbox" checked={rule40} onChange={(e) => setRule40(e.target.checked)} className="rounded border-[#262833] bg-[#181920] text-[#6366f1] focus:ring-0" />
-                            <span>40% Rule</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
+                    <Select
+                      label="Psychologie du Trader"
+                      value={mentalState}
+                      onChange={(e) => setMentalState(e.target.value as any)}
+                      options={[
+                        { value: 'focused', label: 'FOCUSED - Calme & Structuré' },
+                        { value: 'anxious', label: 'ANXIOUS - Stressé / Doute' },
+                        { value: 'greedy', label: 'GREEDY - Trop gourmand' },
+                        { value: 'revenge', label: 'REVENGE - Vengeance après perte' },
+                        { value: 'fomo', label: 'FOMO - Peur de rater le move' },
+                        { value: 'tired', label: 'TIRED - Fatigué' },
+                      ]}
+                    />
                   </div>
 
                   <div className="space-y-3 pt-3 border-t border-[#262833]">
